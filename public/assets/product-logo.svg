@@ -1,0 +1,135 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Multi-tenant platform icon">
+      <defs>
+        <!-- Brand gradients (kept) -->
+        <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#0B1D4D" stop-opacity="1"></stop>
+          <stop offset="100%" stop-color="#0F4C81" stop-opacity="0.95"></stop>
+        </linearGradient>
+
+ 
+        <!-- Tenant card symbol (refactored: defined once, reused via <use>) -->
+        <g id="tenantCard">
+          <rect width="72" height="72" rx="20" fill="url(#secondaryGradient)" fill-opacity="0.72"></rect>
+          <rect width="72" height="72" rx="20" stroke="#FFFFFF" stroke-opacity="0.22"></rect>
+          <rect x="6" y="6" width="60" height="60" rx="16" fill="#FFFFFF" fill-opacity="0.08"></rect>
+          <circle cx="36" cy="36" r="14" fill="none" stroke="#FFFFFF" stroke-opacity="0.30" stroke-width="3"></circle>
+          <circle cx="36" cy="36" r="4.5" fill="#FFFFFF" fill-opacity="0.55"></circle>
+        </g>
+
+        <!-- Glass fill: subtle cool tint + top highlight -> bottom shadow -->
+        <linearGradient id="glassFill" x1="0" y1="56" x2="0" y2="456" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.18"></stop>
+          <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.10"></stop>
+          <stop offset="1" stop-color="#0B1D4D" stop-opacity="0.08"></stop>
+        </linearGradient>
+
+        <!-- Glass shadow (kept, slightly refined) -->
+        <filter id="glassShadow" x="-25%" y="-25%" width="150%" height="150%">
+          <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000000" flood-opacity="0.35"></feDropShadow>
+        </filter>
+
+        <!-- Inner shadow for glass depth -->
+        <filter id="innerShadow" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+          <feOffset dx="0" dy="6"></feOffset>
+          <feGaussianBlur stdDeviation="10" result="blur"></feGaussianBlur>
+          <feComposite in="blur" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="inner"></feComposite>
+          <feColorMatrix in="inner" type="matrix" values="
+            0 0 0 0 0
+            0 0 0 0 0
+            0 0 0 0 0
+            0 0 0 0.25 0" result="shadow"></feColorMatrix>
+          <feComposite in="shadow" in2="SourceGraphic" operator="over"></feComposite>
+        </filter>
+
+        <!-- Glass noise texture -->
+        <filter id="glassNoise" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="noise"></feTurbulence>
+          <feColorMatrix in="noise" type="matrix" values="
+            1 0 0 0 0
+            0 1 0 0 0
+            0 0 1 0 0
+            0 0 0 0.08 0" result="noiseAlpha"></feColorMatrix>
+          <feComposite in="noiseAlpha" in2="SourceGraphic" operator="in"></feComposite>
+        </filter>
+
+        <!-- Panel clip/mask -->
+        <clipPath id="panelClip">
+          <rect x="56" y="56" width="400" height="400" rx="64"></rect>
+        </clipPath>
+
+        <!-- Slight glow for connector lines (kept) -->
+        <filter id="lineGlow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="2" result="b"></feGaussianBlur>
+          <feMerge>
+            <feMergeNode in="b"></feMergeNode>
+            <feMergeNode in="SourceGraphic"></feMergeNode>
+          </feMerge>
+        </filter>
+
+        <!-- Soft specular highlight gradient (diagonal sheen) -->
+        <linearGradient id="sheen" x1="80" y1="70" x2="420" y2="420" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"></stop>
+          <stop offset="0.28" stop-color="#FFFFFF" stop-opacity="0.08"></stop>
+          <stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0"></stop>
+        </linearGradient>
+      </defs>
+
+      <!-- Frosted glass panel (glassy/frosted) -->
+      <g filter="url(#glassShadow)">
+        <!-- Base panel -->
+        <rect x="56" y="56" width="400" height="400" rx="64" fill="url(#glassFill)"></rect>
+        <!-- Outer rim -->
+        <rect x="56" y="56" width="400" height="400" rx="64" stroke="#FFFFFF" stroke-opacity="0.26" stroke-width="2"></rect>
+        <!-- Inner rim -->
+        <rect x="70" y="70" width="372" height="372" rx="54" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="1.5"></rect>
+
+        <!-- Sheen overlay clipped to panel -->
+        <g clip-path="url(#panelClip)">
+          <path d="M56 110 C150 60, 270 60, 456 130 L456 190 C280 120, 150 120, 56 170 Z" fill="url(#sheen)"></path>
+          <!-- Subtle bottom shadow band for depth -->
+          <path d="M56 360 C170 430, 330 430, 456 360 L456 456 L56 456 Z" fill="#0B1D4D" fill-opacity="0.06"></path>
+        </g>
+
+        <!-- Grain/noise to sell frost (clipped) -->
+        <g clip-path="url(#panelClip)" opacity="0.75">
+          <rect x="56" y="56" width="400" height="400" rx="64" fill="#FFFFFF" filter="url(#glassNoise)"></rect>
+        </g>
+
+        <!-- Inner shadow over everything (depth) -->
+        <g filter="url(#innerShadow)">
+          <rect x="56" y="56" width="400" height="400" rx="64" fill="transparent"></rect>
+        </g>
+
+        <!-- top-left accent highlight (kept but refined) -->
+        <path d="M98 104 H312" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="8" stroke-linecap="round"></path>
+        <path d="M98 104 V220" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="8" stroke-linecap="round"></path>
+      </g>
+
+      <!-- Connector lines (tenants -> platform) -->
+      <g filter="url(#lineGlow)" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round">
+        <!-- start points moved to the *edges* of the tenant cards so the connectors stay visible -->
+        <path d="M190 196.5 L256 276"></path>
+        <path d="M322 196.5 L256 276"></path>
+        <path d="M186.8 332 L256 276"></path>
+        <path d="M325.2 332 L256 276"></path>
+      </g>
+
+      <!-- Central platform (stacked layers + lock) -->
+      <g transform="translate(0 -15)">
+        
+        
+        <rect x="176" y="226" width="160" height="110" rx="28" fill="url(#primaryGradient)"></rect>
+        <rect x="184" y="234" width="144" height="94" rx="24" fill="#FFFFFF" fill-opacity="0.10"></rect>
+        <rect x="176" y="226" width="160" height="110" rx="28" stroke="#FFFFFF" stroke-opacity="0.16"></rect>
+
+        
+      </g>
+
+      <!-- Tenant cards (4) -->
+      <g>
+        <use href="#tenantCard" x="118" y="128"></use>
+        <use href="#tenantCard" x="322" y="128"></use>
+        <use href="#tenantCard" x="118" y="332"></use>
+        <use href="#tenantCard" x="322" y="332"></use>
+      </g>
+    </svg>

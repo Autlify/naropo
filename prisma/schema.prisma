@@ -1,0 +1,979 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoleScope {
+  SYSTEM
+  AGENCY
+  SUBACCOUNT
+}
+
+// Stripe Business Type:  "company" | "government_entity" | "individual" | "non_profit"
+enum EntityType {
+  INDIVIDUAL
+  COMPANY
+  NON_PROFIT
+  GOVERNMENT_ENTITY
+
+  @@map("Entity")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  INCOMPLETE
+  UNPAID
+}
+
+enum Icon {
+  settings
+  chart
+  calendar
+  check
+  chip
+  compass
+  database
+  flag
+  home
+  info
+  link
+  lock
+  messages
+  notification
+  payment
+  power
+  receipt
+  shield
+  star
+  tune
+  videorecorder
+  wallet
+  warning
+  headphone
+  send
+  pipelines
+  person
+  category
+  contact
+  clipboardIcon
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  firstName     String?
+  lastName      String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  avatarUrl     String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Stripe customer ID - 1 User = 1 Customer Account
+  customerId String? @unique
+
+  // Subscription info (false = already used trial)
+  trialEligibled Boolean @default(true)
+
+  AgencyMemberships     AgencyMembership[]
+  SubAccountMemberships SubAccountMembership[]
+
+  Ticket       Ticket[]
+  Notification Notification[]
+  accounts     Account[]
+  sessions     Session[]
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Context switching
+  activeAgencyId     String?
+  activeSubAccountId String?
+
+  // Security tracking
+  deviceName   String?
+  ipAddress    String?
+  userAgent    String?   @db.Text
+  lastActiveAt DateTime  @default(now())
+  revokedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([activeAgencyId])
+  @@index([activeSubAccountId])
+  @@index([sessionToken])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model TaxIdentity {
+  id              String      @id @default(uuid())
+  agencyId        String?     @unique
+  subAccountId    String?     @unique
+  entityType      EntityType?
+  entityStructure String?     @default("") // e.g., Sole Proprietorship, Partnership, Corporation, LLC, etc.
+
+  legalName   String
+  countryCode String // ISO-2
+  state       String? // State/Province (optional)
+
+  // BRN/SSM/NRIC/etc (optional)
+  idType   String?
+  idNumber String?
+
+  // TIN (optional)
+  tinType   String?
+  tinNumber String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Agency         Agency?         @relation(map: "FK_AGENCY_TAXIDENTITY")
+  SubAccount     SubAccount?     @relation(map: "FK_SUBACCOUNT_TAXIDENTITY")
+  TaxObligations TaxObligation[]
+
+  @@index([countryCode])
+  @@index([tinNumber])
+}
+
+model TaxObligation {
+  id                String    @id @default(uuid())
+  taxIdentityId     String
+  taxCategory       String    @default("") // e.g., VAT, GST, SST, etc.
+  taxCode           String?   @default("") // Tax product/service code (e.g., TX-101, 9971)
+  taxRegistrationNo String // Tax registration number
+  taxExmptionNo     String? // Tax exemption number
+  taxRate           Decimal   @default(0) @db.Decimal(5, 4) // Tax rate percentage (e.g., 0.06 for 6%)
+  description       String
+  jurisdiction      String?   @default("") // State/Province for multi-level tax (e.g., "Selangor", "California")
+  taxAuthority      String?   @default("") // Tax authority name (e.g., "Royal Malaysian Customs")
+  effectiveFrom     DateTime  @default(now()) // When this rate/obligation starts
+  effectiveTo       DateTime? // When this rate/obligation ends (null = ongoing)
+  isActive          Boolean   @default(true) // Whether this obligation is currently active
+  dueDate           DateTime // Next filing/payment due date
+  frequency         String // Filing frequency (MONTHLY, QUARTERLY, ANNUALLY)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  TaxIdentity TaxIdentity @relation(fields: [taxIdentityId], references: [id], onDelete: Cascade)
+
+  @@unique([taxIdentityId, taxCategory, jurisdiction])
+  @@index([taxIdentityId])
+  @@index([isActive])
+  @@index([effectiveFrom, effectiveTo])
+}
+
+model Agency {
+  id               String                @id @default(uuid())
+  connectAccountId String?               @default("")
+  customerId       String                @default("")
+  taxIdentityId    String?               @unique
+  name             String
+  agencyLogo       String                @default("") @db.Text
+  companyEmail     String                @db.Text
+  companyPhone     String
+  whiteLabel       Boolean               @default(true)
+  line1            String
+  line2            String?               @default("")
+  city             String
+  postalCode       String
+  state            String
+  country          String
+  goal             Int                   @default(5)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  TaxIdentity      TaxIdentity?          @relation(fields: [taxIdentityId], references: [id], onDelete: SetNull)
+  SubAccount       SubAccount[]
+  SidebarOption    AgencySidebarOption[]
+  Invitation       Invitation[]
+  Notification     Notification[]
+  Subscription     Subscription?
+  AddOns           AddOns[]
+
+  // New RBAC relations
+  Roles                 Role[]
+  Memberships           AgencyMembership[]
+  UsageTracking         UsageTracking[]
+  EntitlementOverrides  EntitlementOverride[]
+  FeatureCreditBalances FeatureCreditBalance[]
+
+  @@index([taxIdentityId])
+}
+
+model SubAccount {
+  id               String                    @id @default(uuid())
+  connectAccountId String?                   @default("")
+  taxIdentityId    String?                   @unique
+  name             String
+  subAccountLogo   String                    @db.Text
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  companyEmail     String                    @db.Text
+  companyPhone     String
+  goal             Int                       @default(5)
+  line1            String
+  line2            String?                   @default("")
+  city             String
+  postalCode       String
+  state            String
+  country          String
+  agencyId         String
+  Agency           Agency                    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  TaxIdentity      TaxIdentity?              @relation(fields: [taxIdentityId], references: [id], map: "FK_SUBACCOUNT_TAXIDENTITY")
+  SidebarOption    SubAccountSidebarOption[]
+
+  Funnels      Funnel[]
+  Media        Media[]
+  Contact      Contact[]
+  Trigger      Trigger[]
+  Automation   Automation[]
+  Pipeline     Pipeline[]
+  Tags         Tag[]
+  Notification Notification[]
+
+  // New RBAC relations
+  Roles       Role[]
+  Memberships SubAccountMembership[]
+
+  @@index([agencyId])
+  @@index([taxIdentityId])
+}
+
+model Tag {
+  id           String   @id @default(uuid())
+  name         String
+  color        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  subAccountId String
+
+  SubAccount SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  Ticket     Ticket[]
+
+  @@index([subAccountId])
+}
+
+model Pipeline {
+  id           String     @id @default(uuid())
+  name         String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  Lane         Lane[]
+  SubAccount   SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  subAccountId String
+
+  @@index([subAccountId])
+}
+
+model Lane {
+  id         String   @id @default(uuid())
+  name       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  Pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  pipelineId String
+  Tickets    Ticket[]
+  order      Int      @default(0)
+
+  @@index([pipelineId])
+}
+
+model Ticket {
+  id          String   @id @default(uuid())
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  laneId      String
+  order       Int      @default(0)
+  Lane        Lane     @relation(fields: [laneId], references: [id], onDelete: Cascade)
+  value       Decimal?
+  description String?
+  Tags        Tag[]
+
+  customerId String?
+  Customer   Contact? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  assignedUserId String?
+  Assigned       User?   @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
+
+  @@index([laneId])
+  @@index([customerId])
+  @@index([assignedUserId])
+}
+
+enum TriggerTypes {
+  CONTACT_FORM
+}
+
+model Trigger {
+  id           String       @id @default(uuid())
+  name         String
+  type         TriggerTypes
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  subAccountId String
+  Subaccount   SubAccount   @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  Automations  Automation[]
+
+  @@index([subAccountId])
+}
+
+model Automation {
+  id                 String               @id @default(uuid())
+  name               String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  triggerId          String?
+  published          Boolean              @default(false)
+  Trigger            Trigger?             @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+  subAccountId       String
+  Subaccount         SubAccount           @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  Action             Action[]
+  AutomationInstance AutomationInstance[]
+
+  @@index([triggerId])
+  @@index([subAccountId])
+}
+
+model AutomationInstance {
+  id           String     @id @default(uuid())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  automationId String
+  Automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  active       Boolean    @default(false)
+
+  @@index([automationId])
+}
+
+enum ActionType {
+  CREATE_CONTACT
+}
+
+model Action {
+  id           String     @id @default(uuid())
+  name         String
+  type         ActionType
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  automationId String
+  order        Int
+  Automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  laneId       String     @default("0")
+
+  @@index([automationId])
+}
+
+model Contact {
+  id           String   @id @default(uuid())
+  name         String
+  email        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  subAccountId String
+
+  Subaccount SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  Ticket     Ticket[]
+
+  @@index([subAccountId])
+}
+
+model Media {
+  id           String     @id @default(uuid())
+  type         String?
+  name         String
+  link         String     @unique
+  subAccountId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  Subaccount   SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+
+  @@index([subAccountId])
+}
+
+model Funnel {
+  id            String       @id @default(uuid())
+  name          String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  description   String?
+  published     Boolean      @default(false)
+  subDomainName String?      @unique
+  favicon       String?      @db.Text
+  subAccountId  String
+  SubAccount    SubAccount   @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  FunnelPages   FunnelPage[]
+  liveProducts  String?      @default("[]")
+  ClassName     ClassName[]
+
+  @@index([subAccountId])
+}
+
+model ClassName {
+  id         String   @id @default(uuid())
+  name       String
+  color      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  funnelId   String
+  customData String?  @db.Text
+  Funnel     Funnel   @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  @@index([funnelId])
+}
+
+model FunnelPage {
+  id           String   @id @default(uuid())
+  name         String
+  pathName     String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  visits       Int      @default(0)
+  content      String?  @db.Text
+  order        Int
+  previewImage String?  @db.Text
+  funnelId     String
+  Funnel       Funnel   @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  @@index([funnelId])
+}
+
+model AgencySidebarOption {
+  id        String   @id @default(uuid())
+  name      String   @default("Menu")
+  link      String   @default("#")
+  icon      Icon     @default(info)
+  agencyId  String
+  Agency    Agency?  @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+}
+
+model SubAccountSidebarOption {
+  id           String      @id @default(uuid())
+  name         String      @default("Menu")
+  link         String      @default("#")
+  icon         Icon        @default(info)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  SubAccount   SubAccount? @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  subAccountId String?
+
+  @@index([subAccountId])
+}
+
+enum InvitationStatus {
+  ACCEPTED
+  REVOKED
+  PENDING
+}
+
+model Invitation {
+  id       String           @id @default(uuid())
+  email    String           @unique
+  agencyId String
+  Agency   Agency           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  status   InvitationStatus @default(PENDING)
+  role     String           @default("SUBACCOUNT_USER")
+
+  @@index([agencyId])
+}
+
+model Notification {
+  id           String  @id @default(uuid())
+  notification String
+  agencyId     String
+  subAccountId String?
+  userId       String
+
+  User       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Agency     Agency      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  SubAccount SubAccount? @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([subAccountId])
+  @@index([userId])
+}
+
+enum Plan {
+  price_1SpVOXJglUPlULDQt9Ejhunb
+  price_1SpVOYJglUPlULDQhsRkA5YV
+  price_1SpVOZJglUPlULDQoFq3iPES
+}
+
+model Subscription {
+  id                   String   @id @default(uuid())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  plan                 Plan?
+  price                String?
+  active               Boolean  @default(false)
+  priceId              String
+  customerId           String
+  currentPeriodEndDate DateTime
+  subscritiptionId     String   @unique
+
+  // Enhanced fields
+  status            SubscriptionStatus @default(ACTIVE)
+  cancelAtPeriodEnd Boolean            @default(false)
+  canceledAt        DateTime?
+  trialEndedAt      DateTime?
+
+  agencyId String? @unique
+  Agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model AddOns {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+  active    Boolean  @default(false)
+  priceId   String   @unique
+  agencyId  String?
+  Agency    Agency?  @relation(fields: [agencyId], references: [id])
+
+  @@index([agencyId])
+}
+
+// ========================================
+// RBAC MODELS
+// ========================================
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?  @db.Text
+  category    String
+  isSystem    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  Roles RolePermission[]
+
+  @@index([category])
+  @@index([isSystem])
+}
+
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String
+  permissionId String
+  granted      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  Role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  Permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model Role {
+  id           String    @id @default(uuid())
+  name         String
+  agencyId     String?
+  subAccountId String?
+  scope        RoleScope @default(AGENCY)
+  isSystem     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  Agency                Agency?                @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  SubAccount            SubAccount?            @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  Permissions           RolePermission[]
+  AgencyMemberships     AgencyMembership[]
+  SubAccountMemberships SubAccountMembership[]
+
+  @@unique([agencyId, subAccountId, name])
+  @@index([agencyId])
+  @@index([subAccountId])
+  @@index([scope])
+  @@index([isSystem])
+}
+
+model AgencyMembership {
+  id        String   @id @default(uuid())
+  userId    String
+  agencyId  String
+  roleId    String
+  isActive  Boolean  @default(true)
+  isPrimary Boolean  @default(false)
+  joinedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  Role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, agencyId])
+  @@index([userId])
+  @@index([agencyId])
+  @@index([roleId])
+  @@index([isActive])
+}
+
+model SubAccountMembership {
+  id           String   @id @default(uuid())
+  userId       String
+  subAccountId String
+  roleId       String
+  isActive     Boolean  @default(true)
+  joinedAt     DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  User       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  SubAccount SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  Role       Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, subAccountId])
+  @@index([userId])
+  @@index([subAccountId])
+  @@index([roleId])
+  @@index([isActive])
+}
+
+// ========================================
+// ENTITLEMENT MODELS
+// ========================================
+// --------------------
+// Enums (needed)
+// --------------------
+
+enum FeatureValueType {
+  BOOLEAN
+  INTEGER
+  DECIMAL
+  STRING
+  JSON
+}
+
+enum MeteringType {
+  NONE
+  COUNT
+  SUM
+}
+
+enum MeterAggregation {
+  COUNT
+  SUM
+  LAST
+}
+
+enum MeteringScope {
+  AGENCY
+  SUBACCOUNT
+}
+
+enum UsagePeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum LimitEnforcement {
+  HARD
+  SOFT
+}
+
+enum OverageMode {
+  NONE
+  INTERNAL_CREDITS
+  STRIPE_METERED
+}
+
+enum CreditLedgerType {
+  GRANT
+  TOPUP
+  CONSUME
+  ADJUST
+  EXPIRE
+}
+
+// --------------------
+// Entitlements (enhanced)
+// --------------------
+
+model EntitlementFeature {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  name        String
+  description String?          @db.Text
+  category    String
+  valueType   FeatureValueType
+  unit        String?
+
+  metering    MeteringType     @default(NONE) // √ MeteringType
+  aggregation MeterAggregation @default(COUNT) // √ MeterAggregation
+  scope       MeteringScope    @default(AGENCY) // √ MeteringScope
+  period      UsagePeriod? // √ UsagePeriod?
+
+  // Credits/top-up capability for this feature (optional)
+  creditEnabled  Boolean @default(false) // √ Boolean
+  creditUnit     String? // √ String?
+  creditExpires  Boolean @default(false) // √ Boolean
+  creditPriority Int     @default(100) // √ Int (lower = consume first; e.g., TOPUP before GRANT)
+
+  // Optional Stripe mapping (only if you later invoice usage via Stripe meters)
+  stripeMeterId        String? // √ String?
+  stripeMeterEventName String? // √ String?
+  stripeUsagePriceId   String? // √ String?
+  stripeTopUpPriceId   String? // √ String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // √ DateTime
+
+  PlanFeatures         PlanFeature[]
+  EntitlementOverrides EntitlementOverride[]
+
+  @@index([category])
+  @@index([valueType])
+  @@index([metering])
+  @@index([scope])
+}
+
+model EntitlementOverride {
+  id String @id @default(uuid())
+
+  // Scope (future-proof for subaccount-level subscription)
+  scope        MeteringScope @default(AGENCY) // √ MeteringScope
+  agencyId     String
+  subAccountId String? // √ String?
+
+  featureKey String
+
+  // Override values (delta-first approach)
+  isEnabled   Boolean? // √ Boolean?
+  isUnlimited Boolean? // √ Boolean?
+
+  maxDeltaInt Int? // √ Int?
+  maxDeltaDec Decimal? @db.Decimal(18, 6) // √ Decimal?
+
+  // Optional absolute override (use sparingly)
+  maxOverrideInt Int? // √ Int?
+  maxOverrideDec Decimal? @db.Decimal(18, 6) // √ Decimal?
+
+  startsAt DateTime  @default(now())
+  endsAt   DateTime?
+  reason   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Agency             Agency             @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  EntitlementFeature EntitlementFeature @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+
+  @@unique([scope, agencyId, subAccountId, featureKey])
+  @@index([agencyId])
+  @@index([subAccountId])
+  @@index([featureKey])
+  @@index([scope])
+}
+
+model PlanFeature {
+  id String @id @default(uuid())
+
+  // planId should map to Stripe recurring priceId
+  planId     String
+  featureKey String
+
+  isEnabled Boolean @default(true) // √ Boolean
+
+  // Limits (query-friendly)
+  isUnlimited Boolean  @default(false) // √ Boolean
+  includedInt Int? // √ Int?
+  maxInt      Int? // √ Int?
+  includedDec Decimal? @db.Decimal(18, 6) // √ Decimal?
+  maxDec      Decimal? @db.Decimal(18, 6) // √ Decimal?
+
+  enforcement LimitEnforcement @default(HARD) // √ LimitEnforcement
+
+  // Overage behavior
+  overageMode          OverageMode @default(NONE) // √ OverageMode
+  overageFee           Decimal?    @db.Decimal(10, 2) // √ Decimal?
+  stripeOveragePriceId String? // √ String?
+
+  // Periodic credit grants (monthly allowance)
+  recurringCreditGrantInt Int? // √ Int?
+  recurringCreditGrantDec Decimal? @db.Decimal(18, 6) // √ Decimal?
+  rolloverCredits         Boolean  @default(false) // √ Boolean
+
+  // Paid top-ups supported?
+  topUpEnabled Boolean @default(false) // √ Boolean
+  topUpPriceId String? // √ String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  EntitlementFeature EntitlementFeature @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+
+  @@unique([planId, featureKey])
+  @@index([planId])
+  @@index([featureKey])
+  @@index([overageMode])
+}
+
+// --------------------
+// Usage Tracking (enhanced)
+// --------------------
+
+model UsageTracking {
+  id String @id @default(uuid())
+
+  // Scope (future-proof for subaccount-level subscription)
+  scope        MeteringScope @default(AGENCY) // √ MeteringScope
+  agencyId     String
+  subAccountId String? // √ String?
+
+  featureKey String
+
+  // Use Decimal to support COUNT and SUM
+  currentUsage Decimal @default(0) @db.Decimal(18, 6) // √ Decimal
+
+  period      UsagePeriod @default(MONTHLY) // √ UsagePeriod
+  periodStart DateTime // √ DateTime
+  periodEnd   DateTime // √ DateTime
+
+  lastEventAt DateTime? // √ DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  Agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([scope, agencyId, subAccountId, featureKey, periodStart])
+  @@index([agencyId])
+  @@index([subAccountId])
+  @@index([featureKey])
+  @@index([periodStart, periodEnd])
+  @@index([scope])
+}
+
+model UsageEvent {
+  id String @id @default(uuid())
+
+  scope        MeteringScope @default(AGENCY) // √ MeteringScope
+  agencyId     String
+  subAccountId String? // √ String?
+
+  featureKey     String
+  quantity       Decimal @default(0) @db.Decimal(18, 6) // √ Decimal
+  actionKey      String? // √ String?
+  idempotencyKey String  @unique // √ String
+
+  stripeMeterEventId String? // √ String?
+
+  createdAt DateTime @default(now())
+
+  @@index([agencyId, subAccountId, featureKey, createdAt])
+  @@index([scope])
+}
+
+// --------------------
+// Credits / Top-up (enhanced for Agency + SubAccount)
+// --------------------
+
+model FeatureCreditBalance {
+  id String @id @default(uuid())
+
+  scope        MeteringScope @default(AGENCY) // √ MeteringScope
+  agencyId     String
+  subAccountId String? // √ String?
+
+  featureKey String
+
+  balance   Decimal   @default(0) @db.Decimal(18, 6) // √ Decimal
+  expiresAt DateTime? // √ DateTime?
+  updatedAt DateTime  @updatedAt // √ DateTime
+
+  Agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([scope, agencyId, subAccountId, featureKey])
+  @@index([agencyId])
+  @@index([subAccountId])
+  @@index([featureKey])
+  @@index([scope])
+}
+
+model FeatureCreditLedger {
+  id String @id @default(uuid())
+
+  scope        MeteringScope @default(AGENCY) // √ MeteringScope
+  agencyId     String
+  subAccountId String? // √ String?
+
+  featureKey String
+  type       CreditLedgerType // √ CreditLedgerType
+  delta      Decimal          @db.Decimal(18, 6) // √ Decimal
+  reason     String? // √ String?
+
+  // Optional: distinguish monthly allowance grants vs topups
+  periodStart DateTime? // √ DateTime?
+  periodEnd   DateTime? // √ DateTime?
+
+  stripePaymentIntentId String? // √ String?
+  stripeInvoiceId       String? // √ String?
+
+  idempotencyKey String   @unique // √ String
+  createdAt      DateTime @default(now())
+
+  @@index([agencyId, subAccountId, featureKey, createdAt])
+  @@index([scope])
+}
