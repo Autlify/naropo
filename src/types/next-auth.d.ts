@@ -13,8 +13,8 @@ declare module 'next-auth' {
   interface User extends DefaultUser {
     firstName?: string | null
     lastName?: string | null
-    emailVerified?: Date | null
-  }
+    emailVerified?: Date | null 
+  }  
 }
 
 declare module 'next-auth/jwt' {

@@ -5,7 +5,7 @@ import { stripe } from '@/lib/stripe'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Button } from '@/components/ui/button'
+import { InvoiceActions } from './_components/invoice-actions'
 
 type Props = { params: Promise<{ agencyId: string }> }
 
@@ -49,7 +49,7 @@ export default async function InvoicesPage({ params }: Props) {
                 <th className="py-2 pr-4">Status</th>
                 <th className="py-2 pr-4 text-right">Amount</th>
                 <th className="py-2 pr-4">Period</th>
-                <th className="py-2">Receipt</th>
+                <th className="py-2">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -78,13 +78,11 @@ export default async function InvoicesPage({ params }: Props) {
                         : '—'}
                     </td>
                     <td className="py-3">
-                      {inv.hosted_invoice_url ? (
-                        <Button asChild variant="outline" size="sm">
-                          <a href={inv.hosted_invoice_url} target="_blank" rel="noreferrer">Open</a>
-                        </Button>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <InvoiceActions
+                        invoiceNumber={inv.number ?? null}
+                        hostedInvoiceUrl={inv.hosted_invoice_url ?? null}
+                        invoicePdf={inv.invoice_pdf ?? null}
+                      />
                     </td>
                   </tr>
                 ))

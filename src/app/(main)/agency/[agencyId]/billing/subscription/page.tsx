@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { pricingCards } from '@/lib/constants'
 import { TrialBanner } from '@/components/billing-sdk/trial-banner'
-import { SubscriptionManagement } from '@autlify/billing-sdk/components'
+import { SubscriptionClient } from './_components/subscription-client'
 
 
 
@@ -17,9 +17,6 @@ type Props = { params: Promise<{ agencyId: string }> }
 
 export default async function SubscriptionPage({ params }: Props) {
   const { agencyId } = await params
-
-  const trialEndDate = new Date();
-  trialEndDate.setDate(trialEndDate.getDate() + 5);
 
   const agencySubscription = await db.agency.findUnique({
     where: {
@@ -37,9 +34,10 @@ export default async function SubscriptionPage({ params }: Props) {
 
   const state = await getAgencySubscriptionState(agencyId)
 
-  const handleUpgrade = () => {
-    // Implementation for upgrade handling
-  }
+  // Check if in trial
+  const subscription = agencySubscription?.Subscription
+  const isTrialing = subscription?.status === 'TRIALING'
+  const trialEndDate = subscription?.trialEndedAt
 
 
   return (
@@ -62,9 +60,12 @@ export default async function SubscriptionPage({ params }: Props) {
             <Button asChild variant="outline">
               <Link href="/site/pricing">View plans</Link>
             </Button>
-            <Button asChild>
-              <Link href="/site/pricing">Change plan</Link>
-            </Button>
+            <SubscriptionClient
+              agencyId={agencyId}
+              currentPriceId={subscription?.priceId}
+              subscriptionId={subscription?.subscritiptionId}
+              status={subscription?.status}
+            />
           </div>
         </div>
 
@@ -128,17 +129,21 @@ export default async function SubscriptionPage({ params }: Props) {
         </div>
       </Card>
 
-      {/* <TrialBanner
-        trialEndDate={new Date(trialEndDate)}
-        onUpgrade={handleUpgrade || undefined}
-        features={[
-          "Unlimited API requests",
-          "Advanced analytics dashboard",
-          "Priority email support",
-          "Custom domain integration",
-        ]}
-        className="w-full max-w-md"
-      /> */}
+      {/* Trial Banner - shown when in trial period */}
+      {isTrialing && trialEndDate && (
+        <TrialBanner
+          trialEndDate={new Date(trialEndDate)}
+          title="Trial Period"
+          description="Your trial will end soon. Upgrade to keep your access."
+          features={[
+            "Unlimited API requests",
+            "Advanced analytics dashboard",
+            "Priority email support",
+            "Custom domain integration",
+          ]}
+          className="w-full"
+        />
+      )}
     </div>
   )
 }

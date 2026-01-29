@@ -9,6 +9,54 @@ type ActionResult<T = void> =
   | { success: false; error: string }
 
 /**
+ * Create a SetupIntent for adding a new payment method
+ */
+export async function createSetupIntent(
+  agencyId: string
+): Promise<ActionResult<{ clientSecret: string; customerId: string }>> {
+  try {
+    // Get customer ID
+    const agency = await db.agency.findUnique({
+      where: { id: agencyId },
+      select: { customerId: true },
+    })
+
+    if (!agency?.customerId) {
+      return { success: false, error: 'No customer found for this agency' }
+    }
+
+    // Create SetupIntent for collecting payment method
+    const setupIntent = await stripe.setupIntents.create({
+      customer: agency.customerId,
+      payment_method_types: ['card'],
+      usage: 'off_session',
+      metadata: {
+        agencyId,
+        source: 'billing-settings',
+      },
+    })
+
+    if (!setupIntent.client_secret) {
+      return { success: false, error: 'Failed to create setup intent' }
+    }
+
+    return { 
+      success: true, 
+      data: { 
+        clientSecret: setupIntent.client_secret,
+        customerId: agency.customerId,
+      } 
+    }
+  } catch (error) {
+    console.error('Error creating setup intent:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to create setup intent' 
+    }
+  }
+}
+
+/**
  * Set a payment method as the default for a customer
  */
 export async function setDefaultPaymentMethod(

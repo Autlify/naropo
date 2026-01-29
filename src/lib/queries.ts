@@ -1250,7 +1250,7 @@ export const getPipelines = async (subaccountId: string) => {
 
 export const createVerificationToken = async (
   email: string,
-  scope: 'verify' | 'authN' | 'passkey' | 'email' | 'webauthN',
+  scope: 'verify' | 'authN' | 'passkey' | 'email' | 'webauthN' | 'pwd-reset',
   milliseconds: number
 ) => {
   // Normalize friendly scope aliases to persisted identifiers
@@ -1331,6 +1331,10 @@ export const validateVerificationToken = async (token: string) => {
   } else if (scope === 'passkey') {
     // Passkey flows validate scope only; specific WebAuthn verification happens in passkey endpoints
     // Do not delete token here; passkey endpoints will delete upon successful verification
+    return { success: true, email, scope }
+  } else if (scope === 'pwd-reset') {
+    // Password reset - validate and delete token, caller handles password update
+    await deleteVerificationToken(token)
     return { success: true, email, scope }
   }
 

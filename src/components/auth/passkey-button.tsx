@@ -10,6 +10,7 @@ import type {
     PublicKeyCredentialCreationOptionsJSON,
     PublicKeyCredentialRequestOptionsJSON
 } from '@simplewebauthn/types'
+import { cn } from '@/lib/utils'
 
 interface PasskeyButtonProps {
     email: string
@@ -17,6 +18,7 @@ interface PasskeyButtonProps {
     onSuccess?: (result: any) => void
     onError?: (error: string) => void
     disabled?: boolean
+    className?: string
 }
 
 export function PasskeyButton({
@@ -24,7 +26,8 @@ export function PasskeyButton({
     variant = 'signup',
     onSuccess,
     onError,
-    disabled = false
+    disabled = false,
+    className
 }: PasskeyButtonProps) {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
@@ -168,11 +171,11 @@ export function PasskeyButton({
     }
 
     return (
-        <div className="space-y-2">
+        <div className={cn("space-y-2", className)}>
             <Button
                 type="button"
                 variant="outline"
-                className="w-full"
+                className={cn("w-full", className, isLoading && 'opacity-70')}
                 onClick={handlePasskey}
                 disabled={isLoading || disabled || (variant === 'signup' && !email)}
             >

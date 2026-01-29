@@ -16,8 +16,9 @@ const stripeWebhookEvents = new Set([
   'customer.subscription.deleted',
   'customer.subscription.trial_will_end',
   'invoice.payment_succeeded',
+  'invoice.payment_failed',
   'setup_intent.succeeded',
-  'checkout.session.completed',
+  // 'checkout.session.completed',
 ])
 
 export async function POST(req: NextRequest) {
@@ -97,7 +98,65 @@ export async function POST(req: NextRequest) {
             subscriptionId: subscription.id,
             trialEnd: subscription.trial_end,
           })
-          // Send email notification (implement later)
+          // TODO: Send email notification to user about trial ending
+          break
+        }
+
+        case 'customer.subscription.deleted': {
+          const subscription = stripeEvent.data.object as Stripe.Subscription
+          const agencyId = subscription.metadata?.agencyId
+
+          console.log('🚫 Subscription deleted', {
+            subscriptionId: subscription.id,
+            agencyId,
+            status: subscription.status,
+          })
+
+          if (agencyId) {
+            // Update subscription status in database
+            await db.subscription.update({
+              where: { agencyId },
+              data: {
+                active: false,
+                status: 'CANCELED',
+                cancelAtPeriodEnd: false, // Clear since it's now actually cancelled
+              },
+            })
+            console.log('✅ Database subscription marked as cancelled for agency:', agencyId)
+          }
+          break
+        }
+
+        case 'invoice.payment_failed': {
+          const invoice = stripeEvent.data.object as Stripe.Invoice
+          const customerId = invoice.customer as string
+
+          console.log('❌ Invoice payment failed', {
+            invoiceId: invoice.id,
+            customerId,
+            amount: invoice.amount_due,
+            attemptCount: invoice.attempt_count,
+          })
+
+          // Find agency by customerId and track dunning status
+          const agency = await db.agency.findFirst({
+            where: { customerId },
+            include: { Subscription: true },
+          })
+
+          if (agency?.Subscription) {
+            // Update subscription status to PAST_DUE
+            await db.subscription.update({
+              where: { agencyId: agency.id },
+              data: {
+                status: 'PAST_DUE',
+              },
+            })
+
+            // TODO: Log dunning event (for tracking failed payment attempts)
+            // TODO: Send email notification about failed payment
+            console.log('⚠️ Subscription marked as PAST_DUE for agency:', agency.id, 'attempt:', invoice.attempt_count)
+          }
           break
         }
 

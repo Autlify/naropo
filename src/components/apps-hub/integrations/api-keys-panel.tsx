@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Copy, Trash2 } from 'lucide-react'
- 
+
 type ScopeProps = { agencyId?: string; subAccountId?: string }
 
 export function IntegrationsApiKeysPanel(props: ScopeProps) {
@@ -101,7 +101,7 @@ export function IntegrationsApiKeysPanel(props: ScopeProps) {
             Create key
           </Button>
         </div>
-        
+
         <div className="divide-y rounded-xl border">
           {apiKeys.length === 0 ? (
             <div className="p-3 text-sm text-muted-foreground">No API keys yet.</div>

@@ -257,7 +257,7 @@ export async function sendPasswordResetEmail({
   name?: string
 }): Promise<EmailResult> {
   const baseUrl = process.env.NEXT_PUBLIC_URL
-  const resetUrl = `${baseUrl}api/auth/reset-password?token=${token}`
+  const resetUrl = `${baseUrl}agency/reset-password?token=${token}`
 
   const subject = "Reset Your Password"
 

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Table,
   TableBody,
@@ -25,7 +26,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { PlusCircle, RefreshCw } from 'lucide-react'
+import { PlusCircle, RefreshCw, CreditCard, Zap } from 'lucide-react'
 
 type Entitlement = {
   key: string
@@ -54,6 +55,7 @@ export function CreditsClient(props: { agencyId: string; subAccountId?: string |
   const [open, setOpen] = useState(false)
   const [featureKey, setFeatureKey] = useState<string>('')
   const [credits, setCredits] = useState<string>('100')
+  const [topupMethod, setTopupMethod] = useState<'manual' | 'stripe'>('stripe')
   const [submitting, setSubmitting] = useState(false)
 
   const creditEnabledFeatures = useMemo(() => {
@@ -108,6 +110,29 @@ export function CreditsClient(props: { agencyId: string; subAccountId?: string |
         return
       }
 
+      if (topupMethod === 'stripe') {
+        // Stripe checkout for paid credits
+        const res = await fetch('/api/stripe/credits/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agencyId,
+            subAccountId,
+            featureKey,
+            credits: c,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok || !data?.ok) throw new Error(data?.error || 'Failed to create checkout')
+
+        // Redirect to Stripe checkout
+        if (data.url) {
+          window.location.href = data.url
+        }
+        return
+      }
+
+      // Manual/internal top-up (admin only)
       const res = await fetch('/api/features/core/billing/credits/topup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -160,12 +185,35 @@ export function CreditsClient(props: { agencyId: string; subAccountId?: string |
                   Top‑up credits
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Top‑up credits</DialogTitle>
+                  <DialogDescription>
+                    Purchase credits to use for features and add-ons.
+                  </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Top-up Method</Label>
+                    <RadioGroup value={topupMethod} onValueChange={(v) => setTopupMethod(v as 'manual' | 'stripe')} className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="stripe" id="stripe" />
+                        <Label htmlFor="stripe" className="flex items-center gap-2 cursor-pointer">
+                          <CreditCard className="h-4 w-4" />
+                          Pay with Card
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="manual" id="manual" />
+                        <Label htmlFor="manual" className="flex items-center gap-2 cursor-pointer">
+                          <Zap className="h-4 w-4" />
+                          Manual (Admin)
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
                   <div className="space-y-2">
                     <Label>Feature</Label>
                     <Select value={featureKey} onValueChange={setFeatureKey}>
@@ -182,15 +230,24 @@ export function CreditsClient(props: { agencyId: string; subAccountId?: string |
                   <div className="space-y-2">
                     <Label>Credits</Label>
                     <Input value={credits} onChange={(e) => setCredits(e.target.value)} inputMode="numeric" />
-                    <p className="text-xs text-muted-foreground">
-                      This uses the internal/manual top‑up route. Replace with Stripe checkout to charge customers.
-                    </p>
+                    {topupMethod === 'stripe' && (
+                      <p className="text-xs text-muted-foreground">
+                        Price: ${(Math.max(1, Number(credits) || 0) * 0.01).toFixed(2)} USD ($0.01 per credit, min $1.00)
+                      </p>
+                    )}
+                    {topupMethod === 'manual' && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        Manual top-up is for admin use only. No payment will be charged.
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>Cancel</Button>
-                  <Button onClick={onTopup} disabled={submitting}>Confirm</Button>
+                  <Button onClick={onTopup} disabled={submitting}>
+                    {submitting ? 'Processing...' : topupMethod === 'stripe' ? 'Pay & Add Credits' : 'Add Credits'}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
