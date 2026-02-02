@@ -70,8 +70,7 @@ B (255 */
     --button-primary-bg-disabled: 214 30% 85%;
     /* Muted disabled */
 
-    --button-primary-bg-gradient: linear-gradient(135deg, color-mix(in lch, #60A5FA 0%, #1D4ED8 40%), color-mix(in lch, #2E8CFF 0%, #0080ff 80%), #1D4ED8 100%);
-    --button-primary-bg-gradient-hover: linear-gradient(135deg, color-mix(in lch, #1758D6 0%, #2D8CFF 100%), color-mix(in lch, #0050ef 0%, #0080ff 100%));
+    /* Note: --button-primary-bg-gradient defined via brand-gradient alias below */
     --button-primary-bg-gradient-active: linear-gradient(135deg, #1758D6 0%, #0080ff 100%);
     /* Matches bg */
     --button-primary-border-hover: 240 100% 44%;
@@ -224,9 +223,9 @@ B (255 */
     --button-brand-bg-gradient-hover: var(--brand-gradient-hover);
     --button-brand-border-gradient: var(--brand-gradient-border);
 
-    /* Back-compat: keep primary gradient aligned with brand gradient */
-    --button-primary-bg-gradient: var(--button-brand-bg-gradient);
-    --button-primary-bg-gradient-hover: var(--button-brand-bg-gradient-hover);
+    /* Primary button gradients (aligned with brand) */
+    --button-primary-bg-gradient: var(--brand-gradient);
+    --button-primary-bg-gradient-hover: var(--brand-gradient-hover);
 
     /* Glass effect defaults (for .glass component) */
     --glass-bg: 0 0% 100% / 0.55;
@@ -525,8 +524,7 @@ B (255 */
     --button-brand-bg-gradient-hover: var(--brand-gradient-hover);
     --button-brand-border-gradient: var(--brand-gradient-border);
 
-    --button-primary-bg-gradient: var(--button-brand-bg-gradient);
-    --button-primary-bg-gradient-hover: var(--button-brand-bg-gradient-hover);
+    /* Note: --button-primary-bg-gradient defined above with button-primary tokens */
 
     --glass-bg: 0 0% 100% / 0.06;
     --glass-border: 0 0% 100% / 0.10;
@@ -852,32 +850,9 @@ B (255 */
     --brand-gradient-active: linear-gradient(135deg, #0060d3 0%, #0070ff 100%);
     --brand-gradient-border: linear-gradient(to left, #60b0ff 0%, #0070ff 50%, #0060d3 100%);
 
-    --ease-in-quad: cubic-bezier(.55, .085, .68, .53);
-    --ease-in-cubic: cubic-bezier(.55, .055, .675, .19);
-    --ease-in-quart: cubic-bezier(.895, .03, .685, .22);
-    --ease-in-quint: cubic-bezier(.755, .05, .855, .06);
-    --ease-in-expo: cubic-bezier(.95, .05, .795, .035);
-    --ease-in-circ: cubic-bezier(.6, .04, .98, .335);
-    --ease-out-quad: cubic-bezier(.25, .46, .45, .94);
-    --ease-out-cubic: cubic-bezier(.215, .61, .355, 1);
-    --ease-out-quart: cubic-bezier(.165, .84, .44, 1);
-    --ease-out-quint: cubic-bezier(.23, 1, .32, 1);
-    --ease-out-expo: cubic-bezier(.19, 1, .22, 1);
-    --ease-out-circ: cubic-bezier(.075, .82, .165, 1);
-    --ease-in-out-quad: cubic-bezier(.455, .03, .515, .955);
-    --ease-in-out-cubic: cubic-bezier(.645, .045, .355, 1);
-    --ease-in-out-quart: cubic-bezier(.77, 0, .175, 1);
-    --ease-in-out-quint: cubic-bezier(.86, 0, .07, 1);
-    --ease-in-out-expo: cubic-bezier(1, 0, 0, 1);
-    --ease-in-out-circ: cubic-bezier(.785, .135, .15, .86);
+    /* Note: Easing functions inherited from :root */
 
-    --shadow-tiny: 0px 1px 3px rgba(0, 0, 0, .05);
-    --shadow-xs: 0px 1px 3px rgba(0, 0, 0, .05);
-    --shadow-sm: 0px 2px 4px rgba(0, 0, 0, .1);
-    --shadow-md: 0px 4px 24px rgba(0, 0, 0, .2);
-    --shadow-lg: 0px 7px 32px rgba(0, 0, 0, .35);
-    --shadow-xl: 0px 8px 2px 0px transparent, 0px 5px 2px 0px rgba(0, 0, 0, .01), 0px 3px 2px 0px rgba(0, 0, 0, .04), 0px 1px 1px 0px rgba(0, 0, 0, .07), 0px 0px 1px 0px rgba(0, 0, 0, .08);
-
+    /* Shadow System - Premium (darker shadows for glass-like surfaces) */
     --shadow-tiny: 0px 1px 3px rgba(0, 0, 0, .05);
     --shadow-xs: 0px 1px 3px rgba(0, 0, 0, .05);
     --shadow-sm: 0px 2px 4px rgba(0, 0, 0, .1);
@@ -1197,10 +1172,7 @@ B (255 */
     --shadow-xl: 0px 16px 64px rgb(0 0 0 / 0.55),
       0px 8px 32px rgb(0 0 0 / 0.25);
 
-    /* Background Gradients (translucent) */
-    --bg-primary-gradient: linear-gradient(135deg, rgba(10, 11, 12, 0.3) 0%, rgba(18, 19, 21, 0.3) 100%);
-    --bg-secondary-gradient: linear-gradient(135deg, rgba(30, 30, 32, 0.3) 0%, rgba(35, 35, 38, 0.3) 100%);
-    --bg-tertiary-gradient: linear-gradient(135deg, rgba(36, 36, 39, 0.3) 0%, rgba(42, 42, 45, 0.3) 100%);
+    /* Note: Background gradients defined above with bg-hierarchy tokens */
 
     /* Button States - Primary (Glass style) */
     --button-primary-bg: 214 100% 50% / 0.9;
@@ -1821,28 +1793,14 @@ B (255 */
 }
 
 .scrollbar-hide {
-
   /* Firefox */
-  @supports (-moz-appearance: none) {
-    scrollbar-width: none;
-  }
-
+  scrollbar-width: none;
   /* IE 10+ */
   -ms-overflow-style: none;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
   /* Chrome/Safari/Edge (Chromium) */
-  display: none;
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  -ms-scrollbar-width: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
