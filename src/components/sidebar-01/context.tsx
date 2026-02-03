@@ -32,7 +32,7 @@ interface SidebarContextValue {
 // Context
 // ============================================================================
 
-const SidebarContext = createContext<SidebarContextValue | null>(null)
+export const SidebarContext = createContext<SidebarContextValue | null>(null)
 
 // ============================================================================
 // Storage Keys

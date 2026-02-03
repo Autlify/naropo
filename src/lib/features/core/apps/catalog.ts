@@ -14,6 +14,12 @@ export type AppCatalogItem = {
 
 export const APPS_CATALOG: AppCatalogItem[] = [
   {
+    key: 'support',
+    label: 'Support Center',
+    description: 'Guided troubleshooting, diagnostics, and support tickets.',
+    isCore: true,
+  },
+  {
     key: 'integrations',
     label: 'Integrations',
     description: 'Connect providers, manage API keys, and configure outbound webhooks.',
@@ -26,10 +32,10 @@ export const APPS_CATALOG: AppCatalogItem[] = [
     isCore: true,
   },
 
-  // Future FI add-ons (placeholders)
-  { key: 'fi-gl', label: 'FI – General Ledger', description: 'Accounting: chart of accounts, journals, close.', requiredFeatureKeys: ['fi.gl.read', 'fi.gl.manage'] },
-  { key: 'fi-ar', label: 'FI – Accounts Receivable', description: 'Accounting: invoicing, receivables, collections.', requiredFeatureKeys: ['fi.ar.read', 'fi.ar.manage'] },
-  { key: 'fi-ap', label: 'FI – Accounts Payable', description: 'Accounting: vendor bills, approvals, payments.', requiredFeatureKeys: ['fi.ap.read', 'fi.ap.manage'] },
-  { key: 'fi-bl', label: 'FI – Bank Ledger', description: 'Accounting: bank sync, reconciliation, cash.', requiredFeatureKeys: ['fi.bl.read', 'fi.bl.manage'] },
-  { key: 'fi-co', label: 'FI – Controlling', description: 'Accounting: cost centers, allocations, profitability.', requiredFeatureKeys: ['fi.co.read', 'fi.co.manage'] },
+  // // Future FI add-ons (placeholders)
+  // { key: 'fi-gl', label: 'FI – General Ledger', description: 'Accounting: chart of accounts, journals, close.', requiredFeatureKeys: ['fi.gl.read', 'fi.gl.manage'] },
+  // { key: 'fi-ar', label: 'FI – Accounts Receivable', description: 'Accounting: invoicing, receivables, collections.', requiredFeatureKeys: ['fi.ar.read', 'fi.ar.manage'] },
+  // { key: 'fi-ap', label: 'FI – Accounts Payable', description: 'Accounting: vendor bills, approvals, payments.', requiredFeatureKeys: ['fi.ap.read', 'fi.ap.manage'] },
+  // { key: 'fi-bl', label: 'FI – Bank Ledger', description: 'Accounting: bank sync, reconciliation, cash.', requiredFeatureKeys: ['fi.bl.read', 'fi.bl.manage'] },
+  // { key: 'fi-co', label: 'FI – Controlling', description: 'Accounting: cost centers, allocations, profitability.', requiredFeatureKeys: ['fi.co.read', 'fi.co.manage'] },
 ]

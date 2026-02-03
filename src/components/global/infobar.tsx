@@ -20,8 +20,7 @@ import { IconLayoutNavbarCollapse } from '@tabler/icons-react'
 import { Button } from '../ui/button'
 import { useSidebar } from '@/components/sidebar-01/sidebar-context'
 import { TbLayoutSidebarLeftExpand } from 'react-icons/tb'
-import { AccessibilityPanel } from '@/components/panels' 
-import { motion } from 'motion/react'
+import { AccessibilityTrigger } from '@/components/panels/accessibility-panel'
 import { cn } from '../../lib/utils'
 
 type Props = {
@@ -146,8 +145,7 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
             </SheetContent>
           </Sheet>
           <ModeToggle />
-
-        
+          <AccessibilityTrigger />
         </div>
       </div>
     </>

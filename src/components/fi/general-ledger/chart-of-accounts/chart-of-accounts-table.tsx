@@ -35,34 +35,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { archiveAccount } from '@/lib/features/fi/general-ledger/actions/chart-of-accounts';
-
-type Account = {
-  id: string;
-  code: string;
-  name: string;
-  category: string;
-  accountType: string;
-  level: number;
-  isActive: boolean;
-  isSystemAccount: boolean;
-  parentAccount?: {
-    id: string;
-    code: string;
-    name: string;
-  } | null;
-};
-
+import type { GenLedgerAccount } from '@/types/finance';
 type Props = {
-  accounts: Account[];
+  accounts: GenLedgerAccount[];
   agencyId: string;
 };
 
-export function ChartOfAccountsTable({ accounts, agencyId }: Props) {
+const ChartOfAccountsTable = ({ accounts, agencyId }: Props) => {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  const columns: ColumnDef<Account>[] = [
+  const columns: ColumnDef<GenLedgerAccount>[] = [
     {
       accessorKey: 'code',
       header: ({ column }) => {
@@ -263,3 +247,5 @@ export function ChartOfAccountsTable({ accounts, agencyId }: Props) {
     </div>
   );
 }
+
+export { ChartOfAccountsTable };

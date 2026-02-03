@@ -13,6 +13,9 @@ import { Geist } from "next/font/google";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
+import { AccessibilityPanel, AccessibilityTrigger } from "@/components/panels/accessibility-panel";
+import { Button } from "../../ui/button";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -158,7 +161,7 @@ export function Navbar() {
   //     window.removeEventListener("scroll", updateScroll);
   //   };
   // }, []);
-     
+
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
     requestAnimationFrame(() => {
       const scroll = window.scrollY || document.documentElement.scrollTop;
@@ -482,28 +485,19 @@ export function Navbar() {
                   strokeLinejoin="round"
                   strokeWidth={2}
                   d="M4 6h16M4 12h16m-7 6h7"
-                /> 
+                />
               </svg>
             </button>
             {/* Buttons Section - Fixed width */}
             <div className="flex items-center gap-3 w-48 justify-end">
-              {/* <Link
-                href={'/agency'}
-                className="bg-gradient-to-br from-blue-800 via-blue-600 to-primary text-white px-5 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                aria-label="Login to your account"
-              >
-                Login
-              </Link> */}
-              <Link
-                href="/agency"
-                className="btn-brand-gradient px-5 py-2 rounded-xl text-sm font-semibold"
-                aria-label="Login to your account"
-              >
-                Login
-              </Link>
-
+              <Button variant="default" size="sm" className="px-5 h-8 py-1 rounded-xl text-sm font-semibold" asChild>
+                <Link href="/agency" aria-label="Login to your account" >
+                  Login
+                </Link>
+              </Button>
               <UserButton />
               <ModeButton />
+              <AccessibilityTrigger />
             </div>
           </div>
         </LiquidGlass>
@@ -512,3 +506,39 @@ export function Navbar() {
   )
 
 }
+
+
+{/** Version 1.0.0 Navigation */}
+// const Navigation = () => {
+//   return (
+//     <div className="fixed top-0 right-0 left-0 p-4 flex items-center justify-between z-10">
+//       <aside className="flex items-center gap-2">
+//         <Image
+//           src={`/assets/autlify-logo.svg`}
+//           width={40}
+//           height={40}
+//           alt="autlify logo"
+//         />
+//         <span className="text-xl font-bold"> Autlify.</span>
+//       </aside>
+//       <nav className="hidden md:block absolute left-[50%] top-[50%] transform translate-x-[-50%] translate-y-[-50%]">
+//         <ul className="flex items-center justify-center gap-8">
+//           <Link href={'#'}>Pricing</Link>
+//           <Link href={'#'}>About</Link>
+//           <Link href={'#'}>Documentation</Link>
+//           <Link href={'#'}>Features</Link>
+//         </ul>
+//       </nav>
+//       <aside className="flex gap-2 items-center">
+//         <Link
+//           href={'/agency'}
+//           className="bg-primary text-white p-2 px-4 rounded-md hover:bg-primary/80"
+//         >
+//           Login
+//         </Link>
+//         <UserButton />
+//         <ModeToggle />
+//       </aside>
+//     </div>
+//   )
+// }

@@ -1,8 +1,7 @@
 import { db } from '@/lib/db'
 import { stripe } from '@/lib/stripe'
 import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
-import { DEFAULT_COUNTRY } from '@/lib/constants'
+import Stripe from 'stripe' 
 
 /**
  * POST /api/stripe/create-subscription
@@ -97,7 +96,7 @@ export async function POST(req: Request) {
           { 
             price: priceId,
           },
-        ],
+        ], 
         payment_behavior: trialEnabled ? 'default_incomplete' : 'error_if_incomplete',
         payment_settings: { 
           save_default_payment_method: 'on_subscription',

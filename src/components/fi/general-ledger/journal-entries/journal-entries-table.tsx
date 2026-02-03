@@ -40,22 +40,7 @@ import {
   rejectJournalEntry,
 } from '@/lib/features/fi/general-ledger/actions/journal-entries';
 import { formatDate } from '@/lib/features/fi/general-ledger/utils/helpers';
-
-type JournalEntry = {
-  id: string;
-  entryNumber: number;
-  entryDate: Date;
-  description: string;
-  status: string;
-  entryType: string;
-  Lines: Array<{
-    debitAmount: number;
-    creditAmount: number;
-  }>;
-  Period: {
-    name: string;
-  };
-};
+import type { JournalEntry, JournalEntryLine } from '@/types/finance';
 
 type Props = {
   entries: JournalEntry[];
@@ -69,7 +54,7 @@ const statusColors: Record<string, 'default' | 'secondary' | 'outline' | 'destru
   REJECTED: 'destructive',
 };
 
-export function JournalEntriesTable({ entries, agencyId }: Props) {
+const JournalEntriesTable = ({ entries, agencyId }: Props) => {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -295,3 +280,5 @@ export function JournalEntriesTable({ entries, agencyId }: Props) {
     </div>
   );
 }
+
+export { JournalEntriesTable };

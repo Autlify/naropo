@@ -21,48 +21,7 @@ import {
 import { MoreHorizontal, Eye, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/features/fi/general-ledger/utils/helpers';
-
-// Open Item type matching the API response
-export type OpenItem = {
-  id: string;
-  sourceReference: string | null;
-  reference: string | null;
-  assignment: string | null;
-  text: string | null;
-  accountId: string;
-  Account?: { id: string; code: string; name: string };
-  documentNumber: string;
-  documentDate: Date;
-  dueDate: Date | null;
-  sourceModule: string | null;
-  localAmount: number;
-  localRemainingAmount: number;
-  localCurrencyCode: string;
-  documentAmount: number;
-  documentRemainingAmount: number;
-  documentCurrencyCode: string;
-  status: string;
-  partnerType: string | null;
-  customerId: string | null;
-  vendorId: string | null;
-  Customer?: { id: string; name: string } | null;
-  Vendor?: { id: string; name: string } | null;
-  clearingDate: Date | null;
-  clearingReference: string | null;
-  createdAt: Date;
-};
-
-export type OpenItemsTableProps = {
-  items: OpenItem[];
-  baseUrl: string;
-  selectable?: boolean;
-  selectedIds?: Set<string>;
-  onSelectionChange?: (ids: Set<string>) => void;
-  showAccount?: boolean;
-  showPartner?: boolean;
-  showStatus?: boolean;
-  emptyMessage?: string;
-};
+import type { OpenItem, OpenItemsTableProps } from '@/types/finance';
 
 const statusColors: Record<string, string> = {
   OPEN: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100',
@@ -70,7 +29,7 @@ const statusColors: Record<string, string> = {
   PARTIALLY_CLEARED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100',
 };
 
-export function OpenItemsTable({
+const OpenItemsTable = ({
   items,
   baseUrl,
   selectable = false,
@@ -80,7 +39,7 @@ export function OpenItemsTable({
   showPartner = false,
   showStatus = true,
   emptyMessage = 'No open items found',
-}: OpenItemsTableProps) {
+}: OpenItemsTableProps) => {
   const toggleItem = (id: string) => {
     if (!onSelectionChange) return;
     const newSelected = new Set(selectedIds);
@@ -245,3 +204,5 @@ export function OpenItemsTable({
     </Table>
   );
 }
+
+export { OpenItemsTable };

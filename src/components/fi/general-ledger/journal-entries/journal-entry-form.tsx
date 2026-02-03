@@ -46,8 +46,8 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-
 import { createJournalEntry } from '@/lib/features/fi/general-ledger/actions/journal-entries'
+import type { JournalEntryFormProps, JournalEntryLine, JournalEntryFormValues, SubledgerType } from '@/types/finance'
 
 // Form schema (simplified from full schema)
 const formSchema = z.object({
@@ -69,47 +69,43 @@ const formSchema = z.object({
   })).min(2, 'At least 2 lines required'),
 })
 
-type FormValues = z.infer<typeof formSchema>
+type FormSchemaValues = z.infer<typeof formSchema>
 
-type Account = {
-  id: string
-  code: string
-  name: string
-  accountType: string
-}
-
-type Period = {
-  id: string
-  name: string
-  startDate: string
-  endDate: string
-  status: string
-}
-
-interface JournalEntryFormProps {
-  agencyId: string
-  accounts: Account[]
-  periods: Period[]
-}
 
 export function JournalEntryForm({ agencyId, accounts, periods }: JournalEntryFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const form = useForm<FormValues>({
+  const form = useForm<FormSchemaValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      periodId: periods[0]?.id ?? '',
+      periodId: '',
       entryDate: new Date(),
       entryType: 'NORMAL',
       description: '',
       notes: '',
-      currencyCode: 'USD',
+      currencyCode: 'MYR',
       exchangeRate: 1,
       lines: [
-        { lineNumber: 1, accountId: '', description: '', debitAmount: 0, creditAmount: 0 },
-        { lineNumber: 2, accountId: '', description: '', debitAmount: 0, creditAmount: 0 },
+        {
+          lineNumber: 1,
+          accountId: '',
+          description: '',
+          debitAmount: 0,
+          creditAmount: 0,
+          dimension1: undefined,
+          dimension2: undefined,
+        },
+        {
+          lineNumber: 2,
+          accountId: '',
+          description: '',
+          debitAmount: 0,
+          creditAmount: 0,
+          dimension1: undefined,
+          dimension2: undefined,
+        },
       ],
     },
   })
@@ -151,7 +147,7 @@ export function JournalEntryForm({ agencyId, accounts, periods }: JournalEntryFo
     })
   }
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: FormSchemaValues) => {
     if (!isBalanced) {
       toast.error('Entry is not balanced. Total debits must equal total credits.')
       return
@@ -160,12 +156,30 @@ export function JournalEntryForm({ agencyId, accounts, periods }: JournalEntryFo
     setIsSubmitting(true)
 
     try {
+      const payload: JournalEntryFormValues = {
+        ...(values as unknown as JournalEntryFormValues),
+        entryDate: values.entryDate.toISOString(),
+      }
+
       const result = await createJournalEntry({
-        ...values,
+        periodId: values.periodId,
+        entryDate: values.entryDate,
+        entryType: values.entryType,
         sourceModule: 'MANUAL',
-        lines: values.lines.map(line => ({
-          ...line,
-          subledgerType: 'NONE' as const,
+        description: values.description,
+        currencyCode: values.currencyCode,
+        exchangeRate: values.exchangeRate,
+        lines: values.lines.map((line) => ({
+          lineNumber: line.lineNumber || 0,
+          accountId: line.accountId || '',
+          description: line.description || undefined,
+          debitAmount: line.debitAmount || 0,
+          creditAmount: line.creditAmount || 0,
+          dimension1: line.dimension1 || undefined,
+          dimension2: line.dimension2 || undefined,
+
+          // Required by the backend/types but not captured in this simplified form.
+          subledgerType: 'NONE' as SubledgerType,
           isIntercompany: false,
         })),
       })
@@ -354,8 +368,8 @@ export function JournalEntryForm({ agencyId, accounts, periods }: JournalEntryFo
                               </FormControl>
                               <SelectContent>
                                 {accounts.map((account) => (
-                                  <SelectItem key={account.id} value={account.id}>
-                                    {account.code} - {account.name}
+                                  <SelectItem key={account?.id} value={account?.id!}>
+                                    {account?.code} - {account?.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>

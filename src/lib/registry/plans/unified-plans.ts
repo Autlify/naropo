@@ -20,7 +20,7 @@ export const PLANS = {
     price: 79,
     currency: 'MYR',
     interval: 'month',
-    description: 'Perfect for trying out plura',
+    description: 'Perfect for trying out autlify',
     trialDays: 14,
     tier: 1,
   },

@@ -52,7 +52,6 @@ const Layout = async ({ children, params }: Props) => {
     <LayoutWrapper
       sidebar={<Sidebar id={paramsAgencyId} type="agency" />}
       infobar={
-        //  <Navbar16 />
         <InfoBar
           notifications={allNoti}
           canFilterBySubAccount={canFilterBySubAccount}

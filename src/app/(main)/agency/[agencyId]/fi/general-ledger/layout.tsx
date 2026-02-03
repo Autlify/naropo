@@ -22,13 +22,14 @@ export default async function GeneralLedgerLayout({
   }
 
   // Check permissions for tabs
-  const [canViewCOA, canViewJournal, canViewPeriods, canViewReports, canViewSettings] =
+  const [canViewCOA, canViewJournal, canViewPeriods, canViewReports, canViewSettings, canApprove] =
     await Promise.all([
       hasAgencyPermission(agencyId, 'fi.master_data.accounts.view'),
       hasAgencyPermission(agencyId, 'fi.general_ledger.journal_entries.read'),
       hasAgencyPermission(agencyId, 'fi.configuration.fiscal_years.view'),
       hasAgencyPermission(agencyId, 'fi.general_ledger.reports.view'),
       hasAgencyPermission(agencyId, 'fi.general_ledger.settings.view'),
+      hasAgencyPermission(agencyId, 'fi.general_ledger.journal_entries.approve'),
     ]);
 
   if (
@@ -69,6 +70,13 @@ export default async function GeneralLedgerLayout({
                   </Link>
                 </TabsTrigger>
               )}
+              {canApprove && (
+                <TabsTrigger value="approvals" asChild>
+                  <Link href={`/agency/${agencyId}/fi/general-ledger/approvals`}>
+                    Approvals
+                  </Link>
+                </TabsTrigger>
+              )}
               {canViewPeriods && (
                 <TabsTrigger value="periods" asChild>
                   <Link href={`/agency/${agencyId}/fi/general-ledger/periods`}>
@@ -80,6 +88,34 @@ export default async function GeneralLedgerLayout({
                 <TabsTrigger value="reports" asChild>
                   <Link href={`/agency/${agencyId}/fi/general-ledger/reports`}>
                     Reports
+                  </Link>
+                </TabsTrigger>
+              )}
+              {canViewSettings && (
+                <TabsTrigger value="bank-ledger" asChild>
+                  <Link href={`/agency/${agencyId}/fi/general-ledger/bank-ledger`}>
+                    Bank Ledger
+                  </Link>
+                </TabsTrigger>
+              )}
+              {canViewSettings && (
+                <TabsTrigger value="audit" asChild>
+                  <Link href={`/agency/${agencyId}/fi/general-ledger/audit`}>
+                    Audit Trail
+                  </Link>
+                </TabsTrigger>
+              )}
+              {canViewSettings && (
+                <TabsTrigger value="posting-rules" asChild>
+                  <Link href={`/agency/${agencyId}/fi/general-ledger/posting-rules`}>
+                    Posting Rules
+                  </Link>
+                </TabsTrigger>
+              )}
+              {canViewSettings && (
+                <TabsTrigger value="consolidation" asChild>
+                  <Link href={`/agency/${agencyId}/fi/general-ledger/consolidation`}>
+                    Consolidation
                   </Link>
                 </TabsTrigger>
               )}

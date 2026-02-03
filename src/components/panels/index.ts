@@ -8,5 +8,5 @@
  */
 
 export { PreferencePanel } from './preference-panel'
-export { AccessibilityPanel } from './accessibility-panel'
+export { AccessibilityPanel, AccessibilityTrigger } from './accessibility-panel'
 export { CustomThemePanel } from './custom-theme'

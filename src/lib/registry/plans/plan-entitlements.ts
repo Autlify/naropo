@@ -464,7 +464,7 @@ export function getPlanEntitlement(planId: string, featureKey: string): PlanEnti
 export const PLAN_METADATA = {
   [PLAN_IDS.STARTER]: {
     name: 'Starter',
-    description: 'Perfect for trying out plura',
+    description: 'Perfect for trying out autlify',
     price: 'RM 79',
     trialDays: 14,
     highlight: 'Key features',

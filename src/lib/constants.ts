@@ -41,101 +41,13 @@ import Tune from '@/components/icons/tune'
 import Video from '@/components/icons/video_recorder'
 import Wallet from '@/components/icons/wallet'
 import Warning from '@/components/icons/warning'
+import { StripePriceProps, StripeProductProps } from './types'
 
-// Default location settings
-export const DEFAULT_COUNTRY = {
-  name: 'Malaysia',
-  isoCode: 'MY',
-  phoneCode: '+60',
-} as const
-
-export const DEFAULT_CURRENCY = 'MYR'
-export const DEFAULT_TAX_RATE_ID = process.env.STRIPE_MALAYSIA_TAX_RATE_ID
-
-// export const planFeatures = [
-//   {
-//   SUBACCOUNT: 'core.subaccounts.account',
-//   REBILLING: 'crm.billing.rebilling',
-//   CONTACT: 'crm.contacts.contact',
-//   FUNNEL: 'crm.funnels.funnel',
-//   PIPELINE: 'crm.pipelines.pipeline',
-//   }
-// ]
-// export const marketingFeatures = {
-//   SUBACCOUNT: 'Subaccount Management',
-//   REBILLING: 'Customer Rebilling',
-//   CONTACT: 'Contact Management',
-//   FUNNEL: 'Sales Funnels & Landing Pages',
-//   PIPELINE: 'Sales Pipelines & Tickets',
-// }
-
-// export const pricingCards = [
-//   {
-//     title: 'Basic',
-//     description: 'Perfect for getting started',
-//     price: 'RM 49', // per seat (subscription quantity controls total agency + subaccount users)
-//     duration: 'month',
-//     trialPeriod: 14, // days - auto-upgrade with pre-collected payment method
-//     highlight: 'Best for getting started',
-//     features: [
-//       '1 Sub account',
-//       '2 Funnels',
-//       '5 Pipelines',
-//     ],
-//     entitlementFeatures: [{
-//       SUBACCOUNT: 1,
-//       FUNNEL: 2, // per subaccount
-//       PIPELINE: 5, // per subaccount
-//       CONTACT: 100, // per subaccount
-//     }],
-//     priceId: 'price_1SpVOYJglUPlULDQhsRkA5YV',
-//   },
-//   {
-//     title: 'Pro',
-//     description: 'Ideal for small to medium agencies',
-//     price: 'RM 99', // per seat (subscription quantity controls total agency + subaccount users)
-//     duration: 'month',
-//     trialPeriod: 14, // days - auto-upgrade with pre-collected payment method
-//     highlight: 'Most popular',
-//     features: [
-//       '10 Sub accounts',
-//       '15 Funnels',
-//       '20 Pipelines',
-//     ],
-//     entitlementFeatures: [{
-//       SUBACCOUNT: 10,
-//       FUNNEL: 15, // per subaccount
-//       PIPELINE: 20, // per subaccount
-//       CONTACT: 1000, // per subaccount
-//     }],
-//     priceId: '',
-//   },
-//   {
-//     title: 'Ultimate',
-//     description: 'For established agencies with advanced needs',
-//     price: 'RM 199', // per seat (subscription quantity controls total agency + subaccount users)
-//     duration: 'month',
-//     trialPeriod: 14, // days - auto-upgrade with pre-collected payment method
-//     highlight: 'Everything unlimited',
-//     features: [
-//       'All Unlimited',
-//       'Customer Rebilling',
-//     ],
-//     entitlementFeatures: [{
-//       REBILLING: -1, // unlimited
-//       SUBACCOUNT: -1, // unlimited
-//       FUNNEL: -1, // unlimited per subaccount
-//       PIPELINE: -1, // unlimited per subaccount
-//       CONTACT: -1, // unlimited per subaccount
-//     }],
-//     priceId: '',
-//   },
-// ]
 
 export const pricingCards = [
   {
     title: 'Starter',
-    description: 'Perfect for trying out plura',
+    description: 'Perfect for trying out autlify',
     currency: 'MYR',
     price: 'RM 79',
     monthlyPrice: 79,
@@ -177,9 +89,11 @@ export const pricingCards = [
   },
 ]
 
+
+
 export const addOnProducts = [
-  { 
-    title: 'Priority Support', 
+  {
+    title: 'Priority Support',
     description: '24/7 priority support with dedicated account manager',
     currency: 'MYR',
     price: 'RM 99',

@@ -1,11 +1,9 @@
 'use client'
 
-import Navigation from '@/components/site/navigation'
 import { Navbar } from '@/components/site/navbar'
 import { Footer } from '@/components/site/footer'
 import React from 'react'
 import { usePathname } from 'next/navigation'
-import { AspectRatio } from '@radix-ui/react-aspect-ratio'
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname()

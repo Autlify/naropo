@@ -3,8 +3,67 @@ applyTo: '**'
 ---
 Provide project context and coding guidelines that AI should follow when generating code, answering questions, or reviewing changes.
 
-# Autlify Project Instructions
+# Autlify
 Autlify is a platform that enables users to create and manage agencies, clients, and projects with features like authentication, passkey management, and file uploads. The codebase primarily uses TypeScript and React, with a focus on security and user experience.
+
+## Instructions Purpose
+These instructions are designed to guide AI in generating, reviewing, and analyzing code within the Autlify project. They ensure that all contributions align with the project's architecture, coding standards, reusability, and best practices.
+
+## Important Guidelines
+1. Always prioritize code reuse by searching the existing codebase before creating new files or components.
+2. Follow established coding conventions and patterns used throughout the project.
+3. Ensure all new code is well-documented with clear comments explaining complex logic with sample usages and expected inputs/outputs.
+4. Maintain a strong focus on security, especially in authentication and data handling.
+5. Adhere to performance, scalability, flexibility, dynamic best practices.
+6. Ensure all new features include permission keys, entitlement checks, and appropriate tests (unit, integration, end-to-end) to maintain code quality.
+7. When generating code, ensure it integrates seamlessly with the existing architecture and follows established patterns.
+8. When reviewing code, focus on correctness, completeness, functionality, efficiency, readability, relatedness and adherence to project guidelines.
+9. When responding to queries about the project, provide context-aware answers that reflect the current architecture and design principles.
+10. When generating documentationas or explanations directly kept them in `/site/docs/` folder and follow the existing documentation style and separate files for different audiences:
+    - Developer Guides
+    - User Manuals
+    - API References
+    - Internal Docs
+
+## Single Source of Truth (SSoT) Resources
+- **Registry**: The primary source for all mappings, resolvers, and definitions is the Registry located at `src/lib/registry/`. It includes:
+    `KEYS`: IDENTIFIERS in a hierarchical structure with pattern `${module}`.`Submodule`.`${Feature}`.`${Action}` 
+       |
+       V
+    `Feature`: The main functionality or module (e.g., `${module}`.`Submodule`.`${Feature}`) as type `FeatureKey`
+       |
+       V
+    `Entitlement`: The entitlements of a specific plan that grants access to features
+       |
+       V
+    `Plans`: The subscription plans or add-ons available in the system
+       |
+       V
+    `Permission`: The required permissions `key` to access features `${module}`.`Submodule`.`${Feature}`.`${Action}` as type `PermissionKey` aka `ActionKey`
+       |
+       V
+    `Role`: The system/custom roles with associated permissions `keys` within the system
+       |
+       V
+    `Action`: The specific operations that can be performed on features `${module}`.`Submodule`.`${Feature}`.`${Action}` as type `ActionKey` aka `PermissionKey`
+       |
+       V
+    `API Endpoint`: The corresponding API routes that implement the feature actions and enforce  `/api/${module}/Submodule/${Feature}`
+       |
+       V
+     `Tracking`: The tracking and analytics events related to feature usage and actions  `${module}`.`Submodule`.`${Feature}` and `${Action}`
+
+
+
+
+## Project Overview
+- **Authentication**: Utilizes NextAuth.js for secure user authentication, including passkey support.
+- **File Uploads**: Implements UploadThing for handling file uploads efficiently.
+- **Database**: Uses Prisma ORM to interact with a PostgreSQL database.
+- **Styling**: Employs Tailwind CSS along with Aceternity UI and Re UI for consistent and responsive design.
+- **Testing**: Incorporates Playwright for end-to-end testing.
+
+
 
 ## General Guidelines
 - Follow TypeScript best practices, ensuring type safety and clarity.

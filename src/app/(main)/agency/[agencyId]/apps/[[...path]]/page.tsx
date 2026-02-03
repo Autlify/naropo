@@ -15,6 +15,9 @@ import { WebhooksConnectionsPanel } from '@/components/apps-hub/webhooks/connect
 import { WebhooksApiKeysPanel } from '@/components/apps-hub/webhooks/api-keys'
 import { WebhooksSubscriptionsPanel } from '@/components/apps-hub/webhooks'
 import { WebhooksDeliveriesPanel } from '@/components/apps-hub/webhooks/deliveries'
+import { SupportNav } from '@/components/apps-hub/support/nav'
+import { SupportWizardPanel } from '@/components/apps-hub/support/wizard'
+import { SupportTicketsPanel } from '@/components/apps-hub/support/tickets'
 import ProviderDetailClient from '@/components/apps-hub/provider-detail-client'
 
 type Props = { params: Promise<{ agencyId: string; path?: string[] }> }
@@ -30,6 +33,9 @@ function AppsHubMenu({ agencyId, apps }: { agencyId: string; apps: AppWithState[
   const webhooks = core.find((a) => a.key === 'webhooks')
   const webhooksMeta = describeInstallState(webhooks?.state ?? 'AVAILABLE')
 
+  const support = core.find((a) => a.key === 'support')
+  const supportMeta = describeInstallState(support?.state ?? 'AVAILABLE')
+
   return (
     <div className="p-6 space-y-8">
       <div>
@@ -38,6 +44,24 @@ function AppsHubMenu({ agencyId, apps }: { agencyId: string; apps: AppWithState[
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle>Support Center</CardTitle>
+              <Badge variant={supportMeta.tone}>{supportMeta.label}</Badge>
+            </div>
+            <CardDescription>Guided troubleshooting, diagnostics, and support tickets.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-2">
+            <Button asChild disabled={(support?.state ?? 'AVAILABLE') !== 'INSTALLED'}>
+              <Link href={`/agency/${agencyId}/apps/support`}>Open</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/agency/${agencyId}/apps/support/tickets`}>Tickets</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-2">
@@ -112,6 +136,65 @@ function AppsHubMenu({ agencyId, apps }: { agencyId: string; apps: AppWithState[
       </div>
     </div>
   )
+}
+
+// ============================================================================
+// Support Center Module Router
+// ============================================================================
+
+function SupportLayout({
+  agencyId,
+  children,
+}: {
+  agencyId: string
+  children: React.ReactNode
+}) {
+  const basePath = `/agency/${agencyId}/apps/support`
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Support Center</h1>
+        <p className="text-sm text-muted-foreground">
+          Guided troubleshooting, diagnostics, and support tickets.
+        </p>
+      </div>
+      <SupportNav basePath={basePath} />
+      <div className="space-y-6">{children}</div>
+    </div>
+  )
+}
+
+function SupportRouter({
+  agencyId,
+  segments,
+}: {
+  agencyId: string
+  segments: string[]
+}) {
+  const [section] = segments
+  // /apps/support → default wizard
+  if (!section || section === '') {
+    return (
+      <SupportLayout agencyId={agencyId}>
+        <SupportWizardPanel scope={{ type: 'AGENCY', agencyId }} />
+      </SupportLayout>
+    )
+  }
+
+  let content: React.ReactNode
+  switch (section) {
+    case 'wizard':
+      content = <SupportWizardPanel scope={{ type: 'AGENCY', agencyId }} />
+      break
+    case 'tickets':
+      content = <SupportTicketsPanel scope={{ type: 'AGENCY', agencyId }} />
+      break
+    default:
+      // Unknown support section → wizard
+      content = <SupportWizardPanel scope={{ type: 'AGENCY', agencyId }} />
+  }
+
+  return <SupportLayout agencyId={agencyId}>{content}</SupportLayout>
 }
 
 // ============================================================================
@@ -391,6 +474,9 @@ export default async function AgencyAppsCatchAllPage({ params }: Props) {
 
     // Route to app-specific module
     switch (appKey) {
+        case 'support':
+            return <SupportRouter agencyId={agencyId} segments={rest} />
+
         case 'webhooks':
             return <WebhooksRouter agencyId={agencyId} segments={rest} />
 

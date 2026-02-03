@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useContext } from 'react'
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -26,7 +26,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/components/ui/alert'
-import { useSidebarPreferences } from '@/components/sidebar-01/context'
+import { SidebarContext } from '@/components/sidebar-01/context'
 import type { MobileBehavior } from '@/components/sidebar-01/types'
 import {
   Accessibility,
@@ -47,6 +47,65 @@ import {
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react'
+import { Sheet, SheetTrigger, SheetContent, SheetTitle } from '../ui/sheet'
+
+// ============================================================================
+// Default preferences for standalone usage (outside SidebarProvider)
+// ============================================================================
+
+const defaultAccessibility = {
+  reducedMotion: false,
+  highContrast: false,
+  focusIndicators: true,
+  announceNavigation: true,
+  keyboardShortcuts: true,
+  minTouchTarget: 44,
+}
+
+const defaultMobile = {
+  behavior: 'drawer' as MobileBehavior,
+  showMenuButton: true,
+  swipeToOpen: true,
+  backdropBlur: true,
+  autoCloseOnNavigate: true,
+  breakpoint: 768,
+}
+
+// Safe hook that works outside of SidebarProvider
+function useSafePreferences() {
+  const context = useContext(SidebarContext)
+
+  // Local state for standalone mode
+  const [localAccessibility, setLocalAccessibility] = React.useState(defaultAccessibility)
+  const [localMobile, setLocalMobile] = React.useState(defaultMobile)
+
+  if (context) {
+    // Use context when available
+    return {
+      preferences: context.preferences,
+      updatePreferences: context.updatePreferences,
+      isStandalone: false,
+    }
+  }
+
+  // Standalone mode - use local state with type-safe updates
+  return {
+    preferences: {
+      accessibility: localAccessibility,
+      mobile: localMobile,
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    updatePreferences: (updates: any) => {
+      if (updates.accessibility) {
+        setLocalAccessibility(prev => ({ ...prev, ...updates.accessibility }))
+      }
+      if (updates.mobile) {
+        setLocalMobile(prev => ({ ...prev, ...updates.mobile }))
+      }
+    },
+    isStandalone: true,
+  }
+}
 
 // ============================================================================
 // Option Row
@@ -106,27 +165,68 @@ function SectionHeader({ icon, title, description }: SectionHeaderProps) {
   )
 }
 
+// ===========================================================================
+// Accessibility Trigger
+// ===========================================================================
+
+interface AccessibilityTriggerProps {
+  className?: string
+  /** Button size */
+  size?: 'sm' | 'default' | 'lg' | 'icon'
+  /** Button variant */
+  variant?: 'ghost' | 'outline' | 'secondary' | 'default'
+}
+
+function AccessibilityTrigger({
+  className,
+  size = 'icon',
+  variant = 'ghost',
+}: AccessibilityTriggerProps) {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button
+          variant={variant}
+          size={size}
+          className={cn('h-9 w-9', className)}
+          aria-label="Accessibility settings"
+        >
+          <Accessibility className="h-4 w-4" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-lg overflow-y-auto p-0"
+      >
+        <SheetTitle className="sr-only">Accessibility Panel</SheetTitle>
+        <AccessibilityPanelContent />
+      </SheetContent>
+    </Sheet>
+  )
+}
+
 // ============================================================================
 // Accessibility Panel Component
 // ============================================================================
 
-interface AccessibilityPanelProps {
+interface AccessibilityPanelContentProps {
   className?: string
   /** Show mobile settings */
   showMobile?: boolean
   /** Show keyboard shortcuts section */
   showKeyboard?: boolean
   /** Callback when settings change */
-  onChange?: (settings: ReturnType<typeof useSidebarPreferences>['preferences']['accessibility']) => void
+  onChange?: (settings: typeof defaultAccessibility) => void
 }
 
-export function AccessibilityPanel({
+/** Inner panel content - used by AccessibilityTrigger */
+function AccessibilityPanelContent({
   className,
   showMobile = true,
   showKeyboard = true,
   onChange,
-}: AccessibilityPanelProps) {
-  const { preferences, updatePreferences } = useSidebarPreferences()
+}: AccessibilityPanelContentProps) {
+  const { preferences, updatePreferences } = useSafePreferences()
   const { accessibility, mobile } = preferences
 
   // Update accessibility setting
@@ -424,4 +524,11 @@ export function AccessibilityPanel({
   )
 }
 
+/** Standalone panel component for direct rendering */
+export function AccessibilityPanel(props: AccessibilityPanelContentProps) {
+  return <AccessibilityPanelContent {...props} />
+}
+
 export default AccessibilityPanel
+
+export { AccessibilityTrigger }

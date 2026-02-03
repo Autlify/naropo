@@ -147,3 +147,8 @@ export type FunnelsForSubAccount = Awaited<ReturnType<
 export type UpsertFunnelPage = Prisma.FunnelPageCreateWithoutFunnelInput
 
 export type StripeCustomerProps = Stripe.CustomerCreateParams
+
+
+export type StripeProductProps = Stripe.Product
+
+export type StripePriceProps = Stripe.Price

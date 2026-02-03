@@ -17,6 +17,9 @@ import { WebhooksConnectionsPanel } from '@/components/apps-hub/webhooks/connect
 import { WebhooksApiKeysPanel } from '@/components/apps-hub/webhooks/api-keys'
 import { WebhooksSubscriptionsPanel } from '@/components/apps-hub/webhooks'
 import { WebhooksDeliveriesPanel } from '@/components/apps-hub/webhooks/deliveries'
+import { SupportNav } from '@/components/apps-hub/support/nav'
+import { SupportWizardPanel } from '@/components/apps-hub/support/wizard'
+import { SupportTicketsPanel } from '@/components/apps-hub/support/tickets'
 import ProviderDetailClient from '@/components/apps-hub/provider-detail-client'
 
 type Props = { params: Promise<{ subaccountId: string; path?: string[] }> }
@@ -25,20 +28,19 @@ type Props = { params: Promise<{ subaccountId: string; path?: string[] }> }
 // Apps Hub Menu (shows when path is empty)
 // ============================================================================
 
-function AppsHubMenu({ 
-  subaccountId, 
-  agencyId, 
-  apps 
-}: { 
+const AppsHubMenu = ({ subaccountId, agencyId, apps }: { 
   subaccountId: string
   agencyId: string
-  apps: AppWithState[] 
-}) {
+  apps: AppWithState[]
+}) => {
   const core = apps.filter((a) => !!a.isCore)
   const addons = apps.filter((a) => !a.isCore)
 
   const webhooks = core.find((a) => a.key === 'webhooks')
   const webhooksMeta = describeInstallState(webhooks?.state ?? 'AVAILABLE')
+
+  const support = core.find((a) => a.key === 'support')
+  const supportMeta = describeInstallState(support?.state ?? 'AVAILABLE')
 
   return (
     <div className="p-6 space-y-8">
@@ -48,6 +50,24 @@ function AppsHubMenu({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle>Support Center</CardTitle>
+              <Badge variant={supportMeta.tone}>{supportMeta.label}</Badge>
+            </div>
+            <CardDescription>Guided troubleshooting, diagnostics, and support tickets.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-2">
+            <Button asChild disabled={(support?.state ?? 'AVAILABLE') !== 'INSTALLED'}>
+              <Link href={`/subaccount/${subaccountId}/apps/support`}>Open</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/subaccount/${subaccountId}/apps/support/tickets`}>Tickets</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-2">
@@ -125,6 +145,63 @@ function AppsHubMenu({
 }
 
 // ============================================================================
+// Support Center Module Router
+// ============================================================================
+
+const SupportLayout = ({
+  subaccountId,
+  children,
+}: {
+  subaccountId: string
+  children: React.ReactNode
+}) => {
+  const basePath = `/subaccount/${subaccountId}/apps/support`
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Support Center</h1>
+        <p className="text-sm text-muted-foreground">Guided troubleshooting, diagnostics, and support tickets.</p>
+      </div>
+      <SupportNav basePath={basePath} />
+      <div className="space-y-6">{children}</div>
+    </div>
+  )
+}
+
+const SupportRouter =({
+  subaccountId,
+  segments,
+}: {
+  subaccountId: string
+  segments: string[]
+}) => {
+  const [section] = segments
+
+  // /apps/support → default wizard
+  if (!section || section === '') {
+    return (
+      <SupportLayout subaccountId={subaccountId}>
+        <SupportWizardPanel scope={{ type: 'SUBACCOUNT', subaccountId }} />
+      </SupportLayout>
+    )
+  }
+
+  let content: React.ReactNode
+  switch (section) {
+    case 'wizard':
+      content = <SupportWizardPanel scope={{ type: 'SUBACCOUNT', subaccountId }} />
+      break
+    case 'tickets':
+      content = <SupportTicketsPanel scope={{ type: 'SUBACCOUNT', subaccountId }} />
+      break
+    default:
+      content = <SupportWizardPanel scope={{ type: 'SUBACCOUNT', subaccountId }} />
+  }
+
+  return <SupportLayout subaccountId={subaccountId}>{content}</SupportLayout>
+}
+
+// ============================================================================
 // Webhooks Module Router
 // ============================================================================
 
@@ -148,7 +225,7 @@ function WebhooksLayout({
   )
 }
 
-async function WebhooksRouter({ 
+const WebhooksRouter = async({ 
   subaccountId, 
   agencyId,
   segments 
@@ -156,7 +233,7 @@ async function WebhooksRouter({
   subaccountId: string
   agencyId: string
   segments: string[] 
-}) {
+}) => {
   const [section, id] = segments
 
   // /apps/webhooks → redirect to providers
@@ -204,13 +281,13 @@ async function WebhooksRouter({
   return <WebhooksLayout subaccountId={subaccountId}>{content}</WebhooksLayout>
 }
 
-function DeliveryDetailView({ 
+const DeliveryDetailView = ({ 
   subaccountId, 
   detail 
 }: { 
   subaccountId: string
   detail: { delivery: any; attempts?: any[] } 
-}) {
+}) => {
   return (
     <Card>
       <CardHeader>
@@ -270,7 +347,7 @@ function DeliveryDetailView({
 // Integrations Redirect (legacy alias to webhooks)
 // ============================================================================
 
-function integrationsRedirect(subaccountId: string, segments: string[]): never {
+const integrationsRedirect =(subaccountId: string, segments: string[]): never => {
   const [section] = segments
 
   // /apps/integrations → /apps/webhooks/providers
@@ -296,7 +373,7 @@ function integrationsRedirect(subaccountId: string, segments: string[]): never {
 // App Not Installed / Upgrade Prompt
 // ============================================================================
 
-function AppAccessPrompt({
+const AppAccessPrompt = ({
   subaccountId,
   agencyId,
   appKey,
@@ -306,7 +383,7 @@ function AppAccessPrompt({
   agencyId: string
   appKey: string
   info?: { state: string; entitled: boolean; canInstall: boolean; label?: string }
-}) {
+})  => {
   const meta = describeInstallState((info?.state as any) ?? 'AVAILABLE')
   const entitled = info?.entitled ?? false
   const canInstall = info?.canInstall ?? false
@@ -414,6 +491,9 @@ export default async function SubAccountAppsCatchAllPage({ params }: Props) {
 
   // Route to app-specific module
   switch (appKey) {
+    case 'support':
+      return <SupportRouter subaccountId={subaccountId} segments={rest} />
+
     case 'webhooks':
       return <WebhooksRouter subaccountId={subaccountId} agencyId={ctx.agencyId} segments={rest} />
 

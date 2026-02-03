@@ -64,7 +64,7 @@ export const columns: ColumnDef<UsersWithAgencySubAccountPermissionsSidebarOptio
           <div className="flex items-center gap-4">
             <div className="h-11 w-11 relative flex-none">
               <Image
-                src={avatarUrl || '/assets/plura-logo.svg'}
+                src={avatarUrl || '/assets/autlify-logo.svg'}
                 fill
                 className="rounded-full object-cover"
                 alt="avatar image"

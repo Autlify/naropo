@@ -53,7 +53,7 @@ const SendInvitation: React.FC<SendInvitationProps> = ({ agencyId }) => {
 
   const onSubmit = async (values: z.infer<typeof userDataSchema>) => {
     try {
-      const res = await sendInvitation(values.role, values.email, agencyId)
+      const res = await sendInvitation(agencyId, values.role, values.email, agencyId)
       await saveActivityLogsNotification({
         agencyId: agencyId,
         description: `Invited ${res.email}`,

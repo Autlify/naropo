@@ -246,6 +246,73 @@ export const listJournalEntries = async (filters?: {
 };
 
 /**
+ * Get pending approvals for the current user
+ */
+export const getPendingApprovals = async (): Promise<ActionResult<{
+    journalEntries: any[];
+    counts: { journalEntries: number };
+}>> => {
+    try {
+        const context = await getContext();
+        if (!context) {
+            return { success: false, error: 'Unauthorized: No session found' };
+        }
+
+        const hasPermission = context.subAccountId
+            ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.journal_entries.approve')
+            : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.journal_entries.approve');
+
+        if (!hasPermission) {
+            return { success: false, error: 'Unauthorized: Missing approval permission' };
+        }
+
+        const whereClause: any = context.subAccountId
+            ? { subAccountId: context.subAccountId }
+            : { agencyId: context.agencyId, subAccountId: null };
+
+        whereClause.status = JournalEntryStatus.PENDING_APPROVAL;
+
+        const journalEntries = await db.journalEntry.findMany({
+            where: whereClause,
+            orderBy: { submittedAt: 'asc' },
+            include: {
+                Lines: {
+                    include: {
+                        Account: { select: { id: true, code: true, name: true } },
+                    },
+                },
+                Period: { select: { name: true } },
+            },
+            take: 50,
+        });
+
+        // Get submitter info
+        const withSubmitter = await Promise.all(
+            journalEntries.map(async (entry) => {
+                const submitter = entry.submittedBy
+                    ? await db.user.findUnique({
+                          where: { id: entry.submittedBy },
+                          select: { name: true, email: true },
+                      })
+                    : null;
+                return { ...entry, submitter };
+            })
+        );
+
+        return {
+            success: true,
+            data: {
+                journalEntries: withSubmitter,
+                counts: { journalEntries: journalEntries.length },
+            },
+        };
+    } catch (error) {
+        console.error('Error in getPendingApprovals:', error);
+        return { success: false, error: 'Failed to get pending approvals' };
+    }
+};
+
+/**
  * Create Journal Entry (Draft)
  */
 export const createJournalEntry = async (

@@ -8,9 +8,10 @@ type LayoutWrapperProps = {
   children: ReactNode
   sidebar: ReactNode
   infobar: ReactNode
+  allyPanel?: ReactNode
 }
 
-function LayoutContent({ children, sidebar, infobar }: LayoutWrapperProps) {
+function LayoutContent({ children, sidebar, infobar, allyPanel }: LayoutWrapperProps) {
   const { isCollapsed } = useSidebar()
 
   return (
@@ -24,15 +25,16 @@ function LayoutContent({ children, sidebar, infobar }: LayoutWrapperProps) {
         <div className="relative">
           {children}
         </div>
+        {allyPanel}
       </div>
     </div>
   )
 }
 
-export function LayoutWrapper({ children, sidebar, infobar }: LayoutWrapperProps) {
+export function LayoutWrapper({ children, sidebar, infobar, allyPanel }: LayoutWrapperProps) {
   return (
     <SidebarProvider>
-      <LayoutContent sidebar={sidebar} infobar={infobar}>
+      <LayoutContent sidebar={sidebar} infobar={infobar} allyPanel={allyPanel}>
         {children}
       </LayoutContent>
     </SidebarProvider>

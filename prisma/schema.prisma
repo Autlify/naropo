@@ -136,6 +136,7 @@ model User {
 
   ApiKeys            ApiKey[]
   IntegrationApiKeys IntegrationApiKey[]
+  SupportTickets     SupportTicket[]
 
   @@schema("public")
 }
@@ -307,9 +308,12 @@ model TaxIdentity {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  Agency         Agency?         @relation(map: "FK_AGENCY_TAXIDENTITY")
-  SubAccount     SubAccount?     @relation(map: "FK_SUBACCOUNT_TAXIDENTITY")
-  TaxObligations TaxObligation[]
+  Agency                   Agency?                   @relation(map: "FK_AGENCY_TAXIDENTITY")
+  SubAccount               SubAccount?               @relation(map: "FK_SUBACCOUNT_TAXIDENTITY")
+  TaxObligations           TaxObligation[]
+  IndustryClassifications  IndustryClassification[]
+  TaxExemptionCertificates TaxExemptionCertificate[]
+  EInvoices                EInvoice[]
 
   @@index([countryCode])
   @@index([tinNumber])
@@ -407,6 +411,7 @@ model Agency {
   IntegrationApiKeys     IntegrationApiKey[]
   IntegrationConnections IntegrationConnection[]
   AppInstallations       AppInstallation[]
+  SupportTickets         SupportTicket[]
 
   @@index([taxIdentityId])
   @@schema("public")
@@ -469,6 +474,7 @@ model SubAccount {
   IntegrationApiKeys     IntegrationApiKey[]
   IntegrationConnections IntegrationConnection[]
   AppInstallations       AppInstallation[]
+  SupportTickets         SupportTicket[]
 
   @@index([agencyId])
   @@index([taxIdentityId])
@@ -2034,6 +2040,12 @@ model ChartOfAccount {
   OpenItems  OpenItem[]  @relation("OpenItemAccount")
   SubLedgers SubLedger[] @relation("SubLedgerControl")
 
+  // E-Invoice relations
+  EInvoiceSettingsRevenue    EInvoiceSettings[] @relation("EInvoiceRevenueAccount")
+  EInvoiceSettingsReceivable EInvoiceSettings[] @relation("EInvoiceReceivableAccount")
+  EInvoiceSettingsTaxOutput  EInvoiceSettings[] @relation("EInvoiceTaxOutputAccount")
+  EInvoiceLineItems          EInvoiceLineItem[]
+
   @@unique([agencyId, code])
   @@unique([subAccountId, code])
   @@index([agencyId, accountType])
@@ -2295,7 +2307,8 @@ model JournalEntry {
   updatedBy String?
 
   // Relations
-  Lines JournalEntryLine[]
+  Lines     JournalEntryLine[]
+  EInvoices EInvoice[]
 
   @@unique([agencyId, entryNumber])
   @@unique([subAccountId, entryNumber])
@@ -3266,6 +3279,7 @@ model Customer {
 
   // Relations
   OpenItems OpenItem[] @relation("CustomerOpenItems")
+  EInvoices EInvoice[]
 
   @@unique([agencyId, code])
   @@unique([subAccountId, code])
@@ -3602,4 +3616,588 @@ model AppInstallation {
   @@index([agencyId])
   @@index([subAccountId])
   @@schema("public")
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+
+  @@schema("public")
+}
+
+model SupportTicket {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scope       MeteringScope
+  status      SupportTicketStatus @default(OPEN)
+  category    String
+  title       String
+  description String?             @db.Text
+  diagnostics Json?
+
+  // Tenant scoping
+  agencyId     String
+  subAccountId String?
+
+  // Actor
+  createdByUserId String?
+
+  Agency        Agency      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  SubAccount    SubAccount? @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  CreatedByUser User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([scope, agencyId])
+  @@index([scope, subAccountId])
+  @@index([status, createdAt])
+  @@schema("public")
+}
+
+// ============================================================================
+// E-INVOICE & BILLING CONFIGURATION (finance schema)
+// ============================================================================
+// NOTE: Autlify does NOT handle tax compliance/liability. These models store
+// user-configured settings for e-Invoice generation and tax visualization.
+// KYC and business verification is handled by Stripe Connect.
+// ============================================================================
+
+enum EInvoiceFormat {
+  UBL_2_1 // OASIS Universal Business Language 2.1
+  CII_D16B // UN/CEFACT Cross Industry Invoice D16B
+  PEPPOL_BIS_3 // Peppol Business Interoperability Specification 3.0
+  EN16931 // European semantic standard
+  MYINVOIS // Malaysia LHDN MyInvois
+  ZATCA_FATOORA // Saudi Arabia ZATCA Fatoora
+  SGP_INVOICENOW // Singapore InvoiceNow (Peppol-based)
+  FACTUR_X // France/Germany hybrid PDF/XML
+  XRECHNUNG // German e-Invoice standard
+  FatturaPA // Italy electronic invoice
+  GST_EINVOICE // India GST e-Invoice
+
+  @@schema("finance")
+}
+
+enum EInvoiceStatus {
+  DRAFT // Not yet validated or submitted
+  PENDING_VALIDATION // Awaiting format/schema validation
+  VALIDATED // Passed validation, ready to submit
+  SUBMITTED // Sent to tax authority/recipient
+  ACCEPTED // Accepted by tax authority
+  REJECTED // Rejected with errors
+  CANCELLED // Cancelled after acceptance
+  EXPIRED // Past submission deadline
+
+  @@schema("finance")
+}
+
+enum EInvoiceDocType {
+  INVOICE // 380 - Commercial invoice
+  CREDIT_NOTE // 381 - Credit note
+  DEBIT_NOTE // 383 - Debit note
+  CORRECTED // 384 - Corrected invoice
+  PREPAYMENT // 386 - Prepayment invoice
+  SELF_BILLED // 389 - Self-billed invoice
+
+  @@schema("finance")
+}
+
+enum DiscountType {
+  PERCENTAGE // Percentage off (e.g., 10% off)
+  FIXED_AMOUNT // Fixed amount off (e.g., $10 off)
+  TIERED // Discount based on quantity/amount tiers
+
+  @@schema("finance")
+}
+
+enum DiscountDuration {
+  ONCE // Apply once
+  REPEATING // Apply for X months
+  FOREVER // Apply indefinitely
+
+  @@schema("finance")
+}
+
+enum DiscountScope {
+  INVOICE // Entire invoice/order
+  LINE_ITEM // Specific line item(s)
+  SUBSCRIPTION // Subscription recurring charges
+  SPECIFIC_PRODUCT // Specific product(s) only
+
+  @@schema("finance")
+}
+
+enum IndustryClassificationScheme {
+  MSIC_2008 // Malaysian Standard Industrial Classification 2008
+  MSIC_2020 // Malaysian Standard Industrial Classification 2020
+  ISIC_REV4 // International Standard Industrial Classification Rev.4
+  SIC_US // US Standard Industrial Classification
+  NAICS_2022 // North American Industry Classification System 2022
+  NACE_REV2 // Statistical Classification of Economic Activities (EU)
+  SSIC_2020 // Singapore Standard Industrial Classification 2020
+  ANZSIC_2006 // Australian/New Zealand SIC 2006
+  UNSPSC // United Nations Standard Products and Services Code
+  HS_2022 // Harmonized System 2022 (customs/trade)
+
+  @@schema("finance")
+}
+
+enum TaxExemptionVerificationStatus {
+  PENDING // Awaiting verification
+  VERIFIED // Verified by authority or system
+  REJECTED // Verification failed
+  EXPIRED // Certificate expired
+
+  @@schema("finance")
+}
+
+// ============================================================================
+// INDUSTRY CLASSIFICATION
+// Stores business activity/product classification codes
+// ============================================================================
+
+model IndustryClassification {
+  id String @id @default(uuid())
+
+  // Link to TaxIdentity (business registration)
+  taxIdentityId String
+  TaxIdentity   TaxIdentity @relation(fields: [taxIdentityId], references: [id], onDelete: Cascade)
+
+  // Classification details
+  scheme      IndustryClassificationScheme
+  code        String // e.g., "62010" for MSIC software publishing
+  description String? // Looked up from authority, not hardcoded
+  version     String? // Scheme version/revision
+  parentCode  String? // Parent code for hierarchy
+  level       Int? // Level in hierarchy
+
+  // Priority
+  isPrimary Boolean @default(false) // Primary business activity
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([taxIdentityId, scheme, code])
+  @@index([taxIdentityId])
+  @@index([scheme, code])
+  @@schema("finance")
+}
+
+// ============================================================================
+// TAX EXEMPTION CERTIFICATE
+// Stores exemption certificates uploaded/configured by users
+// ============================================================================
+
+model TaxExemptionCertificate {
+  id String @id @default(uuid())
+
+  // Link to TaxIdentity
+  taxIdentityId String
+  TaxIdentity   TaxIdentity @relation(fields: [taxIdentityId], references: [id], onDelete: Cascade)
+
+  // Certificate details
+  certificateId    String // Certificate ID/number
+  exemptionType    String // TaxExemptionReasonCode
+  issuingAuthority String
+  countryCode      String // ISO 3166-1 alpha-2
+
+  // Validity
+  issueDate  DateTime
+  expiryDate DateTime? // null = permanent
+
+  // Tax types covered (e.g., ["VAT", "SST"])
+  coveredTaxTypes     String[] @default([])
+  exemptionPercentage Decimal  @default(100) @db.Decimal(5, 2) // 100 = full exemption
+
+  // Document storage
+  documentUrl  String? @db.Text
+  documentHash String? // For integrity verification
+
+  // Verification
+  verificationStatus TaxExemptionVerificationStatus @default(PENDING)
+  verifiedBy         String?
+  verifiedAt         DateTime?
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taxIdentityId])
+  @@index([expiryDate])
+  @@index([verificationStatus])
+  @@schema("finance")
+}
+
+// ============================================================================
+// E-INVOICE SETTINGS
+// Agency/SubAccount-level e-invoice configuration
+// ============================================================================
+
+model EInvoiceSettings {
+  id String @id @default(uuid())
+
+  // Tenant scoping (one per agency/subaccount)
+  agencyId     String? @unique
+  subAccountId String? @unique
+
+  // E-Invoice format preference
+  defaultFormat EInvoiceFormat @default(UBL_2_1)
+
+  // Country-specific settings
+  countryCode String // Primary country for e-Invoice
+
+  // API credentials for tax authority (encrypted)
+  authorityClientId     String? @db.Text
+  authorityClientSecret String? @db.Text
+  authorityEndpoint     String? // API endpoint URL
+
+  // Default GL accounts for e-Invoice transactions
+  defaultRevenueAccountId    String?
+  defaultReceivableAccountId String?
+  defaultTaxOutputAccountId  String?
+
+  // Numbering
+  invoicePrefix     String @default("INV")
+  invoiceNextSeq    Int    @default(1)
+  creditNotePrefix  String @default("CN")
+  creditNoteNextSeq Int    @default(1)
+
+  // Auto-submission settings
+  autoSubmit      Boolean @default(false)
+  autoSubmitDelay Int     @default(0) // Minutes before auto-submit
+
+  // Digital signature
+  signInvoices   Boolean @default(false)
+  signingCertUrl String? @db.Text
+
+  // Metadata
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations to GL accounts
+  DefaultRevenueAccount    ChartOfAccount? @relation("EInvoiceRevenueAccount", fields: [defaultRevenueAccountId], references: [id], onDelete: SetNull)
+  DefaultReceivableAccount ChartOfAccount? @relation("EInvoiceReceivableAccount", fields: [defaultReceivableAccountId], references: [id], onDelete: SetNull)
+  DefaultTaxOutputAccount  ChartOfAccount? @relation("EInvoiceTaxOutputAccount", fields: [defaultTaxOutputAccountId], references: [id], onDelete: SetNull)
+
+  EInvoices EInvoice[]
+
+  @@schema("finance")
+}
+
+// ============================================================================
+// E-INVOICE
+// Main e-invoice document matching UBL 2.1 / EN16931 structure
+// ============================================================================
+
+model EInvoice {
+  id String @id @default(uuid())
+
+  // Settings reference
+  settingsId String
+  Settings   EInvoiceSettings @relation(fields: [settingsId], references: [id], onDelete: Restrict)
+
+  // Document identification
+  invoiceNumber String // Unique within settings context
+  documentType  EInvoiceDocType @default(INVOICE)
+  format        EInvoiceFormat
+
+  // Dates (ISO 8601)
+  issueDate DateTime
+  dueDate   DateTime?
+
+  // Currency
+  documentCurrency String  @default("MYR") // ISO 4217
+  taxCurrency      String? // If different from document currency
+
+  // Status
+  status EInvoiceStatus @default(DRAFT)
+
+  // References
+  buyerReference    String? // PO number, etc.
+  orderReference    String?
+  contractReference String?
+
+  // Period (for recurring/subscription invoices)
+  periodStart DateTime?
+  periodEnd   DateTime?
+
+  // Supplier party (from issuer's TaxIdentity)
+  supplierTaxIdentityId String?
+
+  // Customer party
+  customerId      String? // Reference to Customer model
+  customerName    String // Denormalized for display
+  customerTaxId   String? // Customer's tax ID
+  customerAddress Json? // EInvoiceAddress as JSON
+  customerContact Json? // EInvoiceContact as JSON
+
+  // Monetary totals (in smallest currency unit)
+  lineExtensionAmount   Decimal  @db.Decimal(15, 2) // Sum of line amounts before tax
+  taxExclusiveAmount    Decimal  @db.Decimal(15, 2) // Total before tax
+  taxInclusiveAmount    Decimal  @db.Decimal(15, 2) // Total including tax
+  allowanceTotalAmount  Decimal? @db.Decimal(15, 2) // Total discounts
+  chargeTotalAmount     Decimal? @db.Decimal(15, 2) // Total charges
+  prepaidAmount         Decimal? @db.Decimal(15, 2) // Already paid
+  payableRoundingAmount Decimal? @db.Decimal(15, 4) // Rounding adjustment
+  payableAmount         Decimal  @db.Decimal(15, 2) // Final amount due
+
+  // Tax breakdown (as JSON array of tax subtotals)
+  taxBreakdown Json? // Array of { taxCategoryCode, taxRate, taxableAmount, taxAmount }
+
+  // Payment
+  paymentMeansCode String? // UNCL4461 code
+  paymentTermsNote String?
+  bankAccountId    String?
+  bankAccountName  String?
+
+  // Document-level allowances/charges (as JSON)
+  allowanceCharges Json? // Array of EInvoiceAllowanceCharge
+
+  // Delivery
+  deliveryDate    DateTime?
+  deliveryAddress Json? // EInvoiceAddress as JSON
+
+  // Notes
+  notes String? @db.Text
+
+  // Submission tracking
+  submittedAt         DateTime?
+  authorityResponseId String? // Tax authority's response/receipt ID
+  validationId        String? // LHDN UUID, ZATCA ID, etc.
+  qrCodeData          String?   @db.Text // For printed QR code
+
+  // Digital signature
+  signedAt        DateTime?
+  signatureValue  String?   @db.Text
+  certificateInfo String?   @db.Text
+
+  // Validation errors (if rejected)
+  validationErrors Json? // Array of { code, message, path }
+
+  // Full XML/JSON document (for compliance record-keeping)
+  rawDocument       String? @db.Text
+  rawDocumentFormat String? // "xml" or "json"
+
+  // GL Integration - link to JournalEntry when posted
+  journalEntryId String?
+  JournalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+
+  // Audit
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+
+  // Relations
+  Customer            Customer?            @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  SupplierTaxIdentity TaxIdentity?         @relation(fields: [supplierTaxIdentityId], references: [id], onDelete: SetNull)
+  LineItems           EInvoiceLineItem[]
+  Submissions         EInvoiceSubmission[]
+
+  @@unique([settingsId, invoiceNumber])
+  @@index([settingsId])
+  @@index([status])
+  @@index([customerId])
+  @@index([issueDate])
+  @@index([journalEntryId])
+  @@schema("finance")
+}
+
+// ============================================================================
+// E-INVOICE LINE ITEM
+// Individual line items on an e-invoice
+// ============================================================================
+
+model EInvoiceLineItem {
+  id String @id @default(uuid())
+
+  // Parent invoice
+  invoiceId String
+  Invoice   EInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  // Line identification
+  lineNumber Int // Sequential line number (1-based)
+
+  // Quantity and unit
+  quantity Decimal @db.Decimal(15, 4)
+  unitCode String  @default("C62") // UN/ECE rec 20
+
+  // Item details
+  itemName           String
+  itemDescription    String?
+  sellersItemId      String? // Internal SKU/code
+  standardItemId     String? // GTIN/EAN/UPC
+  standardItemScheme String? // "GTIN", "EAN", etc.
+
+  // Classification
+  classificationCode   String? // Industry classification code (MSIC, UNSPSC, etc.)
+  classificationScheme String? // IndustryClassificationScheme value
+
+  // Pricing (in smallest currency unit, normalized to document currency)
+  unitPrice         Decimal  @db.Decimal(15, 4)
+  priceBaseQuantity Decimal? @default(1) @db.Decimal(15, 4)
+
+  // Calculated amounts
+  lineExtensionAmount Decimal @db.Decimal(15, 2) // quantity × unitPrice
+
+  // Tax
+  taxCategoryCode String  @default("S") // UNCL5305: S, Z, E, AE, etc.
+  taxRate         Decimal @default(0) @db.Decimal(5, 2) // Percentage
+  taxScheme       String  @default("SST") // VAT, GST, SST, etc.
+  taxAmount       Decimal @db.Decimal(15, 2) // Calculated tax
+
+  // Exemption (if applicable)
+  exemptionReasonCode String?
+  exemptionReason     String?
+
+  // Line-level allowances/charges (as JSON)
+  allowanceCharges Json? // Array of EInvoiceAllowanceCharge
+
+  // Reference to order line
+  orderLineReference String?
+
+  // GL account for revenue (if different from default)
+  revenueAccountId String?
+  RevenueAccount   ChartOfAccount? @relation(fields: [revenueAccountId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([invoiceId])
+  @@index([classificationCode])
+  @@schema("finance")
+}
+
+// ============================================================================
+// E-INVOICE SUBMISSION
+// Tracks submission attempts to tax authorities
+// ============================================================================
+
+model EInvoiceSubmission {
+  id String @id @default(uuid())
+
+  invoiceId String
+  Invoice   EInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  // Submission details
+  submittedAt DateTime       @default(now())
+  format      EInvoiceFormat
+  endpoint    String // API endpoint used
+
+  // Request/Response
+  requestPayload  String? @db.Text // Sent XML/JSON
+  responseStatus  Int? // HTTP status code
+  responsePayload String? @db.Text // Received response
+
+  // Result
+  success      Boolean @default(false)
+  authorityId  String? // Authority's document ID
+  validationId String? // Validation/UUID from authority
+  errorCode    String?
+  errorMessage String? @db.Text
+
+  // Retry tracking
+  attemptNumber Int       @default(1)
+  willRetry     Boolean   @default(false)
+  nextRetryAt   DateTime?
+
+  @@index([invoiceId])
+  @@index([submittedAt])
+  @@schema("finance")
+}
+
+// ============================================================================
+// DISCOUNT
+// Coupon/promo code configuration for subscriptions and invoices
+// ============================================================================
+
+model Discount {
+  id String @id @default(uuid())
+
+  // Tenant scoping
+  agencyId String
+
+  // Identification
+  code        String // Coupon/promo code
+  name        String // Display name
+  description String?
+
+  // Type and value
+  discountType DiscountType
+  percentOff   Decimal?     @db.Decimal(5, 2) // For PERCENTAGE type (0-100)
+  amountOff    Decimal?     @db.Decimal(15, 2) // For FIXED_AMOUNT type
+  currency     String?      @default("MYR") // Currency for fixed amount
+
+  // Scope
+  scope DiscountScope @default(INVOICE)
+
+  // Duration
+  duration         DiscountDuration @default(ONCE)
+  durationInMonths Int? // For REPEATING duration
+
+  // Limits
+  maxRedemptions Int? // null = unlimited
+  timesRedeemed  Int  @default(0)
+
+  // Validity period
+  validFrom DateTime  @default(now())
+  expiresAt DateTime? // null = no expiry
+
+  // Conditions
+  minimumAmount      Decimal? @db.Decimal(15, 2) // Minimum purchase to qualify
+  applicablePlans    String[] @default([]) // Plan keys (empty = all)
+  applicableProducts String[] @default([]) // Product IDs (empty = all)
+
+  // Stripe integration
+  stripeCouponId  String?
+  stripePromoCode String?
+
+  // Status
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  AppliedDiscounts AppliedDiscount[]
+
+  @@unique([agencyId, code])
+  @@index([agencyId])
+  @@index([code])
+  @@index([isActive])
+  @@schema("finance")
+}
+
+// ============================================================================
+// APPLIED DISCOUNT
+// Junction table for discounts applied to invoices/subscriptions
+// ============================================================================
+
+model AppliedDiscount {
+  id String @id @default(uuid())
+
+  discountId String
+  Discount   Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+
+  // What it was applied to
+  invoiceId      String? // EInvoice ID
+  subscriptionId String? // Subscription ID
+
+  // Calculated values (in smallest currency unit)
+  originalAmount Decimal @db.Decimal(15, 2)
+  discountAmount Decimal @db.Decimal(15, 2)
+  finalAmount    Decimal @db.Decimal(15, 2)
+
+  // Source
+  source String @default("manual") // "coupon", "promo_code", "automatic", "manual"
+
+  appliedAt   DateTime @default(now())
+  appliedById String?
+
+  @@index([discountId])
+  @@index([invoiceId])
+  @@index([subscriptionId])
+  @@schema("finance")
 }

@@ -20,18 +20,11 @@ import {
 } from '@/components/ui/popover'
 import { CalendarIcon, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-type Period = {
-  id: string
-  name: string
-  startDate: Date
-  endDate: Date
-  status: string
-}
+import type { FiscalPeriod } from '@/types/finance'
 
 type Props = {
   reportType: string
-  periods: Period[]
+  periods: FiscalPeriod[]
   selectedPeriodId?: string
   selectedAsOfDate?: string
   selectedFromDate?: string
@@ -39,7 +32,7 @@ type Props = {
   basePath: string
 }
 
-export function ReportFilters({
+ const ReportFilters =  ({
   reportType,
   periods,
   selectedPeriodId,
@@ -47,7 +40,7 @@ export function ReportFilters({
   selectedFromDate,
   selectedToDate,
   basePath,
-}: Props) {
+}: Props) => {
   const router = useRouter()
   const [filterType, setFilterType] = useState<'period' | 'date' | 'range'>(
     selectedPeriodId ? 'period' : selectedFromDate ? 'range' : 'date'
@@ -212,3 +205,4 @@ export function ReportFilters({
     </div>
   )
 }
+export { ReportFilters }
