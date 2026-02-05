@@ -152,3 +152,16 @@ export type StripeCustomerProps = Stripe.CustomerCreateParams
 export type StripeProductProps = Stripe.Product
 
 export type StripePriceProps = Stripe.Price
+
+// ============================================================================
+// Re-export Catalog Types from types/billing.ts (SSoT)
+// ============================================================================
+
+export type {
+  CatalogProduct,
+  CatalogPrice,
+  PlanDefinition,
+  AddonDefinition,
+  AddonClassificationType as AddonType,
+  AddonCategoryType as AddonCategory,
+} from '@/types/billing'

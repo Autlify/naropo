@@ -4,15 +4,7 @@ import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { grantRecurringCreditsForAgency } from '@/lib/features/core/billing/credits/grant'
 
-function assertJobSecret(req: NextRequest) {
-  const configured = process.env.JOBS_SECRET
-  if (!configured) return
-
-  const provided = req.headers.get('x-job-secret') || new URL(req.url).searchParams.get('secret')
-  if (provided !== configured) {
-    throw new Error('UNAUTHORIZED')
-  }
-}
+import { assertJobSecret, getSystemJobActor } from '@/lib/features/system/job-auth'
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,6 +12,10 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, reason: 'UNAUTHORIZED' }, { status: 401 })
   }
+
+  // Ensure system actor exists (for audit attribution in downstream logic).
+  // Even if a particular flow doesn’t currently write audit logs, this guarantees a stable actor identity.
+  const actor = await getSystemJobActor()
 
   const now = new Date()
 
@@ -37,7 +33,7 @@ export async function POST(req: NextRequest) {
     processed += 1
   }
 
-  return NextResponse.json({ ok: true, processed })
+  return NextResponse.json({ ok: true, processed, actor })
 }
 
 // Allow GET for quick manual runs.

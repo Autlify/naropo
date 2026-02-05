@@ -1,7 +1,7 @@
 import 'server-only'
 
 import type { EffectiveEntitlement } from '@/lib/features/core/billing/entitlements/types'
-import type { ActionKey, FeatureKey, SubModuleKey } from '@/lib/registry'
+import type { FeatureKey, SubModuleKey } from '@/lib/registry'
 
 export type PermissionEntitlementGate = {
   /** Permission key prefix.
@@ -10,11 +10,18 @@ export type PermissionEntitlementGate = {
    * - Prefer 3 segments (module.submodule.resource.)
    * - Otherwise 2 segments (module.submodule.)
    */
-  prefix: `${SubModuleKey}.` | `${SubModuleKey}.${string}.`
+  prefix: `${SubModuleKey | FeatureKey}.`
   /** At least one of these entitlements must be enabled */
   requireAny?: FeatureKey[]
   /** All of these entitlements must be enabled */
   requireAll?: FeatureKey[]
+  /**
+   * Any-of groups where each group is an all-of requirement.
+   * Useful when access can be satisfied via different bundles.
+   *
+   * Example: (A && B) || (C && D)
+   */
+  requireAnyAll?: FeatureKey[][]
 }
 
 /**
@@ -23,23 +30,28 @@ export type PermissionEntitlementGate = {
  */
 export const PERMISSION_ENTITLEMENT_GATES: PermissionEntitlementGate[] = [
   // ─────────────────────────────────────────────────────────
-  // CORE
+  // CORE AGENCY - Require a subscription to Agency module
   // ─────────────────────────────────────────────────────────
-  { prefix: 'core.agency.subaccounts.', requireAny: ['core.agency.subaccounts'] },
-  { prefix: 'core.agency.team_member.', requireAny: ['core.agency.team_member'] },
+  // Agency account management entitlements
+  { prefix: 'core.agency.', requireAny: ['core.agency.account'] },
+  { prefix: 'core.billing.', requireAll: ['core.agency.account'] },
 
-  // Subaccount namespaces depend on Agency subaccounts entitlement
-  { prefix: 'core.subaccount.account.', requireAny: ['core.agency.subaccounts'] },
+  // IAM / AuthZ management: allow if either Agency or Subaccount team-member bundle is available.
   {
-    prefix: 'core.subaccount.team_member.',
-    requireAll: ['core.agency.subaccounts', 'core.agency.team_member'],
+    prefix: 'iam.authZ.',
+    requireAnyAll: [
+      ['core.agency.account'],
+      ['core.subaccount.account'],
+    ],
   },
+
+  // CORE SUBACCOUNT - Require core.agency.subaccounts to create (agency level), core.subaccount.account to access/manage (subaccount level)
+  { prefix: 'core.subaccount.', requireAny: ['core.agency.subaccounts', 'core.subaccount.account'] },
 
   // ─────────────────────────────────────────────────────────
   // APPS
   // ─────────────────────────────────────────────────────────
-  { prefix: 'core.apps.api_keys.', requireAny: ['core.apps.api_keys'] },
-  { prefix: 'core.apps.webhooks.', requireAny: ['core.apps.webhooks'] },
+  { prefix: 'core.apps.', requireAny: ['core.apps.api_keys', 'core.apps.app', 'core.apps.webhooks'] },
 
   // ─────────────────────────────────────────────────────────
   // BILLING (feature-gated parts)
@@ -97,6 +109,32 @@ export const PERMISSION_ENTITLEMENT_GATES: PermissionEntitlementGate[] = [
   { prefix: 'co.budgets.', requireAny: ['co.budgets.planning'] },
 ]
 
+function validatePermissionEntitlementGates(gates: PermissionEntitlementGate[]): void {
+  const seen = new Map<string, number>()
+  for (const gate of gates) {
+    const prev = seen.get(gate.prefix)
+    if (prev !== undefined) {
+      throw new Error(
+        `[permission-entitlements] Duplicate gate prefix: "${gate.prefix}" (indexes ${prev} and ${gates.indexOf(
+          gate
+        )})`
+      )
+    }
+    seen.set(gate.prefix, gates.indexOf(gate))
+
+    const hasAny = !!gate.requireAny?.length
+    const hasAll = !!gate.requireAll?.length
+    const hasAnyAll = !!gate.requireAnyAll?.length
+    if (!hasAny && !hasAll && !hasAnyAll) {
+      throw new Error(`[permission-entitlements] Gate for "${gate.prefix}" has no requirements`)
+    }
+  }
+}
+
+if (process.env.NODE_ENV !== 'production') {
+  validatePermissionEntitlementGates(PERMISSION_ENTITLEMENT_GATES)
+}
+
 function isPositiveQuantity(ent: EffectiveEntitlement): boolean {
   if (!ent.isEnabled) return false
   if (ent.isUnlimited) return true
@@ -114,6 +152,28 @@ function isEntitlementSatisfied(ent: EffectiveEntitlement | undefined): boolean 
   if (!ent) return false
   if (ent.valueType === 'BOOLEAN') return ent.isEnabled
   return isPositiveQuantity(ent)
+}
+
+function isGateSatisfied(
+  gate: PermissionEntitlementGate,
+  entitlements: Record<string, EffectiveEntitlement>
+): boolean {
+  if (gate.requireAll?.length) {
+    for (const k of gate.requireAll) {
+      if (!isEntitlementSatisfied(entitlements[k])) return false
+    }
+  }
+
+  if (gate.requireAnyAll?.length) {
+    const ok = gate.requireAnyAll.some((group) => group.every((k) => isEntitlementSatisfied(entitlements[k])))
+    if (!ok) return false
+  }
+
+  if (gate.requireAny?.length) {
+    return gate.requireAny.some((k) => isEntitlementSatisfied(entitlements[k]))
+  }
+
+  return true
 }
 
 /** Find the most specific gate (longest prefix) that matches a permission key */
@@ -135,19 +195,9 @@ export function isPermissionAssignable(
   // Fail-closed for paid namespaces: if there's no matching gate, do NOT allow assignment.
   // This prevents leakage when new FI permissions are added but not yet mapped.
   if (!gate) {
-    if (permissionKey.startsWith('fi.')) return false
+    if (permissionKey.startsWith('fi.') || permissionKey.startsWith('co.')) return false
     return true
   }
 
-  if (gate.requireAll?.length) {
-    for (const k of gate.requireAll) {
-      if (!isEntitlementSatisfied(entitlements[k])) return false
-    }
-  }
-
-  if (gate.requireAny?.length) {
-    return gate.requireAny.some((k) => isEntitlementSatisfied(entitlements[k]))
-  }
-
-  return true
+  return isGateSatisfied(gate, entitlements)
 }

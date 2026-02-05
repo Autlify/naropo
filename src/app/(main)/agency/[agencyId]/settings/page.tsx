@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Crown, CheckCircle, Lock, ArrowUpCircle } from 'lucide-react'
 import Link from 'next/link'
-import { pricingCards } from '@/lib/constants'
+import { getPricingCardByPriceId } from '@/lib/registry/plans/pricing-config'
 
 type Props = {
   params: Promise<{ agencyId: string }>
@@ -49,10 +49,10 @@ const SettingsPage = async ({ params }: Props) => {
   
   const isTrialing = subscription?.status === 'TRIALING'
   
-  // Get current plan details
-  const currentPlan = pricingCards.find(
-    (card) => card.priceId === subscription?.priceId
-  )
+  // Get current plan details from pricing-config SSoT
+  const currentPlan = subscription?.priceId 
+    ? getPricingCardByPriceId(subscription.priceId) 
+    : undefined
   
   const planTitle = currentPlan?.title || 'Starter'
   const isStarterPlan = planTitle === 'Starter'

@@ -59,52 +59,57 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
   if (!subaccountDetails) return
 
   if (subaccountDetails.connectAccountId) {
-    const response = await stripe.accounts.retrieve({
-      stripeAccount: subaccountDetails.connectAccountId,
-    })
-    currency = response.default_currency?.toUpperCase() || 'USD'
-    const checkoutSessions = await stripe.checkout.sessions.list(
-      { created: { gte: startDate, lte: endDate }, limit: 100 },
-      {
+    try {
+      const response = await stripe.accounts.retrieve({
         stripeAccount: subaccountDetails.connectAccountId,
-      }
-    )
-    sessions = checkoutSessions.data.map((session) => ({
-      ...session,
-      created: new Date(session.created).toLocaleDateString(),
-      amount_total: session.amount_total ? session.amount_total / 100 : 0,
-    }))
-
-    totalClosedSessions = checkoutSessions.data
-      .filter((session) => session.status === 'complete')
-      .map((session) => ({
-        ...session,
-        created: new Date(session.created).toLocaleDateString(),
-        amount_total: session.amount_total ? session.amount_total / 100 : 0,
-      }))
-
-    totalPendingSessions = checkoutSessions.data
-      .filter(
-        (session) => session.status === 'open' || session.status === 'expired'
+      })
+      currency = response.default_currency?.toUpperCase() || 'USD'
+      const checkoutSessions = await stripe.checkout.sessions.list(
+        { created: { gte: startDate, lte: endDate }, limit: 100 },
+        {
+          stripeAccount: subaccountDetails.connectAccountId,
+        }
       )
-      .map((session) => ({
+      sessions = checkoutSessions.data.map((session) => ({
         ...session,
         created: new Date(session.created).toLocaleDateString(),
         amount_total: session.amount_total ? session.amount_total / 100 : 0,
       }))
 
-    net = +totalClosedSessions
-      .reduce((total, session) => total + (session.amount_total || 0), 0)
-      .toFixed(2)
+      totalClosedSessions = checkoutSessions.data
+        .filter((session) => session.status === 'complete')
+        .map((session) => ({
+          ...session,
+          created: new Date(session.created).toLocaleDateString(),
+          amount_total: session.amount_total ? session.amount_total / 100 : 0,
+        }))
 
-    potentialIncome = +totalPendingSessions
-      .reduce((total, session) => total + (session.amount_total || 0), 0)
-      .toFixed(2)
+      totalPendingSessions = checkoutSessions.data
+        .filter(
+          (session) => session.status === 'open' || session.status === 'expired'
+        )
+        .map((session) => ({
+          ...session,
+          created: new Date(session.created).toLocaleDateString(),
+          amount_total: session.amount_total ? session.amount_total / 100 : 0,
+        }))
 
-    closingRate = +(
-      (totalClosedSessions.length / checkoutSessions.data.length) *
-      100
-    ).toFixed(2)
+      net = +totalClosedSessions
+        .reduce((total, session) => total + (session.amount_total || 0), 0)
+        .toFixed(2)
+
+      potentialIncome = +totalPendingSessions
+        .reduce((total, session) => total + (session.amount_total || 0), 0)
+        .toFixed(2)
+
+      const totalSessions = checkoutSessions.data.length
+      closingRate = totalSessions > 0
+        ? +(((totalClosedSessions.length / totalSessions) * 100).toFixed(2))
+        : 0
+    } catch (error) {
+      // Connected account no longer accessible - log and continue with defaults
+      console.error('Failed to fetch Stripe Connect account data:', error)
+    }
   }
 
   const funnels = await db.funnel.findMany({
@@ -147,8 +152,9 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
           </div>
         )}
         <div className="flex flex-col gap-4 pb-6">
-          <div className="flex gap-4 flex-col xl:!flex-row">
-            <Card className="flex-1 relative">
+          {/* Row 1: 4 evenly-sized cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch auto-rows-fr">
+            <Card className="relative h-full">
               <CardHeader>
                 <CardDescription>Income</CardDescription>
                 <CardTitle className="text-4xl">
@@ -163,7 +169,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
               </CardContent>
               <DollarSign className="absolute right-4 top-4 text-muted-foreground" />
             </Card>
-            <Card className="flex-1 relative">
+            <Card className="relative h-full">
               <CardHeader>
                 <CardDescription>Potential Income</CardDescription>
                 <CardTitle className="text-4xl">
@@ -180,9 +186,9 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
               </CardContent>
               <Contact2 className="absolute right-4 top-4 text-muted-foreground" />
             </Card>
-            <PipelineValue subaccountId={subaccountId} />
+            <PipelineValue subaccountId={subaccountId} className="h-full" />
 
-            <Card className="xl:w-fit">
+            <Card className="h-full">
               <CardHeader>
                 <CardDescription>Conversions</CardDescription>
                 <CircleProgress
@@ -214,21 +220,24 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
             </Card>
           </div>
 
-          <div className="flex gap-4 flex-col xl:!flex-row">
-            <Card className="relative">
+          {/* Row 2: 1/3 split */}
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 flex-grow items-stretch">
+            <Card className="col-span-1 flex flex-col h-full">
               <CardHeader>
                 <CardDescription>Funnel Performance</CardDescription>
               </CardHeader>
               <CardContent className=" text-sm text-muted-foreground flex flex-col gap-12 justify-between ">
                 <SubaccountFunnelChart data={funnelPerformanceMetrics} />
-                <div className="lg:w-[150px]">
+                <div className="flex flex-col">
                   Total page visits across all funnels. Hover over to get more
                   details on funnel page performance.
                 </div>
               </CardContent>
               <Contact2 className="absolute right-4 top-4 text-muted-foreground" />
             </Card>
-            <Card className="p-4 flex-1">
+
+            
+            <Card className="col-span-3 h-full">
               <CardHeader>
                 <CardTitle>Checkout Activity</CardTitle>
               </CardHeader>
@@ -243,7 +252,8 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
               />
             </Card>
           </div>
-          <div className="flex gap-4 xl:!flex-row flex-col">
+          
+          <div className="grid grid-cols-1 gap-4 flex-grow">
             <Card className="p-4 flex-1 h-[450px] overflow-scroll relative">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

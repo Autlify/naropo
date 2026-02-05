@@ -50,10 +50,11 @@ const Page = async ({
     if (plan && canManageBilling) return redirect(`/agency/${agencyId}/billing?plan=${plan}`)
     if (plan && !canManageBilling) return redirect(`/site/pricing/checkout/${plan}`)
 
-    if (state) {
+    // Handle OAuth callback - use stateAgencyId from state, not landingTarget
+    if (state && code) {
       const [statePath, stateAgencyId] = state.split('___')
-      if (stateAgencyId && stateAgencyId === agencyId) {
-        return redirect(`/agency/${stateAgencyId}/${statePath}?code=${code ?? ''}`)
+      if (stateAgencyId) {
+        return redirect(`/agency/${stateAgencyId}/${statePath}?code=${code}`)
       }
     }
 

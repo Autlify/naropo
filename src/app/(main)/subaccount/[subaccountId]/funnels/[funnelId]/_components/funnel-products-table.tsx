@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table'
 import Stripe from 'stripe'
 import Image from 'next/image'
+import { ImageIcon } from 'lucide-react'
 import {
   saveActivityLogsNotification,
   updateFunnelProducts,
@@ -103,12 +104,19 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
                 />
               </TableCell>
               <TableCell>
-                <Image
-                  alt="product Image"
-                  height={60}
-                  width={60}
-                  src={product.images[0]}
-                />
+                {product.images?.[0] ? (
+                  <Image
+                    alt="Product image"
+                    height={60}
+                    width={60}
+                    src={product.images[0]}
+                    className="rounded-md border bg-muted/20 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-[60px] w-[60px] items-center justify-center rounded-md border bg-muted/20">
+                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
               </TableCell>
               <TableCell>{product.name}</TableCell>
               <TableCell>

@@ -608,7 +608,7 @@ function formatCategory(key: string): string {
     'fi.accounts_receivable': 'FI - Accounts Receivable',
     'fi.accounts_payable': 'FI - Accounts Payable',
     'fi.bank_ledger': 'FI - Bank Ledger',
-    'fi.controlling': 'FI - Controlling',
+    'co.controlling': 'FI - Controlling',
     'fi.advanced_reporting': 'FI - Advanced Reporting',
     co: 'CO - Controlling',
     'co.cost_centers': 'CO - Cost Centers',

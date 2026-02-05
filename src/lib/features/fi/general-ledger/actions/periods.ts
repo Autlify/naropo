@@ -16,6 +16,8 @@ import {
   type UpdatePeriodInput,
 } from '@/lib/schemas/fi/general-ledger/period';
 import { logGLAudit } from './audit';
+import { emitEvent } from './fanout';
+import { EVENT_KEYS } from '@/lib/registry/events/trigger';
 import { PeriodStatus } from '@/generated/prisma/client';
 
 type ActionResult<T> = {
@@ -380,6 +382,18 @@ export const openPeriod = async (periodId: string): Promise<ActionResult<any>> =
       description: `Period ${period.fiscalYear}-${period.fiscalPeriod} opened`,
     });
 
+    // Emit period opened event
+    await emitEvent(
+      'fi.general_ledger',
+      EVENT_KEYS.fi.general_ledger.periods.opened,
+      { type: 'FinancialPeriod', id: periodId },
+      { 
+        amount: 0,
+        reference: `${period.fiscalYear}-${period.fiscalPeriod}`,
+        description: period.name || 'Period opened',
+      }
+    );
+
     const basePath = context.subAccountId
       ? `/subaccount/${context.subAccountId}/fi/general-ledger/periods`
       : `/agency/${context.agencyId}/fi/general-ledger/periods`;
@@ -524,6 +538,19 @@ export const closePeriod = async (periodId: string): Promise<ActionResult<any>> 
       description: `Period ${period.fiscalYear}-${period.fiscalPeriod} closed with carry forward`,
     });
 
+    // Emit period closed event
+    await emitEvent(
+      'fi.general_ledger',
+      EVENT_KEYS.fi.general_ledger.periods.closed,
+      { type: 'FinancialPeriod', id: periodId },
+      { 
+        amount: 0,
+        reference: `${period.fiscalYear}-${period.fiscalPeriod}`,
+        description: period.name || 'Period closed',
+        metadata: { carryForwardApplied: !!nextPeriod },
+      }
+    );
+
     const basePath = context.subAccountId
       ? `/subaccount/${context.subAccountId}/fi/general-ledger/periods`
       : `/agency/${context.agencyId}/fi/general-ledger/periods`;
@@ -594,6 +621,18 @@ export const lockPeriod = async (periodId: string, reason: string): Promise<Acti
       description: `Period ${period.fiscalYear}-${period.fiscalPeriod} locked`,
       reason,
     });
+
+    // Emit period locked event
+    await emitEvent(
+      'fi.general_ledger',
+      EVENT_KEYS.fi.general_ledger.periods.locked,
+      { type: 'FinancialPeriod', id: periodId },
+      { 
+        amount: 0,
+        reference: `${period.fiscalYear}-${period.fiscalPeriod}`,
+        description: reason || 'Period locked',
+      }
+    );
 
     const basePath = context.subAccountId
       ? `/subaccount/${context.subAccountId}/fi/general-ledger/periods`

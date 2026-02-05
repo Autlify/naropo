@@ -58,4 +58,5 @@ export type ResolveEntitlementsArgs = {
   // Optional override: if you already know the planId (Stripe recurring priceId)
   planId?: Plan | string | null
   now?: Date | null
+  inheritAgencyEntitlements?: boolean | null
 }

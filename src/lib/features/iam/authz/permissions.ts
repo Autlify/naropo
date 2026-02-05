@@ -158,7 +158,7 @@ export const getEntitledPermissions = async (
 
   const scopePrefixes =
     scope === 'AGENCY'
-      ? ['core.agency.', 'core.billing.', 'core.apps.', 'core.features.', 'crm.', 'fi.']
+      ? ['core.agency.', 'core.billing.', 'core.apps.', 'core.experimental.', 'crm.', 'fi.']
       : ['core.subaccount.', 'crm.', 'fi.']
 
   const seeds = getPermissionCatalogSeeds()

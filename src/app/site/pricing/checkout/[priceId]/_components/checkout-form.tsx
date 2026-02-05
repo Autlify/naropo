@@ -471,6 +471,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                 tinNumber: data.tinNumber || '',
                 source: 'checkout',
               },
+              userId: user.id, // Inline user customerId update (replaces /api/user/update-customer)
             }),
           })
 
@@ -479,17 +480,10 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
             throw new Error(error.error || 'Failed to create customer')
           }
 
-          const customerData: { customerId: string } = await customerResponse.json()
+          const customerData: { customerId: string; userUpdated?: boolean } = await customerResponse.json()
           finalCustomerId = customerData.customerId
           setCustomerId(finalCustomerId)
-          console.log('\u2705 New customer created:', finalCustomerId)
-
-          // Update user with customerId
-          await fetch('/api/user/update-customer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, customerId: finalCustomerId }),
-          })
+          console.log('\u2705 New customer created:', finalCustomerId, 'userUpdated:', customerData.userUpdated)
         }
       }
 
@@ -1251,7 +1245,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                     setSavedPaymentMethodId(null)
                                     console.log('🔄 Resetting payment method')
                                   }}
-                                  className="flex-shrink-0 border-success text-success-foreground hover:bg-success/10 transition-colors"
+                                  className="flex-shrink-0 bg-gradient-to-br from-green-600 via-emerald-500 to-emerald-500 text-white transition-colors"
                                 >
                                   Change Card
                                 </Button>

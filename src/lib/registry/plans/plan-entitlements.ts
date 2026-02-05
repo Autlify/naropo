@@ -2,10 +2,10 @@
  * @abstraction Plan Entitlements Registry
  * @description Static plan entitlements mapping. These get seeded to PlanFeature table.
  * 
- * Plan Structure (matches pricing cards):
- * - Starter (price_1SpVOXJglUPlULDQt9Ejhunb): RM 79/mo - 3 sub-accounts, 2 team members, unlimited pipelines
- * - Basic (price_1SpVOYJglUPlULDQhsRkA5YV): RM 149/mo - Unlimited sub-accounts & team members
- * - Advanced (price_1SpVOZJglUPlULDQoFq3iPES): RM 399/mo - Everything + Rebilling + 24/7 support
+ * Plan Structure (matches pricing-config.ts seeded values):
+ * - Starter (price_1SwgiBJglUPlULDQpwOoy3zQ): RM 79/mo - 3 sub-accounts, 2 team members, unlimited pipelines
+ * - Basic (price_1SwgiCJglUPlULDQ9XByIzXp): RM 199/mo - Unlimited sub-accounts & team members
+ * - Advanced (price_1SwgiDJglUPlULDQ0LqXQpip): RM 399/mo - Everything + Rebilling + 24/7 support
  * 
  * @namespace Autlify.Lib.Registry.Plans.PlanEntitlements
  * @module REGISTRY
@@ -16,39 +16,19 @@
 import type { LimitEnforcement, OverageMode } from '@/generated/prisma/client'
 import type { FeatureKey } from '@/lib/registry/keys/features'
 
-/** Plan IDs (Stripe Price IDs) */
-export const PLAN_IDS = {
-  STARTER: 'price_1SpVOXJglUPlULDQt9Ejhunb',
-  BASIC: 'price_1SpVOYJglUPlULDQhsRkA5YV',
-  ADVANCED: 'price_1SpVOZJglUPlULDQoFq3iPES',
+// ============================================================================
+// PRICE_IDS - IMPORTED FROM pricing-config.ts (SSoT)
+// ============================================================================
+// Re-export PRICE_IDS from pricing-config.ts for backward compatibility
+// The SSoT for Stripe price IDs is @/lib/registry/plans/pricing-config.ts
+import type { PriceKey, PlanKey, AddonKey } from '@/lib/registry/plans/pricing-config'
 
-  // Add-ons
-  PRIORITY_SUPPORT: 'price_1SpVObJglUPlULDQRfhLJNEo',
-
-  // TODO: Replace with actual Stripe price ID when ready
-  FI_GL: 'price_fi_gl_placeholder', // General Ledger
-  FI_AR: 'price_fi_ar_placeholder', // Accounts Receivable
-  FI_AP: 'price_fi_ap_placeholder', // Accounts Payable
-  FI_BL: 'price_fi_bl_placeholder', // Bank Ledgers
-  FI_FS: 'price_fi_fs_placeholder', // Financial Statements aka Advanced Reports
-
-  // CO - Controlling Add-ons (separate module)
-  CO_CCA: 'price_co_cca_placeholder', // Cost Center Accounting
-  CO_PCA: 'price_co_pca_placeholder', // Profit Center Accounting
-  CO_PA: 'price_co_pa_placeholder', // Profitability Analysis
-  CO_BUDGET: 'price_co_budget_placeholder', // Budgeting
-
-  // MM - Materials Management (future)
-  // MM_PUR: 'price_mm_pur_placeholder', // Purchasing
-  // MM_IM: 'price_mm_im_placeholder', // Inventory Management
-  // MM_IV: 'price_mm_iv_placeholder', // Invoice Verification
-} as const
-
-export type PlanId = typeof PLAN_IDS[keyof typeof PLAN_IDS]
+// Import for local use in this file
+import { PRICING_CONFIG, PRICE_IDS } from '@/lib/registry/plans/pricing-config'
 
 /** Plan entitlement seed for database seeding */
 export type PlanEntitlementSeed = {
-  planId: typeof PLAN_IDS[keyof typeof PLAN_IDS] // Stripe recurring priceId
+  planId: typeof PRICE_IDS[PriceKey | PlanKey | AddonKey]
   featureKey: FeatureKey
   isEnabled?: boolean
   isUnlimited?: boolean
@@ -66,80 +46,99 @@ export type PlanEntitlementSeed = {
 }
 
 /**
- * Master plan entitlements configuration.
- * Use this to seed the PlanFeature table.
+ * @namespace PlanEntitlements
+ * @description Static plan entitlements mapping.
+ * @module REGISTRY
+ * @author Autlify Team 
  */
 export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   // ─────────────────────────────────────────────────────────
   // STARTER PLAN (RM 79/mo)
   // ─────────────────────────────────────────────────────────
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
+    featureKey: 'core.agency.account',
+    isEnabled: true,
+  },
+  {
+    planId: PRICE_IDS.STARTER,
+    featureKey: 'core.billing.account',
+    isEnabled: true,
+  },
+  {
+    planId: PRICE_IDS.STARTER,
+    featureKey: 'iam.authZ.roles',
+    isEnabled: true,
+    maxInt: 2,
+    enforcement: 'HARD',
+  },
+  {
+    planId: PRICE_IDS.STARTER,
     featureKey: 'core.agency.subaccounts',
     isEnabled: true,
     maxInt: 3,
     enforcement: 'HARD',
   },
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
     featureKey: 'core.agency.team_member',
     isEnabled: true,
     maxInt: 2,
     enforcement: 'HARD',
   },
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
     featureKey: 'core.agency.storage',
     isEnabled: true,
     maxDec: '5.0', // 5 GB
     enforcement: 'SOFT',
   },
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
     featureKey: 'crm.funnels.content',
     isEnabled: true,
     maxInt: 5,
     enforcement: 'HARD',
   },
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
     featureKey: 'crm.pipelines.lane',
     isEnabled: true,
     isUnlimited: true,
   },
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
     featureKey: 'crm.customers.contact',
     isEnabled: true,
     maxInt: 500,
     enforcement: 'SOFT',
   },
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
     featureKey: 'crm.media.file',
     isEnabled: true,
     maxInt: 100,
     enforcement: 'SOFT',
   },
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
     featureKey: 'crm.customers.billing',
     isEnabled: false,
   },
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
     featureKey: 'core.billing.priority_support',
     isEnabled: false,
   },
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
     featureKey: 'core.apps.api_keys',
     isEnabled: true,
     maxInt: 3,
     enforcement: 'HARD',
   },
   {
-    planId: PLAN_IDS.STARTER,
+    planId: PRICE_IDS.STARTER,
     featureKey: 'core.apps.webhooks',
     isEnabled: true,
     maxInt: 5,
@@ -150,70 +149,87 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   // BASIC PLAN (RM 149/mo)
   // ─────────────────────────────────────────────────────────
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
+    featureKey: 'core.agency.account',
+    isEnabled: true,
+  },
+  {
+    planId: PRICE_IDS.BASIC,
     featureKey: 'core.agency.subaccounts',
     isEnabled: true,
     isUnlimited: true,
   },
+    {
+    planId: PRICE_IDS.BASIC,
+    featureKey: 'core.billing.account',
+    isEnabled: true,
+  },
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
+    featureKey: 'iam.authZ.roles',
+    isEnabled: true,
+    maxInt: 2,
+    enforcement: 'HARD',
+  },
+  {
+    planId: PRICE_IDS.BASIC,
     featureKey: 'core.agency.team_member',
     isEnabled: true,
     isUnlimited: true,
   },
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
     featureKey: 'core.agency.storage',
     isEnabled: true,
     maxDec: '25.0', // 25 GB
     enforcement: 'SOFT',
   },
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
     featureKey: 'crm.funnels.content',
     isEnabled: true,
     maxInt: 25,
     enforcement: 'SOFT',
   },
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
     featureKey: 'crm.pipelines.lane',
     isEnabled: true,
     isUnlimited: true,
   },
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
     featureKey: 'crm.customers.contact',
     isEnabled: true,
     maxInt: 5000,
     enforcement: 'SOFT',
   },
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
     featureKey: 'crm.media.file',
     isEnabled: true,
     maxInt: 500,
     enforcement: 'SOFT',
   },
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
     featureKey: 'crm.customers.billing',
     isEnabled: false,
   },
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
     featureKey: 'core.billing.priority_support',
     isEnabled: false,
   },
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
     featureKey: 'core.apps.api_keys',
     isEnabled: true,
     maxInt: 10,
     enforcement: 'HARD',
   },
   {
-    planId: PLAN_IDS.BASIC,
+    planId: PRICE_IDS.BASIC,
     featureKey: 'core.apps.webhooks',
     isEnabled: true,
     maxInt: 25,
@@ -224,66 +240,83 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   // ADVANCED PLAN (RM 399/mo)
   // ─────────────────────────────────────────────────────────
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
+    featureKey: 'core.agency.account',
+    isEnabled: true,
+  },
+  {
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'core.agency.subaccounts',
     isEnabled: true,
     isUnlimited: true,
   },
+    {
+    planId: PRICE_IDS.ADVANCED,
+    featureKey: 'core.billing.account',
+    isEnabled: true,
+  },
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
+    featureKey: 'iam.authZ.roles',
+    isEnabled: true,
+    maxInt: 10,
+    enforcement: 'HARD',
+  },
+  {
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'core.agency.team_member',
     isEnabled: true,
     isUnlimited: true,
   },
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'core.agency.storage',
     isEnabled: true,
     maxDec: '100.0', // 100 GB
     enforcement: 'SOFT',
   },
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'crm.funnels.content',
     isEnabled: true,
     isUnlimited: true,
   },
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'crm.pipelines.lane',
     isEnabled: true,
     isUnlimited: true,
   },
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'crm.customers.contact',
     isEnabled: true,
     isUnlimited: true,
   },
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'crm.media.file',
     isEnabled: true,
     isUnlimited: true,
   },
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'crm.customers.billing',
     isEnabled: true, // Rebilling enabled for Advanced
   },
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'core.billing.priority_support',
     isEnabled: true, // 24/7 support enabled for Advanced
   },
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'core.apps.api_keys',
     isEnabled: true,
     isUnlimited: true,
   },
   {
-    planId: PLAN_IDS.ADVANCED,
+    planId: PRICE_IDS.ADVANCED,
     featureKey: 'core.apps.webhooks',
     isEnabled: true,
     isUnlimited: true,
@@ -293,90 +326,90 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   // PRIORITY SUPPORT ADD-ON (RM 99/mo)
   // ─────────────────────────────────────────────────────────
   {
-    planId: PLAN_IDS.PRIORITY_SUPPORT,
+    planId: PRICE_IDS.PRIORITY_SUPPORT,
     featureKey: 'core.billing.priority_support',
     isEnabled: true,
   },
   // FI-GL: General Ledger Add-on
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.general_ledger.settings',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.general_ledger.journal_entries',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.general_ledger.reports',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.general_ledger.reconciliation',
     isEnabled: true,
   },
   // FI-GL Configuration (bundled with FI_GL)
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.master_data.accounts',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.configuration.fiscal_years',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.configuration.currencies',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.configuration.tax_settings',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.configuration.number_ranges',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.configuration.posting_rules',
     isEnabled: true,
   },
   // FI-GL Master Data (bundled with FI_GL)
   {
-    planId: PLAN_IDS.FI_GL,
+    planId: PRICE_IDS.FI_GL,
     featureKey: 'fi.master_data.accounts',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.FI_AR,
+    planId: PRICE_IDS.FI_AR,
     featureKey: 'fi.accounts_receivable.subledgers',
     isEnabled: true,
   },
     {
-    planId: PLAN_IDS.FI_AP,
+    planId: PRICE_IDS.FI_AP,
     featureKey: 'fi.accounts_payable.subledgers',
     isEnabled: true,
   },
     {
-    planId: PLAN_IDS.FI_BL,
+    planId: PRICE_IDS.FI_BL,
     featureKey: 'fi.bank_ledger.bank_accounts',
     isEnabled: true,
   },
     {
-    planId: PLAN_IDS.FI_BL,
+    planId: PRICE_IDS.FI_BL,
     featureKey: 'fi.bank_ledger.subledgers',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.FI_FS,
+    planId: PRICE_IDS.FI_FS,
     featureKey: 'fi.advanced_reporting.financial_statements',
     isEnabled: true,
   },
@@ -385,67 +418,67 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   // ─────────────────────────────────────────────────────────
   // CO-CCA: Cost Center Accounting
   {
-    planId: PLAN_IDS.CO_CCA,
+    planId: PRICE_IDS.CO_CCA,
     featureKey: 'co.cost_centers.master_data',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.CO_CCA,
+    planId: PRICE_IDS.CO_CCA,
     featureKey: 'co.cost_centers.hierarchy',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.CO_CCA,
+    planId: PRICE_IDS.CO_CCA,
     featureKey: 'co.cost_centers.allocations',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.CO_CCA,
+    planId: PRICE_IDS.CO_CCA,
     featureKey: 'co.cost_centers.reports',
     isEnabled: true,
   },
   // CO-PCA: Profit Center Accounting
   {
-    planId: PLAN_IDS.CO_PCA,
+    planId: PRICE_IDS.CO_PCA,
     featureKey: 'co.profit_centers.master_data',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.CO_PCA,
+    planId: PRICE_IDS.CO_PCA,
     featureKey: 'co.profit_centers.hierarchy',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.CO_PCA,
+    planId: PRICE_IDS.CO_PCA,
     featureKey: 'co.profit_centers.reports',
     isEnabled: true,
   },
   // CO-PA: Profitability Analysis
   {
-    planId: PLAN_IDS.CO_PA,
+    planId: PRICE_IDS.CO_PA,
     featureKey: 'co.profitability.segments',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.CO_PA,
+    planId: PRICE_IDS.CO_PA,
     featureKey: 'co.profitability.reports',
     isEnabled: true,
   },
   // CO Budgets
   {
-    planId: PLAN_IDS.CO_BUDGET,
+    planId: PRICE_IDS.CO_BUDGET,
     featureKey: 'co.budgets.planning',
     isEnabled: true,
   },
   {
-    planId: PLAN_IDS.CO_BUDGET,
+    planId: PRICE_IDS.CO_BUDGET,
     featureKey: 'co.budgets.monitoring',
     isEnabled: true,
   },
   // Legacy: Keep fi.controlling for backward compatibility (maps to CO_CCA)
   {
-    planId: PLAN_IDS.CO_CCA,
-    featureKey: 'fi.controlling.cost_centers',
+    planId: PRICE_IDS.CO_CCA,
+    featureKey: 'co.cost_centers.master_data',
     isEnabled: true,
   },
 ]
@@ -460,28 +493,14 @@ export function getPlanEntitlement(planId: string, featureKey: string): PlanEnti
   return PLAN_ENTITLEMENTS.find(e => e.planId === planId && e.featureKey === featureKey)
 }
 
-/** Plan metadata for UI display */
-export const PLAN_METADATA = {
-  [PLAN_IDS.STARTER]: {
-    name: 'Starter',
-    description: 'Perfect for trying out autlify',
-    price: 'RM 79',
-    trialDays: 14,
-    highlight: 'Key features',
-  },
-  [PLAN_IDS.BASIC]: {
-    name: 'Basic',
-    description: 'For serious agency owners',
-    price: 'RM 149',
-    trialDays: 14,
-    highlight: 'Everything in Starter, plus',
-  },
-  [PLAN_IDS.ADVANCED]: {
-    name: 'Advanced',
-    description: 'The ultimate agency kit',
-    price: 'RM 399',
-    trialDays: 0,
-    highlight: 'Everything unlimited',
-  },
-} as const
+/** Get plan by Stripe price ID - uses PRICING_CONFIG as SSoT */
+export function getPlanByPriceId(priceId: string) {
+  return Object.values(PRICING_CONFIG).find(p => p.stripePriceId === priceId)
+}
+
+/** Get plan key by Stripe price ID - uses PRICING_CONFIG as SSoT */
+export function getPlanKeyByPriceId(priceId: string): string | undefined {
+  const entry = Object.entries(PRICING_CONFIG).find(([, p]) => p.stripePriceId === priceId)
+  return entry?.[0]
+}
 

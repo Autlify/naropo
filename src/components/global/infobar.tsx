@@ -1,7 +1,7 @@
 'use client'
 import { NotificationWithUser } from '@/lib/types'
 import { UserButton } from '@/components/global/user-button'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   Sheet,
@@ -15,12 +15,23 @@ import { Accessibility, Bell } from 'lucide-react'
 import { Card } from '../ui/card'
 import { Switch } from '../ui/switch'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
-import { ModeToggle } from './mode-toggle'
+import { ModeToggle, ModeButton } from './mode-toggle'
 import { IconLayoutNavbarCollapse } from '@tabler/icons-react'
 import { Button } from '../ui/button'
 import { useSidebar } from '@/components/sidebar-01/sidebar-context'
 import { TbLayoutSidebarLeftExpand } from 'react-icons/tb'
-import { AccessibilityTrigger } from '@/components/panels/accessibility-panel'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+
 import { cn } from '../../lib/utils'
 
 type Props = {
@@ -35,6 +46,86 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
   const [showA11y, setShowA11y] = useState(false)
   const [showAll, setShowAll] = useState(true)
   const { isCollapsed, toggle, title } = useSidebar()
+  const pathname = usePathname()
+
+  const breadcrumbs = useMemo(() => {
+    const LABELS: Record<string, string> = {
+      dashboard: 'Dashboard',
+      launchpad: 'Launchpad',
+      apps: 'Apps',
+      billing: 'Billing',
+      subscription: 'Subscription',
+      'payment-methods': 'Payment Methods',
+      usage: 'Usage',
+      credits: 'Credits',
+      'credits-discounts': 'Credits & Discounts',
+      settings: 'Settings',
+      team: 'Team',
+      finance: 'Finance',
+      fi: 'Finance',
+      'general-ledger': 'General Ledger',
+    }
+
+    const toTitle = (s: string) => {
+      const key = decodeURIComponent(s)
+      if (LABELS[key]) return LABELS[key]
+      return key
+        .replace(/[-_]+/g, ' ')
+        .replace(/\b\w/g, (m) => m.toUpperCase())
+    }
+
+    const segments = pathname.split('?')[0].split('/').filter(Boolean)
+    if (segments.length === 0) {
+      return [] as { label: string; href?: string; current?: boolean }[]
+    }
+
+    // Handle scoped routes: /agency/:id/... or /subaccount/:id/...
+    let baseHref = ''
+    const items: { label: string; href?: string; current?: boolean }[] = []
+
+    if ((segments[0] === 'agency' || segments[0] === 'subaccount') && segments[1]) {
+      baseHref = `/${segments[0]}/${segments[1]}`
+      items.push({
+        label: segments[0] === 'agency' ? 'Agency' : 'Subaccount',
+        href: baseHref,
+      })
+
+      const rest = segments.slice(2)
+      if (rest.length === 0) {
+        const pageTitle = title?.split('|')[0]?.trim() || 'Dashboard'
+        items.push({ label: pageTitle, current: true })
+        return items
+      }
+
+      let acc = baseHref
+      for (let i = 0; i < rest.length; i++) {
+        const seg = rest[i]
+        acc += `/${seg}`
+        const isLast = i === rest.length - 1
+        items.push({
+          label: toTitle(seg),
+          href: isLast ? undefined : acc,
+          current: isLast,
+        })
+      }
+      // Remove consecutive duplicates (e.g., Billing > Billing)
+      return items.filter((item, idx, arr) => idx === 0 || item.label !== arr[idx - 1]?.label)
+    }
+
+    // Fallback: non-scoped routes
+    let acc = ''
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i]
+      acc += `/${seg}`
+      const isLast = i === segments.length - 1
+      items.push({
+        label: toTitle(seg),
+        href: isLast ? undefined : acc,
+        current: isLast,
+      })
+    }
+    return items.filter((item, idx, arr) => idx === 0 || item.label !== arr[idx - 1]?.label)
+  }, [pathname, title])
 
   const handleClick = () => {
     if (!showAll) {
@@ -56,13 +147,39 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
       <div
         className={twMerge(
           'fixed z-[20] left-0 right-0 top-0 py-4 pr-4 bg-background/80 backdrop-blur-md flex gap-4 items-center border-b-[1px] transition-all duration-300',
-          isCollapsed ? 'md:left-[80px]' : 'md:left-[300px]',
+          isCollapsed ? 'md:left-[96px]' : 'md:left-[300px]',
           className
         )}
       >
         <Button variant="ghost" size="icon" onClick={toggle} className='bg-transparent hover:bg-muted/50'>
           <TbLayoutSidebarLeftExpand className={twMerge(isCollapsed ? '' : 'rotate-180', 'bg-transparent w-6 h-6')} />
         </Button>
+
+        {breadcrumbs.length > 0 && (
+          <Breadcrumb className="hidden md:block">
+            <BreadcrumbList>
+              {breadcrumbs.map((item, idx) => (
+                <React.Fragment key={`${item.label}-${idx}`}>
+                  <BreadcrumbItem>
+                    {item.current || !item.href ? (
+                      <BreadcrumbPage className="max-w-[240px] truncate">
+                        {item.label}
+                      </BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink asChild>
+                        <Link href={item.href} className="max-w-[200px] truncate">
+                          {item.label}
+                        </Link>
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                  {idx < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
+                </React.Fragment>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
+        )}
+
         {title && (() => {
           const [pageTitle, pageDescription] = title.split('|')
           return (
@@ -144,8 +261,7 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
               )}
             </SheetContent>
           </Sheet>
-          <ModeToggle />
-          <AccessibilityTrigger />
+          <ModeButton />
         </div>
       </div>
     </>

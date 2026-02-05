@@ -11,14 +11,12 @@ import {
     hasAgencyPermission,
     hasSubAccountPermission
 } from '@/lib/features/iam/authz/permissions'
-import { KEYS } from '@/lib/registry/keys/permissions'
 import type { ActionKey } from '@/lib/registry'
 import type { GLContext } from './context'
+import { GL_PERMISSION_KEYS, FI_CONFIG_KEYS, FI_MASTER_DATA_KEYS } from './utils'
 
-/** Re-export permission keys for easy access - Single Source of Truth */
-export const GL_PERMISSION_KEYS = KEYS.fi.general_ledger
-export const FI_CONFIG_KEYS = KEYS.fi.configuration
-export const FI_MASTER_DATA_KEYS = KEYS.fi.master_data
+// Note: Permission key constants are now in ./utils.ts
+// Import them from '../core' or '../core/utils' in action files
 
 /** Permission check result */
 export interface PermissionCheckResult {
@@ -107,43 +105,8 @@ export const checkGLPermissions = async (
     return results.every(Boolean)
 }
 
-/**
- * Check if context is for agency-only feature
- * Uses entitlement scope from registry to determine access
- * 
- * @param context - The GL context
- * @param feature - Feature name for error message
- * @returns boolean
- */
-export const isAgencyOnlyFeature = (
-    context: GLContext,
-    feature: string
-): boolean => {
-    // If in subaccount context, agency-only features are not available
-    if (context.contextType === 'SUBACCOUNT') {
-        return true
-    }
-    return false
-}
-
-/**
- * Require agency-only feature access
- * 
- * @param context - The GL context
- * @param feature - Feature name for error message
- * @throws Error if in subaccount context
- */
-export const requireAgencyOnlyFeature = (
-    context: GLContext,
-    feature: string
-): void => {
-    if (context.contextType === 'SUBACCOUNT') {
-        throw new Error(`${feature} is only available at Agency level`)
-    }
-    if (!context.agencyId) {
-        throw new Error(`Agency context required for ${feature}`)
-    }
-}
+// Note: isAgencyOnlyFeature and requireAgencyOnlyFeature
+// have been moved to ./utils.ts to avoid 'use server' restrictions
 
 // ============================================================
 // Convenience permission check functions using registry keys
@@ -155,31 +118,31 @@ export const requireAgencyOnlyFeature = (
 // ─────────────────────────────────────────────────────────────────────────
 
 // Accounts (Chart of Accounts) - now under master_data
-export const canViewAccounts = (ctx: GLContext) =>
+export const canViewAccounts = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.accounts.view)
 
-export const canManageAccounts = (ctx: GLContext) =>
+export const canManageAccounts = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.accounts.manage)
 
 // Customer Master Data
-export const canViewCustomers = (ctx: GLContext) =>
+export const canViewCustomers = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.customers.view)
 
-export const canManageCustomers = (ctx: GLContext) =>
+export const canManageCustomers = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.customers.manage)
 
 // Vendor Master Data
-export const canViewVendors = (ctx: GLContext) =>
+export const canViewVendors = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.vendors.view)
 
-export const canManageVendors = (ctx: GLContext) =>
+export const canManageVendors = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.vendors.manage)
 
 // Bank Master Data
-export const canViewBanks = (ctx: GLContext) =>
+export const canViewBanks = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.banks.view)
 
-export const canManageBanks = (ctx: GLContext) =>
+export const canManageBanks = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.banks.manage)
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -187,52 +150,52 @@ export const canManageBanks = (ctx: GLContext) =>
 // ─────────────────────────────────────────────────────────────────────────
 
 // Chart of Accounts Configuration
-export const canViewCOAConfig = (ctx: GLContext) =>
+export const canViewCOAConfig = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.accounts.view)
 
-export const canManageCOAConfig = (ctx: GLContext) =>
+export const canManageCOAConfig = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.accounts.manage)
 
 // Fiscal Years (replaces periods)
-export const canViewFiscalYears = (ctx: GLContext) => 
+export const canViewFiscalYears = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.fiscal_years.view)
 
-export const canManageFiscalYears = (ctx: GLContext) => 
+export const canManageFiscalYears = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.fiscal_years.manage)
 
 // Currencies (replaces currency)
-export const canViewCurrencies = (ctx: GLContext) => 
+export const canViewCurrencies = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.currencies.view)
 
-export const canManageCurrencies = (ctx: GLContext) => 
+export const canManageCurrencies = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.currencies.manage)
 
 // Tax Settings (replaces tax)
-export const canViewTaxSettings = (ctx: GLContext) =>
+export const canViewTaxSettings = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_CONFIG_KEYS.tax_settings.view)
 
-export const canManageTaxSettings = (ctx: GLContext) =>
+export const canManageTaxSettings = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_CONFIG_KEYS.tax_settings.manage)
 
 // Tolerances
-export const canViewTolerances = (ctx: GLContext) =>
+export const canViewTolerances = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_CONFIG_KEYS.tolerances.view)
 
-export const canManageTolerances = (ctx: GLContext) =>
+export const canManageTolerances = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_CONFIG_KEYS.tolerances.manage)
 
 // Number Ranges
-export const canViewNumberRanges = (ctx: GLContext) =>
+export const canViewNumberRanges = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_CONFIG_KEYS.number_ranges.view)
 
-export const canManageNumberRanges = (ctx: GLContext) =>
+export const canManageNumberRanges = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_CONFIG_KEYS.number_ranges.manage)
 
 // Posting Rules
-export const canViewPostingRules = (ctx: GLContext) => 
+export const canViewPostingRules = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.posting_rules.view)
 
-export const canManagePostingRules = (ctx: GLContext) => 
+export const canManagePostingRules = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.posting_rules.manage)
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -240,55 +203,55 @@ export const canManagePostingRules = (ctx: GLContext) =>
 // ─────────────────────────────────────────────────────────────────────────
 
 // Settings
-export const canViewSettings = (ctx: GLContext) =>
+export const canViewSettings = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.settings.view)
 
-export const canManageSettings = (ctx: GLContext) =>
+export const canManageSettings = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.settings.manage)
 
 // Journal Entries
-export const canViewJournals = (ctx: GLContext) =>
+export const canViewJournals = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.journal_entries.read)
 
-export const canCreateJournals = (ctx: GLContext) =>
+export const canCreateJournals = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.journal_entries.create)
 
-export const canApproveJournals = (ctx: GLContext) =>
+export const canApproveJournals = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.journal_entries.approve)
 
 // Reports
-export const canViewReports = (ctx: GLContext) => 
+export const canViewReports = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reports.view)
 
-export const canGenerateReports = (ctx: GLContext) => 
+export const canGenerateReports = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reports.generate)
 
-export const canApproveReports = (ctx: GLContext) => 
+export const canApproveReports = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reports.approve)
 
 // Consolidation (agency-only)
-export const canViewConsolidation = (ctx: GLContext) =>
+export const canViewConsolidation = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.consolidation.view)
 
-export const canManageConsolidation = (ctx: GLContext) =>
+export const canManageConsolidation = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.consolidation.manage)
 
 // Year-End Closing
-export const canViewYearEnd = (ctx: GLContext) =>
+export const canViewYearEnd = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.year_end.view)
 
-export const canManageYearEnd = (ctx: GLContext) =>
+export const canManageYearEnd = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.year_end.manage)
 
-export const canCloseYearEnd = (ctx: GLContext) =>
+export const canCloseYearEnd = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.year_end.close)
 
 // Reconciliation
-export const canViewReconciliation = (ctx: GLContext) => 
+export const canViewReconciliation = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reconciliation.view)
 
-export const canManageReconciliation = (ctx: GLContext) => 
+export const canManageReconciliation = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reconciliation.manage)
 
-export const canClearReconciliation = (ctx: GLContext) => 
+export const canClearReconciliation = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reconciliation.clear)

@@ -13,7 +13,7 @@ import Stripe from 'stripe'
  * - action: 'create' | 'update' | 'cancel' - The action to perform
  * - customerId: string - Stripe customer ID
  * - agencyId: string - Agency ID to associate the subscription with
- * - priceId: string (for create/update) - Stripe price ID for the subscription
+ * - priceId: string (for create/update) - Stripe price ID (real Stripe ID from constants.ts)
  * - coupon: string (optional, for create/update) - Coupon code to apply
  * - paymentMethodId: string (optional, for create) - Payment method ID to attach
  * - trialEnabled: boolean (optional, for create) - Whether to enable a trial period
@@ -31,6 +31,8 @@ export async function POST(req: Request) {
     try {
         const body = await req.json()
         const { action, customerId, agencyId, priceId, coupon, paymentMethodId, trialEnabled, trialPeriodDays, prorationBehavior } = body
+
+        // Price ID is now always the real Stripe ID (after sync script updates constants.ts)
 
         if (!action || !customerId || !agencyId) {
             return NextResponse.json(

@@ -2,6 +2,8 @@ import { stripe } from '@/lib/stripe'
 import { StripeCustomerType } from '@/lib/types'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { db } from '@/lib/db'
+import { auth } from '@/auth'
 
 /**
  * GET /api/stripe/customer
@@ -50,13 +52,28 @@ export async function GET(req: Request) {
 /**
  * POST /api/stripe/customer
  * Create new Stripe customer or return existing
+ * 
+ * Request body:
+ * - email: string - Customer email (required)
+ * - name: string - Customer name (required)
+ * - phone?: string - Phone number
+ * - business_name?: string - Business name
+ * - individual_name?: string - Individual name
+ * - address: object - Billing address (required)
+ * - shipping: object - Shipping address (required)
+ * - metadata?: object - Additional metadata
+ * - userId?: string - User ID to update with customerId (inline update, replaces /api/user/update-customer)
+ * 
+ * Returns:
+ * - customerId: string - The created Stripe customer ID
+ * - userUpdated?: boolean - Whether the user was updated (if userId provided)
  */
 export async function POST(req: Request) {
     const body = JSON.stringify(await req.json())
     console.log('🔍 Raw body received:', body)
-    const { email, name, phone, business_name, individual_name, address, shipping, metadata } = JSON.parse(body) as StripeCustomerType
+    const { email, name, phone, business_name, individual_name, address, shipping, metadata, userId } = JSON.parse(body) as StripeCustomerType & { userId?: string }
 
-    console.log('🔍 Parsed values:', { email, name, phone, individual_name, business_name, address, shipping, metadata })
+    console.log('🔍 Parsed values:', { email, name, phone, individual_name, business_name, address, shipping, metadata, userId })
 
     if (!email || !name || !address || !shipping) {
         console.log('❌ Validation failed:', { email, name, address, shipping })
@@ -84,7 +101,35 @@ export async function POST(req: Request) {
             
         })
         console.log('✅ Stripe customer created:', customer.id, 'with metadata:', cleanMetadata)
-        return Response.json({ customerId: customer.id })
+
+        // If userId provided, update user with customerId inline (replaces /api/user/update-customer)
+        let userUpdated = false
+        if (userId) {
+            try {
+                // Verify session if available
+                const session = await auth()
+                
+                // Only update if session user matches or no session (internal call)
+                if (!session?.user?.id || session.user.id === userId) {
+                    await db.user.update({
+                        where: { id: userId },
+                        data: { customerId: customer.id },
+                    })
+                    console.log('✅ User customerId updated inline:', userId, '->', customer.id)
+                    userUpdated = true
+                } else {
+                    console.warn('⚠️ Session user mismatch, skipping user update:', session.user.id, '!=', userId)
+                }
+            } catch (userError) {
+                console.error('⚠️ Failed to update user customerId (non-blocking):', userError)
+                // Non-blocking - customer was still created successfully
+            }
+        }
+
+        return Response.json({ 
+            customerId: customer.id,
+            ...(userId && { userUpdated }),
+        })
     } catch (error) {
         console.log('🔴 Error', error)
         return new NextResponse('Internal Server Error', { status: 500 })

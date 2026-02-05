@@ -27,10 +27,19 @@ export default function SignUpPage() {
   const [error, setError] = useState('')
   const [termsAgreed, setTermsAgreed] = useState(false)
   const [usePasskeyOnly, setUsePasskeyOnly] = useState(false)
+  const [disabled, setDisabled] = useState(false)
 
   useEffect(() => {
     setName(`${firstName} ${lastName}`)
   }, [firstName, lastName])
+ 
+  useEffect(() => {
+    if (!email || !firstName || !lastName || !password || !confirmPassword || !termsAgreed) {
+      setDisabled(true)
+    } else {
+      setDisabled(false)
+    }
+  })
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -105,13 +114,14 @@ export default function SignUpPage() {
 
   return (
     <div className="w-full flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
+         <Card className="max-w-[380px]">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
-            <Image src="/assets/autlify-logo.svg" alt="Autlify Logo" width={40} height={40} />
-            <span className="ml-2 text-2xl font-bold">Autlify</span>
+            <Image src="/assets/autlify-logo.svg" alt="Autlify Logo" width={48} height={48} />
+            <CardTitle className="text-center ml-2 text-2xl font-bold">Create an account</CardTitle>
+      
           </div>
-          <CardTitle className="text-2xl text-center">Create an account</CardTitle>
+
           <CardDescription className="text-center">
             Enter your information to get started
           </CardDescription>
@@ -196,7 +206,7 @@ export default function SignUpPage() {
                 disabled={isLoading || usePasskeyOnly}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading || !termsAgreed}>
+            <Button type="submit" className="w-full" disabled={isLoading || !termsAgreed || disabled}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create account
             </Button>
@@ -213,51 +223,82 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="mx-auto grid w-full grid-cols-4 gap-2 items-center justify-center">
+            <Button
+              variant="outline"
+              onClick={() => handleOAuthSignIn('github')}
+              disabled={isLoading || !termsAgreed}
+              aria-label="Sign up with GitHub"
+              className="h-12 p-0"
+              tooltip="Sign in with GitHub"
+            >
+              <span className="relative h-8 w-8">
+                <Image
+                  src="/logos/github.svg"
+                  alt="GitHub"
+                  fill
+                  sizes="36px"
+                  className="object-contain brightness-0 invert"
+                />
+              </span>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => handleOAuthSignIn('azure-ad')}
+              disabled={isLoading || !termsAgreed}
+              aria-label="Sign up with Microsoft"
+              className="h-12 p-0"
+              tooltip="Sign in with Microsoft"
+              
+            >
+              <span className="relative h-8 w-8 ">
+                <Image
+                  src="/logos/microsoft.svg"
+                  alt="Microsoft"
+                  fill
+                  sizes="36px"
+                  className="object-contain"
+                />
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              disabled={isLoading || !termsAgreed}
+              aria-label="Sign up with Google"
+              className="h-12 p-0"
+              tooltip="Sign in with Google"
+            >
+              <span className="relative h-8 w-8">
+                <svg className="absolute inset-0 h-8 w-8" viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="#4285f4" d="M533.5 278.4c0-17.4-1.4-34.1-4.2-50.4H272v95.5h147.1c-6.4 34.7-25.4 64.1-54.3 83.8v69.7h87.7c51.3-47.2 81-116.7 81-198.6z" />
+                  <path fill="#34a853" d="M272 544.3c73.4 0 135-24.3 180-66l-87.7-69.7c-24.3 16.3-55.5 26-92.3 26-70.9 0-131-47.9-152.4-112.2H29.6v70.6c46.2 91.7 141.1 151.3 242.4 151.3z" />
+                  <path fill="#fbbc04" d="M119.6 324.4c-11.4-34.7-11.4-72.4 0-107.1V146.7H29.6c-39.2 77.9-39.2 169.1 0 247l90-69.3z" />
+                  <path fill="#ea4335" d="M272 107.7c39.9-.6 78.3 14.5 107.4 41.7l80.5-80.5C407 24.6 344.4-.4 272 0 170.7 0 75.8 59.6 29.6 151.3l90 70.6C141 155.6 201.1 107.7 272 107.7z" />
+                </svg>
+                {/* <Image
+                  src="/logos/github.svg"
+                  alt="GitHub"
+                  fill
+                  sizes="36px"
+                  className="object-contain brightness-0 invert"
+                /> */}
+              </span>
+            </Button>
+
             <PasskeyButton
               email={email}
-              variant="signup"
-              onSuccess={(result) => {
-                // Redirect after passkey signup
+              variant="icon-signup"
+              onSuccess={() => {
                 router.push('/agency')
                 router.refresh()
               }}
               onError={(err) => setError(err)}
               disabled={isLoading || !termsAgreed}
+              className="h-12 p-0"
             />
-            <p className="text-xs text-center text-muted-foreground">
-              Secure, passwordless authentication using your device
-            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Button
-              variant="outline"
-              onClick={() => handleOAuthSignIn('github')}
-              disabled={isLoading}
-            >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2Z"
-                />
-              </svg>
-              GitHub
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleOAuthSignIn('azure-ad')}
-              disabled={isLoading}
-            >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zm12.6 0H12.6V0H24v11.4z"
-                />
-              </svg>
-              Microsoft
-            </Button>
-          </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <TermsAgreement

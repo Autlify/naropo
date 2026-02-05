@@ -18,15 +18,14 @@ import { redirect } from 'next/navigation'
 
 type Props = {
   searchParams: Promise<{
-    state: string
-    code: string
+    code?: string
   }>
   params: Promise<{ subaccountId: string }>
 }
 
 const LaunchPad = async ({ params, searchParams }: Props) => {
   const { subaccountId } = await params
-  const { code, state } = await searchParams
+  const { code } = await searchParams
   
   const subaccountDetails = await db.subAccount.findUnique({
     where: {
@@ -53,34 +52,38 @@ const LaunchPad = async ({ params, searchParams }: Props) => {
     `launchpad___${subaccountDetails.id}`
   )
 
-  let connectedStripeAccount = false
-
+  // Handle OAuth callback
   if (code) {
-    if (!subaccountDetails.connectAccountId) {
-      try {
-        const response = await stripe.oauth.token({
-          grant_type: 'authorization_code',
-          code,
-        })
-        await db.subAccount.update({
-          where: { id: subaccountId },
-          data: { connectAccountId: response.stripe_user_id },
-        })
-        // Redirect to remove code from URL and prevent re-processing
-        return redirect(`/subaccount/${subaccountId}/launchpad`)
-      } catch (error) {
-        console.log('🔴 Could not connect stripe account', error)
-        // Redirect to remove invalid/used code from URL
-        return redirect(`/subaccount/${subaccountId}/launchpad`)
-      }
-    } else {
-      // Already connected, redirect to remove code from URL
-      return redirect(`/subaccount/${subaccountId}/launchpad`)
+    try {
+      const response = await stripe.oauth.token({
+        grant_type: 'authorization_code',
+        code,
+      })
+      
+      // Verify connection works before saving
+      await stripe.accounts.retrieve({
+        stripeAccount: response.stripe_user_id,
+      })
+      
+      await db.subAccount.update({
+        where: { id: subaccountId },
+        data: { connectAccountId: response.stripe_user_id },
+      })
+    } catch (error: any) {
+      // Log but don't crash - code might already be used (double render) or expired
+      console.log('🔴 Could not connect stripe account:', error?.message || error)
     }
+    // Always redirect to remove code from URL
+    return redirect(`/subaccount/${subaccountId}/launchpad`)
   }
 
-  // Check if already connected (for display purposes)
-  connectedStripeAccount = !!subaccountDetails.connectAccountId
+  // Re-fetch to get updated connectAccountId after OAuth
+  const updatedSubaccount = await db.subAccount.findUnique({
+    where: { id: subaccountId },
+    select: { connectAccountId: true },
+  })
+  
+  const connectedStripeAccount = !!updatedSubaccount?.connectAccountId
 
   return (
     <BlurPage>
@@ -121,8 +124,7 @@ const LaunchPad = async ({ params, searchParams }: Props) => {
                     used to run payouts.
                   </p>
                 </div>
-                {subaccountDetails.connectAccountId ||
-                connectedStripeAccount ? (
+                {connectedStripeAccount ? (
                   <CheckCircleIcon
                     size={50}
                     className=" text-primary p-2 flex-shrink-0"

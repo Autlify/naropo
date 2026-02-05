@@ -21,7 +21,7 @@ import {
   FunnelTemplate,
   StarterKit,
   TemplateCategory,
-} from '@/lib/funnel-templates'
+} from '../../app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/_components/funnel-templates'
 import { FileText, LayoutTemplate, Layers, Check, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

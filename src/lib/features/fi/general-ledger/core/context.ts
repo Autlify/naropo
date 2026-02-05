@@ -128,29 +128,5 @@ export const requireAnyContext = async (): Promise<GLContext> => {
   return result.context
 }
 
-/**
- * Get the entity ID for database queries based on context
- * Returns the appropriate where clause for agency or subaccount
- */
-export const getContextWhereClause = (context: GLContext) => {
-  if (context.contextType === 'SUBACCOUNT' && context.subAccountId) {
-    return { subAccountId: context.subAccountId }
-  }
-  return { agencyId: context.agencyId, subAccountId: null }
-}
-
-/**
- * Get the entity IDs for creating records based on context
- */
-export const getContextCreateData = (context: GLContext) => {
-  if (context.contextType === 'SUBACCOUNT' && context.subAccountId) {
-    return { 
-      agencyId: null,
-      subAccountId: context.subAccountId,
-    }
-  }
-  return { 
-    agencyId: context.agencyId ?? null,
-    subAccountId: null,
-  }
-}
+// Note: Utility functions getContextWhereClause and getContextCreateData
+// have been moved to ./utils.ts to avoid 'use server' restrictions

@@ -1,6 +1,6 @@
 import React from 'react'
 
-import BillingClient from '@/components/billing/client'
+import BillingClient from '@/components/features/core/billing/client'
 
 type Props = {
   params: Promise<{ agencyId: string; section: string }>

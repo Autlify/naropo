@@ -3,9 +3,7 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Download, Trash2, AlertCircle } from 'lucide-react'
-import { SegmentedTabs} from '@/components/ui/segmented-tabs'
-import MercuryButton from '@/components/ui/liquid-glass'
-import  SegmentedControl from '@/components/ui/segmented-control'
+import { SegmentedTabs} from '@/components/ui/segmented-tabs' 
  
 export function ButtonsSection() {
   return (

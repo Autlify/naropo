@@ -7,6 +7,8 @@ import bcrypt from 'bcryptjs'
 import type { Adapter } from 'next-auth/adapters'
 import type { Role } from '@/generated/prisma/client'
 
+import { SYSTEM_USER_EMAIL } from '@/lib/features/system/system-user'
+
 // Custom adapter to map 'image' to 'avatarUrl'
 const customAdapter: Adapter = {
   ...PrismaAdapter(db),
@@ -89,6 +91,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new Error('Invalid credentials')
         }
 
+        // Block UI sign-in for the internal system service account.
+        if (user.email === SYSTEM_USER_EMAIL) {
+          throw new Error('Invalid credentials')
+        }
+
         // Check if this is an auto-login attempt (password is a hex token from authN scope)
         const isAutoLogin = /^[a-f0-9]{64}$/i.test(credentials.password as string)
 
@@ -144,6 +151,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ user }) {
+      // Never allow the internal system service account to sign in via OAuth.
+      if (user?.email === SYSTEM_USER_EMAIL) return false
+      return true
+    },
     async jwt({ token, user, account, trigger }) {
       // Always fetch fresh user data from database
       const userId = user?.id || token.id

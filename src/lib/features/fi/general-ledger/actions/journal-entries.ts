@@ -16,6 +16,8 @@ import {
     type UpdateJournalEntryInput,
 } from '@/lib/schemas/fi/general-ledger/journal-entry';
 import { logGLAudit } from './audit';
+import { emitEvent } from './fanout';
+import { EVENT_KEYS } from '@/lib/registry/events/trigger';
 import { ConsolidationMethod, JournalEntryStatus, PeriodStatus } from '@/generated/prisma/client';
 import { format } from 'date-fns';
 import { Decimal } from 'decimal.js';
@@ -431,6 +433,18 @@ export const createJournalEntry = async (
             description: `Journal entry ${entry!.entryNumber} created`,
         });
 
+        // Emit drafted event for fanout processing
+        await emitEvent(
+            'fi.general_ledger',
+            EVENT_KEYS.fi.general_ledger.journal_entries.drafted,
+            { type: 'JournalEntry', id: entry!.id },
+            { 
+                amount: validated.data.lines.reduce((sum, l) => sum + (l.debitAmount || 0), 0),
+                reference: entry!.entryNumber,
+                description: entry!.description || 'Journal entry drafted',
+            }
+        );
+
         const basePath = context.subAccountId
             ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
             : `/agency/${context.agencyId}/fi/general-ledger/journal-entries`;
@@ -632,6 +646,18 @@ export const submitJournalEntry = async (entryId: string): Promise<ActionResult<
             description: `Journal entry ${entry.entryNumber} submitted for approval`,
         });
 
+        // Emit submitted event for fanout processing
+        await emitEvent(
+            'fi.general_ledger',
+            EVENT_KEYS.fi.general_ledger.journal_entries.submitted,
+            { type: 'JournalEntry', id: entryId },
+            { 
+                amount: entry.Lines.reduce((sum, l) => sum + l.debitAmount.toNumber(), 0),
+                reference: entry.entryNumber,
+                description: entry.description || 'Journal entry submitted',
+            }
+        );
+
         const basePath = context.subAccountId
             ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
             : `/agency/${context.agencyId}/fi/general-ledger/journal-entries`;
@@ -791,6 +817,39 @@ export const approveJournalEntry = async (
             description: `Journal entry ${entry.entryNumber} approved and posted`,
         });
 
+        // Emit approved event
+        await emitEvent(
+            'fi.general_ledger',
+            EVENT_KEYS.fi.general_ledger.journal_entries.approved,
+            { type: 'JournalEntry', id: entryId },
+            { 
+                amount: entry.Lines.reduce((sum, l) => sum + l.debitAmount.toNumber(), 0),
+                reference: entry.entryNumber,
+                description: entry.description || 'Journal entry approved',
+                metadata: { periodId: entry.periodId },
+            }
+        );
+
+        // Emit posted event for fanout (triggers cross-module postings)
+        await emitEvent(
+            'fi.general_ledger',
+            EVENT_KEYS.fi.general_ledger.journal_entries.posted,
+            { type: 'JournalEntry', id: entryId },
+            { 
+                amount: entry.Lines.reduce((sum, l) => sum + l.debitAmount.toNumber(), 0),
+                reference: entry.entryNumber,
+                description: entry.description || 'Journal entry posted',
+                metadata: {
+                    periodId: entry.periodId,
+                    lines: entry.Lines.map(l => ({
+                        accountId: l.accountId,
+                        debit: l.debitAmount.toNumber(),
+                        credit: l.creditAmount.toNumber(),
+                    })),
+                },
+            }
+        );
+
         const basePath = context.subAccountId
             ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
             : `/agency/${context.agencyId}/fi/general-ledger/journal-entries`;
@@ -859,6 +918,18 @@ export const rejectJournalEntry = async (
             description: `Journal entry ${entry.entryNumber} rejected`,
             reason,
         });
+
+        // Emit rejected event
+        await emitEvent(
+            'fi.general_ledger',
+            EVENT_KEYS.fi.general_ledger.journal_entries.rejected,
+            { type: 'JournalEntry', id: entryId },
+            { 
+                amount: 0,
+                reference: entry.entryNumber,
+                description: reason || 'Journal entry rejected',
+            }
+        );
 
         const basePath = context.subAccountId
             ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
@@ -1032,6 +1103,39 @@ export const reverseJournalEntry = async (
             description: `Reversal entry ${reversal.entryNumber} created for JE ${entry.entryNumber}`,
             reason,
         });
+
+        // Emit reversed event for original entry
+        await emitEvent(
+            'fi.general_ledger',
+            EVENT_KEYS.fi.general_ledger.journal_entries.reversed,
+            { type: 'JournalEntry', id: entryId },
+            { 
+                amount: 0,
+                reference: entry.entryNumber,
+                description: reason || 'Journal entry reversed',
+                metadata: {
+                    reversalEntryId: reversal.id,
+                    reversalEntryNumber: reversal.entryNumber,
+                    reversalDate: reversal.entryDate,
+                },
+            }
+        );
+
+        // Emit posted event for reversal entry (triggers balance adjustments)
+        await emitEvent(
+            'fi.general_ledger',
+            EVENT_KEYS.fi.general_ledger.journal_entries.posted,
+            { type: 'JournalEntry', id: reversal.id },
+            { 
+                amount: entry.Lines.reduce((sum, l) => sum + l.creditAmount.toNumber(), 0),
+                reference: reversal.entryNumber,
+                description: reversal.description || 'Reversal entry posted',
+                metadata: {
+                    isReversal: true,
+                    originalEntryId: entryId,
+                },
+            }
+        );
 
         const basePath = context.subAccountId
             ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`

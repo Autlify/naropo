@@ -890,6 +890,22 @@ B (255 */
     --button-primary-text-hover: 0 0% 100%;
     --button-primary-text-disabled: 219 6% 50%;
     /* #787882 */
+    
+    --button-success-bg: 145 63.64% 40%;
+    --button-success-bg-hover: 145 63.64% 45%;
+    --button-success-text: 145 63.64% 97%;
+    --button-success-text-hover: 145 63.64% 97%;
+    --button-warning-bg: 42 100% 57%;
+    --button-warning-bg-hover: 42 100% 62%;
+    --button-warning-text: 42 100% 11.8%;
+    --button-warning-text-hover: 42 100% 11.8%;
+    --button-info-bg: 210 100% 56%;
+    --button-info-bg-hover: 210 100% 61%;
+    --button-info-text: 210 100% 97%;
+    --button-info-text-hover: 210 100% 97%;
+
+
+
 
     /* Button States - Brand (Alias to Primary with consistent naming) */
     --button-brand-bg: var(--button-primary-bg);
@@ -1608,6 +1624,12 @@ B (255 */
   --color-form-border: hsl(var(--form-border, var(--input)));
   --color-form-error: hsl(var(--form-error, var(--destructive)));
   --color-form-success: hsl(var(--form-success, var(--green-border)));
+
+  /* Button States (if defined in themes) */
+  --color-button-success: hsl(var(--button-success, var(--green-600)));
+  --color-button-error: hsl(var(--button-error, var(--destructive)));
+  --color-button-warning: hsl(var(--button-warning, var(--amber-600)));
+  --color-button-info: hsl(var(--button-info, var(--blue-600)));
 
   /* Dropdown/Popover States (if defined in themes) */
   --color-dropdown-background: hsl(var(--dropdown-background, var(--popover)));

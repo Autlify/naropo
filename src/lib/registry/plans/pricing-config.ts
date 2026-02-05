@@ -34,14 +34,30 @@ import type {
     PricingConfig,
     PriceCalculationInput,
     PriceBreakdownItem,
-    PriceCalculationResult, PricingConfigKeyType
+    PriceCalculationResult,
+    PricingConfigKeyType,
+    PricingCardData,
 } from '@/types/billing'
 
+// Re-export PricingCardData for consumers
+export type { PricingCardData } from '@/types/billing'
+
 // ============================================================================
-// Pricing Configuration (Single Source of Truth)
+// PRICING_CONFIG (Single Source of Truth)
+// The sync-stripe script updates stripePriceId values here.
+// All other price ID lookups should derive from this config.
 // ============================================================================
 
-export const PRICING_CONFIG: Record<string, PricingConfig> = {
+const definePricingConfig = <T extends Record<string, Omit<PricingConfig, 'key'>>>(
+    cfg: T
+): { [K in keyof T]: T[K] & { key: K } } => {
+    const out: any = {};
+    for (const k of Object.keys(cfg)) out[k] = { ...cfg[k], key: k };
+    return out;
+}
+
+
+export const PRICING_CONFIG = definePricingConfig({
     // ========== PLANS (Services - Revenue recognized over time) ==========
     STARTER: {
         key: 'STARTER',
@@ -70,14 +86,14 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         },
 
         // Pricing
-        baseAmount: 9900,              // MYR 99.00
+        baseAmount: 7900,              // MYR 79.00 (matches constants.ts)
         currency: 'MYR',
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'none',
         tier: 1,
         trialDays: 14,
-        stripePriceId: 'price_1SpVOXJglUPlULDQt9Ejhunb',
+        stripePriceId: 'price_1SxAiXJglUPlULDQJDOmcB2C',
         featureOverrides: {
             'core.subaccounts': 3,
             'core.team_members': 2,
@@ -112,14 +128,14 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         },
 
         // Pricing
-        baseAmount: 19900,             // MYR 199.00
+        baseAmount: 19900,             // MYR 199.00 (matches constants.ts)
         currency: 'MYR',
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'none',
         tier: 2,
         trialDays: 14,
-        stripePriceId: 'price_1SpVOYJglUPlULDQhsRkA5YV',
+        stripePriceId: 'price_1SxAiYJglUPlULDQvHsvpsmi',
         featureOverrides: {
             'core.subaccounts': 10,
             'core.team_members': 10,
@@ -154,14 +170,14 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         },
 
         // Pricing
-        baseAmount: 54900,             // MYR 549.00
+        baseAmount: 39900,             // MYR 399.00 (matches constants.ts)
         currency: 'MYR',
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'none',
         tier: 3,
-        trialDays: 0,
-        stripePriceId: 'price_1SpVOZJglUPlULDQoFq3iPES',
+        trialDays: 14,
+        stripePriceId: 'price_1SxAiYJglUPlULDQtxTI8UwM',
         featureOverrides: {
             'core.subaccounts': '∞',
             'core.team_members': '∞',
@@ -197,21 +213,20 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
             profitCenter: 'ENTERPRISE',
         },
 
-        // Pricing
-        baseAmount: 99900,             // MYR 999.00 base
+        // Pricing - tiered_graduated matches constants.ts Enterprise tiers
+        baseAmount: 0,                 // No base - pure per-unit graduated pricing
         currency: 'MYR',
         interval: 'month',
         billingScheme: 'tiered_graduated',
-        pricingUnit: 'subaccount',
+        pricingUnit: 'subaccount',     // Per sub-account pricing (headcount)
         tier: 4,
         trialDays: 0,
-        // Graduated tiers: base includes 20, then per-unit pricing
+        stripePriceId: 'price_1SxAiZJglUPlULDQge6pU88h',  // Tiered price
+        // Graduated tiers from constants.ts: 14900/12900/10900 per unit
         tiers: [
-            { upTo: 20, flatAmount: 99900 },        // First 20: MYR 999 flat
-            { upTo: 50, unitAmount: 2500 },         // 21-50: MYR 25/each
-            { upTo: 100, unitAmount: 2000 },        // 51-100: MYR 20/each
-            { upTo: 250, unitAmount: 1500 },        // 101-250: MYR 15/each
-            { upTo: 'inf', unitAmount: 1000 },      // 251+: MYR 10/each
+            { upTo: 50, unitAmount: 14900 },        // 1-50: MYR 149/each
+            { upTo: 100, unitAmount: 12900 },       // 51-100: MYR 129/each
+            { upTo: 'inf', unitAmount: 10900 },     // 101+: MYR 109/each
         ],
         featureOverrides: {
             'core.subaccounts': '∞',
@@ -222,7 +237,113 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
             'fi.gl_access': true,
         },
     },
+    // ========== YEARLY PLANS (20% discount) ==========
+    STARTER_YEARLY: {
+        key: 'STARTER_YEARLY',
+        type: 'plan',
+        name: 'Starter',
+        description: 'Perfect for trying out Autlify',
+        productType: 'service',
+        revenueRecognition: 'over_time_ratable',
+        deferredRevenue: {
+            createDeferredEntry: true,
+            deferredRevenueAccount: '2400-DEFERRED-REV',
+            revenueAccount: '4100-SUBSCRIPTION-REV',
+            recognitionFrequency: 'monthly',
+        },
+        tax: { taxCategory: 'standard', stripeTaxCode: 'txcd_10103001' },
+        accounting: {
+            revenueAccountCode: '4100',
+            deferredRevenueAccountCode: '2400',
+            costCenter: 'SAAS',
+            profitCenter: 'SUBSCRIPTIONS',
+        },
+        baseAmount: 79000,             // MYR 790/year (79 × 10 months = 20% off)
+        currency: 'MYR',
+        interval: 'year',
+        billingScheme: 'flat',
+        pricingUnit: 'none',
+        tier: 1,
+        trialDays: 14,
+        stripePriceId: 'price_1SxAiaJglUPlULDQ9K3ngV94',
+        featureOverrides: {
+            'core.subaccounts': 3,
+            'core.team_members': 2,
+            'core.storage_gb': 5,
+        },
+    },
 
+    BASIC_YEARLY: {
+        key: 'BASIC_YEARLY',
+        type: 'plan',
+        name: 'Basic',
+        description: 'For serious agency owners',
+        productType: 'service',
+        revenueRecognition: 'over_time_ratable',
+        deferredRevenue: {
+            createDeferredEntry: true,
+            deferredRevenueAccount: '2400-DEFERRED-REV',
+            revenueAccount: '4100-SUBSCRIPTION-REV',
+            recognitionFrequency: 'monthly',
+        },
+        tax: { taxCategory: 'standard', stripeTaxCode: 'txcd_10103001' },
+        accounting: {
+            revenueAccountCode: '4100',
+            deferredRevenueAccountCode: '2400',
+            costCenter: 'SAAS',
+            profitCenter: 'SUBSCRIPTIONS',
+        },
+        baseAmount: 199000,            // MYR 1990/year (199 × 10 months = 20% off)
+        currency: 'MYR',
+        interval: 'year',
+        billingScheme: 'flat',
+        pricingUnit: 'none',
+        tier: 2,
+        trialDays: 14,
+        stripePriceId: 'price_1SxAibJglUPlULDQDZjEsjSk',
+        featureOverrides: {
+            'core.subaccounts': 10,
+            'core.team_members': 10,
+            'core.storage_gb': 25,
+        },
+    },
+
+    ADVANCED_YEARLY: {
+        key: 'ADVANCED_YEARLY',
+        type: 'plan',
+        name: 'Advanced',
+        description: 'The ultimate agency kit',
+        productType: 'service',
+        revenueRecognition: 'over_time_ratable',
+        deferredRevenue: {
+            createDeferredEntry: true,
+            deferredRevenueAccount: '2400-DEFERRED-REV',
+            revenueAccount: '4100-SUBSCRIPTION-REV',
+            recognitionFrequency: 'monthly',
+        },
+        tax: { taxCategory: 'standard', stripeTaxCode: 'txcd_10103001' },
+        accounting: {
+            revenueAccountCode: '4100',
+            deferredRevenueAccountCode: '2400',
+            costCenter: 'SAAS',
+            profitCenter: 'SUBSCRIPTIONS',
+        },
+        baseAmount: 399000,            // MYR 3990/year (399 × 10 months = 20% off)
+        currency: 'MYR',
+        interval: 'year',
+        billingScheme: 'flat',
+        pricingUnit: 'none',
+        tier: 3,
+        trialDays: 14,
+        stripePriceId: 'price_1SxAibJglUPlULDQOQAltSBS',
+        featureOverrides: {
+            'core.subaccounts': '∞',
+            'core.team_members': '∞',
+            'core.storage_gb': 100,
+            'billing.rebilling': true,
+            'billing.priority_support': true,
+        },
+    },
     // ========== ADD-ONS (Services - Revenue recognized over time) ==========
     PRIORITY_SUPPORT: {
         key: 'PRIORITY_SUPPORT',
@@ -251,12 +372,12 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         },
 
         // Pricing
-        baseAmount: 14900,             // MYR 149.00 flat
+        baseAmount: 9900,              // MYR 99.00 flat (from constants.ts)
         currency: 'MYR',
         interval: 'month',
         billingScheme: 'flat',         // Flat rate - no per-unit
         pricingUnit: 'none',
-        stripePriceId: 'price_1SpVObJglUPlULDQRfhLJNEo',
+        stripePriceId: 'price_1SxAicJglUPlULDQRy4FId25',
         featureOverrides: {
             'billing.priority_support': true,
         },
@@ -289,17 +410,12 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         },
 
         // Pricing
-        baseAmount: 4900,              // MYR 49.00 base
+        baseAmount: 24900,             // MYR 249.00 flat (from constants.ts)
         currency: 'MYR',
         interval: 'month',
-        billingScheme: 'base_plus_overage',
+        billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        overage: {
-            includedUnits: 5,            // 5 SubAccounts included in base
-            unitAmount: 1000,            // MYR 10.00 per additional SubAccount
-            maxUnits: 100,               // Cap at 100 for this tier
-        },
-        stripePriceId: 'price_fi_gl_base',
+        stripePriceId: 'price_1SxAidJglUPlULDQeQ6aNzAF',
         featureOverrides: {
             'fi.gl_access': true,
             'fi.gl_accounts': '∞',
@@ -334,15 +450,12 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         },
 
         // Pricing
-        baseAmount: 7900,              // MYR 79.00 base
+        baseAmount: 12900,             // MYR 129.00 flat (from constants.ts)
         currency: 'MYR',
         interval: 'month',
-        billingScheme: 'base_plus_overage',
+        billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        overage: {
-            includedUnits: 3,
-            unitAmount: 1500,            // MYR 15.00 per additional
-        },
+        stripePriceId: 'price_1SxAieJglUPlULDQ1tzfiQqh',
         featureOverrides: {
             'fi.ar_access': true,
         },
@@ -375,20 +488,239 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         },
 
         // Pricing
-        baseAmount: 7900,              // MYR 79.00 base
+        baseAmount: 12900,             // MYR 129.00 flat (from constants.ts)
         currency: 'MYR',
         interval: 'month',
-        billingScheme: 'base_plus_overage',
+        billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        overage: {
-            includedUnits: 3,
-            unitAmount: 1500,            // MYR 15.00 per additional
-        },
+        stripePriceId: 'price_1SxAifJglUPlULDQR0r8hQ0J',
         featureOverrides: {
             'fi.ap_access': true,
         },
     },
 
+    FI_BL: {
+        key: 'FI_BL',
+        type: 'addon',
+        name: 'Bank Ledgers',
+        description: 'Bank account management and reconciliation',
+
+        // Product Classification
+        productType: 'service',
+        revenueRecognition: 'over_time_ratable',
+        deferredRevenue: {
+            createDeferredEntry: true,
+            deferredRevenueAccount: '2400-DEFERRED-REV',
+            revenueAccount: '4300-ADDON-REV',
+            recognitionFrequency: 'monthly',
+        },
+        tax: {
+            taxCategory: 'standard',
+            stripeTaxCode: 'txcd_10103001',
+        },
+        accounting: {
+            revenueAccountCode: '4300',
+            deferredRevenueAccountCode: '2400',
+            costCenter: 'FINANCE',
+            profitCenter: 'ADDONS',
+        },
+
+        // Pricing
+        baseAmount: 11900,             // MYR 119.00 flat
+        currency: 'MYR',
+        interval: 'month',
+        billingScheme: 'flat',
+        pricingUnit: 'subaccount',
+        stripePriceId: 'price_1SxAifJglUPlULDQXgIbxzf7',
+        featureOverrides: {
+            'fi.bl_access': true,
+        },
+    },
+    FI_FS: {
+        key: 'FI_FS',
+        type: 'addon',
+        name: 'Financial Statements',
+        description: 'Advanced financial reporting and statements',
+
+        // Product Classification
+        productType: 'service',
+        revenueRecognition: 'over_time_ratable',
+        deferredRevenue: {
+            createDeferredEntry: true,
+            deferredRevenueAccount: '2400-DEFERRED-REV',
+            revenueAccount: '4300-ADDON-REV',
+            recognitionFrequency: 'monthly',
+        },
+        tax: {
+            taxCategory: 'standard',
+            stripeTaxCode: 'txcd_10103001',
+        },
+        accounting: {
+            revenueAccountCode: '4300',
+            deferredRevenueAccountCode: '2400',
+            costCenter: 'FINANCE',
+            profitCenter: 'ADDONS',
+        },
+
+        // Pricing
+        baseAmount: 12900,             // MYR 129.00 flat
+        currency: 'MYR',
+        interval: 'month',
+        billingScheme: 'flat',
+        pricingUnit: 'subaccount',
+        stripePriceId: 'price_1SxAigJglUPlULDQleXpx8Ac',
+        featureOverrides: {
+            'fi.fs_access': true,
+        },
+    },
+    CO_CCA: {
+        key: 'CO_CCA',
+        type: 'addon',
+        name: 'Cost Accounting',
+        description: 'Cost center and profit center management',
+
+        // Product Classification
+        productType: 'service',
+        revenueRecognition: 'over_time_ratable',
+        deferredRevenue: {
+            createDeferredEntry: true,
+            deferredRevenueAccount: '2400-DEFERRED-REV',
+            revenueAccount: '4300-ADDON-REV',
+            recognitionFrequency: 'monthly',
+        },
+        tax: {
+            taxCategory: 'standard',
+            stripeTaxCode: 'txcd_10103001',
+        },
+        accounting: {
+            revenueAccountCode: '4300',
+            deferredRevenueAccountCode: '2400',
+            costCenter: 'COSTING',
+            profitCenter: 'ADDONS',
+        },
+
+        // Pricing
+        baseAmount: 12900,             // MYR 129.00 flat
+        currency: 'MYR',
+        interval: 'month',
+        billingScheme: 'flat',
+        pricingUnit: 'subaccount',
+        stripePriceId: 'price_1SxAihJglUPlULDQftoxdK6t',
+        featureOverrides: {
+            'co.cca_access': true,
+        },
+    },
+    CO_PCA: {
+        key: 'CO_PCA',
+        type: 'addon',
+        name: 'Profit Center Accounting',
+        description: 'Profit center tracking and analysis',
+
+        // Product Classification
+        productType: 'service',
+        revenueRecognition: 'over_time_ratable',
+        deferredRevenue: {
+            createDeferredEntry: true,
+            deferredRevenueAccount: '2400-DEFERRED-REV',
+            revenueAccount: '4300-ADDON-REV',
+            recognitionFrequency: 'monthly',
+        },
+        tax: {
+            taxCategory: 'standard',
+            stripeTaxCode: 'txcd_10103001',
+        },
+        accounting: {
+            revenueAccountCode: '4300',
+            deferredRevenueAccountCode: '2400',
+            costCenter: 'COSTING',
+            profitCenter: 'ADDONS',
+        },
+
+        // Pricing
+        baseAmount: 12900,             // MYR 129.00 flat
+        currency: 'MYR',
+        interval: 'month',
+        billingScheme: 'flat',
+        pricingUnit: 'subaccount',
+        stripePriceId: 'price_1SxAihJglUPlULDQiijyjkbo',
+        featureOverrides: {
+            'co.pca_access': true,
+        },
+    },
+    CO_PA: {
+        key: 'CO_PA',
+        type: 'addon',
+        name: 'Profitability Analysis',
+        description: 'Detailed profitability reporting and insights',
+
+        // Product Classification
+        productType: 'service',
+        revenueRecognition: 'over_time_ratable',
+        deferredRevenue: {
+            createDeferredEntry: true,
+            deferredRevenueAccount: '2400-DEFERRED-REV',
+            revenueAccount: '4300-ADDON-REV',
+            recognitionFrequency: 'monthly',
+        },
+        tax: {
+            taxCategory: 'standard',
+            stripeTaxCode: 'txcd_10103001',
+        },
+        accounting: {
+            revenueAccountCode: '4300',
+            deferredRevenueAccountCode: '2400',
+            costCenter: 'COSTING',
+            profitCenter: 'ADDONS',
+        },
+
+        // Pricing
+        baseAmount: 12900,             // MYR 129.00 flat
+        currency: 'MYR',
+        interval: 'month',
+        billingScheme: 'flat',
+        pricingUnit: 'subaccount',
+        stripePriceId: 'price_1SxAiiJglUPlULDQMTKUghdO',
+        featureOverrides: {
+            'co.pa_access': true,
+        },
+    },
+    CO_BUDGET: {
+        key: 'CO_BUDGET',
+        type: 'addon',
+        name: 'Budgeting & Planning',
+        description: 'Comprehensive budgeting and financial planning tools',
+
+        // Product Classification
+        productType: 'service',
+        revenueRecognition: 'over_time_ratable',
+        deferredRevenue: {
+            createDeferredEntry: true,
+            deferredRevenueAccount: '2400-DEFERRED-REV',
+            revenueAccount: '4300-ADDON-REV',
+            recognitionFrequency: 'monthly',
+        },
+        tax: {
+            taxCategory: 'standard',
+            stripeTaxCode: 'txcd_10103001',
+        },
+        accounting: {
+            revenueAccountCode: '4300',
+            deferredRevenueAccountCode: '2400',
+            costCenter: 'COSTING',
+            profitCenter: 'ADDONS',
+        },
+
+        // Pricing
+        baseAmount: 12900,             // MYR 129.00 flat
+        currency: 'MYR',
+        interval: 'month',
+        billingScheme: 'flat',
+        pricingUnit: 'subaccount',
+        stripePriceId: 'price_1SxAijJglUPlULDQQsNguflG',
+        featureOverrides: {
+            'co.budget_access': true,
+        },
+    },
     WHITE_LABEL: {
         key: 'WHITE_LABEL',
         type: 'addon',
@@ -416,11 +748,12 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         },
 
         // Pricing
-        baseAmount: 29900,             // MYR 299.00 base
+        baseAmount: 19900,             // MYR 199.00 flat (from constants.ts)
         currency: 'MYR',
         interval: 'month',
-        billingScheme: 'base_plus_overage',
+        billingScheme: 'flat',
         pricingUnit: 'subaccount',
+        stripePriceId: 'price_1SxAikJglUPlULDQLO5jRqaL',
         overage: {
             includedUnits: 3,            // 3 branded SubAccounts included
             unitAmount: 2500,            // MYR 25.00 per additional
@@ -437,8 +770,8 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         name: 'Setup & Onboarding',
         description: 'One-time setup and configuration assistance',
 
-        // Product Classification - GOOD (recognized immediately)
-        productType: 'good',
+        // Product Classification - SERVICE (intangible)
+        productType: 'service',
         revenueRecognition: 'point_in_time',
         deferredRevenue: {
             createDeferredEntry: false, // No deferral for goods
@@ -459,6 +792,7 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         interval: 'one_time',
         billingScheme: 'flat',
         pricingUnit: 'none',
+        stripePriceId: 'price_1SxAikJglUPlULDQh9eZmiVC',
         featureOverrides: {},
     },
 
@@ -468,8 +802,8 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         name: 'API Credits Pack',
         description: 'Pre-purchased API call credits',
 
-        // Product Classification - GOOD (prepaid credits)
-        productType: 'good',
+        // Product Classification - SERVICE (intangible consumables per IFRS)
+        productType: 'service',
         revenueRecognition: 'over_time_usage', // Recognized as credits are consumed
         deferredRevenue: {
             createDeferredEntry: true,
@@ -494,6 +828,7 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         interval: 'one_time',
         billingScheme: 'per_unit',
         pricingUnit: 'api_call',
+        stripePriceId: 'price_1SxAilJglUPlULDQiNEHFYdB',
         featureOverrides: {},
     },
 
@@ -503,8 +838,8 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
         name: 'Data Migration Service',
         description: 'Professional data migration from other platforms',
 
-        // Product Classification - GOOD (milestone-based)
-        productType: 'good',
+        // Product Classification - SERVICE (intangible)
+        productType: 'service',
         revenueRecognition: 'milestone', // Recognized upon migration completion
         deferredRevenue: {
             createDeferredEntry: true,
@@ -522,32 +857,31 @@ export const PRICING_CONFIG: Record<string, PricingConfig> = {
             profitCenter: 'SERVICES',
         },
 
-        // Pricing
+        // Pricing - Flat one-time fee (tiered pricing not supported for one_time)
+        // Volume-based quotes handled separately, not via Stripe tiered pricing
         baseAmount: 99900,             // MYR 999.00 base
         currency: 'MYR',
         interval: 'one_time',
-        billingScheme: 'tiered_volume',
-        pricingUnit: 'contact',
-        tiers: [
-            { upTo: 1000, flatAmount: 99900 },      // Up to 1K contacts: MYR 999
-            { upTo: 10000, flatAmount: 249900 },    // Up to 10K: MYR 2,499
-            { upTo: 100000, flatAmount: 499900 },   // Up to 100K: MYR 4,999
-            { upTo: 'inf', flatAmount: 999900 },    // 100K+: MYR 9,999
-        ],
+        billingScheme: 'flat',         // Changed from tiered_volume - Stripe doesn't support tiered one_time
+        pricingUnit: 'none',
+        stripePriceId: 'price_1SxAimJglUPlULDQkn6cXTqS',
+        // Note: Volume tiers handled via custom quotes, not Stripe pricing
+        // Tiers for reference (used in custom quote generation):
+        // - Up to 1K contacts: MYR 999
+        // - Up to 10K: MYR 2,499
+        // - Up to 100K: MYR 4,999
+        // - 100K+: MYR 9,999
         featureOverrides: {},
     },
-}
-
-// ============================================================================
-// Price Calculation Engine (Config-Driven, No Hardcoding)
-// ============================================================================
+} as const)
 
 /**
  * Calculate price based on configuration
  * This is the ONLY function that calculates prices - all logic is config-driven
  */
 export function calculatePrice(input: PriceCalculationInput): PriceCalculationResult {
-    const config = PRICING_CONFIG[input.configKey]
+    const priceKey = input.configKey as PricingConfigKeyType
+    const config = PRICING_CONFIG[priceKey] as PricingConfig | undefined
     if (!config) {
         throw new Error(`Unknown pricing config: ${input.configKey}`)
     }
@@ -700,38 +1034,11 @@ export function formatAmount(amountInCents: number, currency: string): string {
 }
 
 /**
- * Get all plans sorted by tier
- */
-export function getPlans(): PricingConfig[] {
-    return Object.values(PRICING_CONFIG)
-        .filter((c) => c.type === 'plan')
-        .sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0))
-}
-
-/**
- * Get all add-ons
- */
-export function getAddons(): PricingConfig[] {
-    return Object.values(PRICING_CONFIG)
-        .filter((c) => c.type === 'addon')
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-}
-
-/**
- * Get config by Stripe price ID
- */
-export function getConfigByPriceId(priceId: string): PricingConfig | undefined {
-    return Object.values(PRICING_CONFIG).find(
-        (c) => c.stripePriceId === priceId || c.stripeTieredPriceId === priceId
-    )
-}
-
-/**
  * Calculate total subscription cost for agency
  */
 export function calculateSubscriptionTotal(
-    planKey: string,
-    addonKeys: string[],
+    planKey: PriceKey,
+    addonKeys: AddonKey[],
     quantities: Record<string, number> = {}
 ): {
     planCost: PriceCalculationResult
@@ -1001,18 +1308,19 @@ export function generateRevenueSchedule(
  * Get all goods (one-time products)
  */
 export function getGoods(): PricingConfig[] {
-    return Object.values(PRICING_CONFIG)
-        .filter((c) => c.productType === 'good')
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    // PRICING_CONFIG is declared `as const`, so Object.values() can overly-narrow
+    // productType to the literals present in the config (currently: "service").
+    // Cast to PricingConfig[] to preserve the intended union and allow filtering.
+    return (Object.values(PRICING_CONFIG) as PricingConfig[]).filter(
+        (c) => c.productType === 'good'
+    )
 }
 
 /**
  * Get all services (recurring products)
  */
 export function getServices(): PricingConfig[] {
-    return Object.values(PRICING_CONFIG)
-        .filter((c) => c.productType === 'service')
-        .sort((a, b) => (a.tier ?? a.sortOrder ?? 0) - (b.tier ?? b.sortOrder ?? 0))
+    return Object.values(PRICING_CONFIG).filter((c) => c.productType === 'service')
 }
 
 /**
@@ -1043,3 +1351,158 @@ export function getAccountCodes(config: PricingConfig): {
             : null,
     }
 }
+
+// ============================================================================
+// Pricing Cards for UI (Single Source of Truth)
+// ============================================================================
+
+/** Plan features for UI display */
+export const PLAN_FEATURES: Record<string, string[]> = {
+    STARTER: [
+        'Up to 3 Sub Accounts',
+        'Basic analytics',
+        'Email support',
+        '1GB storage',
+    ],
+    BASIC: [
+        'Up to 10 Sub Accounts',
+        'Advanced analytics',
+        'Priority email support',
+        '10GB storage',
+        'API access',
+    ],
+    ADVANCED: [
+        'Up to 50 Sub Accounts',
+        'Full analytics suite',
+        '24/7 phone & email support',
+        '100GB storage',
+        'Full API access',
+        'Custom integrations',
+    ],
+    ENTERPRISE: [
+        'Unlimited Sub Accounts',
+        'Enterprise analytics',
+        'Dedicated support team',
+        'Unlimited storage',
+        'Full API access',
+        'Custom integrations',
+        'SLA guarantee',
+        'White-label options',
+    ],
+}
+
+// PricingCardData is imported from @/types/billing (SSoT)
+// Re-export for backward compatibility with existing imports
+
+
+/**
+ * Get pricing cards for UI display
+ * This is the SINGLE SOURCE OF TRUTH for pricing UI
+ * @param interval - 'month' or 'year'
+ */
+export function getPricingCards(interval: 'month' | 'year' = 'month'): PricingCardData[] {
+    // Filter plans by interval - yearly plans have _YEARLY suffix
+    const plans = Object.values(PRICING_CONFIG).filter((config) => {
+        if (config.type !== 'plan') return false
+        if (interval === 'year') {
+            return config.key.endsWith('_YEARLY')
+        } else {
+            // Monthly plans don't have _YEARLY suffix and aren't ENTERPRISE (tiered)
+            return !config.key.endsWith('_YEARLY') && config.billingScheme !== 'tiered_graduated'
+        }
+    }).sort((a, b) => (a.baseAmount ?? 0) - (b.baseAmount ?? 0))
+
+    // Add Enterprise for display (both monthly and yearly show it)
+    const enterprise = PRICING_CONFIG.ENTERPRISE
+    if (enterprise) {
+        plans.push(enterprise)
+    }
+
+    return plans.map((config: PricingConfig) => {
+        // Calculate savings for yearly plans
+        let savings: string | undefined
+        if (interval === 'year' && config.key.endsWith('_YEARLY')) {
+            const monthlyKey = config.key.replace('_YEARLY', '')
+            const monthlyConfig = Object.values(PRICING_CONFIG).find(c =>
+                c.type === 'plan' &&
+                c.key === monthlyKey &&
+                !c.key.endsWith('_YEARLY')
+            )
+            if (monthlyConfig) {
+                const monthlyTotal = monthlyConfig.baseAmount * 12
+                const yearlySavings = monthlyTotal - config.baseAmount
+                const monthlySavings = Math.round(yearlySavings / 12)
+                savings = `Save ${formatAmount(monthlySavings, config.currency)} per month with annual billing`
+            }
+        }
+
+        // Get features from base plan key (without _YEARLY suffix)
+        const baseKey = config.key.replace('_YEARLY', '')
+
+        return {
+            key: config.key,
+            title: config.name,
+            description: config.description ?? '',
+            price: formatAmount(config.baseAmount, config.currency),
+            priceAmount: config.baseAmount,
+            priceId: config.stripePriceId ?? '',
+            interval,
+            features: PLAN_FEATURES[baseKey] ?? [],
+            highlight: baseKey === 'ADVANCED',
+            trialEnabled: (config.trialDays ?? 0) > 0,
+            trialDays: config.trialDays ?? 0,
+            isTiered: config.billingScheme === 'tiered_graduated',
+            savings,
+        }
+    })
+}
+
+
+/**
+ * Get a pricing card by Stripe price ID
+ * Useful for checkout pages that need to lookup plan details by priceId
+ */
+export function getPricingCardByPriceId(priceId: string): PricingCardData | undefined {
+    const monthlyCards = getPricingCards('month')
+    const yearlyCards = getPricingCards('year')
+
+    // Check monthly first, then yearly
+    return monthlyCards.find(card => card.priceId === priceId)
+        ?? yearlyCards.find(card => card.priceId === priceId)
+}
+
+
+// ============================================================================
+// Type Assertions
+// ============================================================================
+
+/** Pricing config key field type */
+export type PriceKey = (typeof PRICING_CONFIG)[keyof typeof PRICING_CONFIG]['key'];
+type PricingConfigMap = typeof PRICING_CONFIG
+type PricingConfigKey = keyof PricingConfigMap
+
+export type PlanKey = {
+    [K in PricingConfigKey]: PricingConfigMap[K]['type'] extends 'plan'
+    ? (K extends `${string}_${'YEARLY' | 'MONTHLY'}` ? never : K)
+    : never
+}[PricingConfigKey]
+
+
+export type AddonKey = {
+    [K in PricingConfigKey]: PricingConfigMap[K]['type'] extends 'addon'
+    ? (K extends `${string}_${'YEARLY' | 'MONTHLY'}` ? never : K)
+    : never
+}[PricingConfigKey]
+
+export type PricingConfigItem = (typeof PRICING_CONFIG)[PriceKey];
+
+
+// Dynamic extraction of ID
+export const PRICE_IDS: Record<PriceKey, string> = Object.fromEntries(
+    Object.values(PRICING_CONFIG)
+        .map((config) => [config.key as PriceKey, config.stripePriceId ?? ''])
+) as Record<PriceKey, string>;
+
+// ============================================================================
+// Recent Edits
+// ============================================================================

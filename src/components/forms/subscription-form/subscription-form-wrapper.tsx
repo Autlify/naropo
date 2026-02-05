@@ -1,7 +1,7 @@
 'use client'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
-import { pricingCards } from '@/lib/constants'
+import { getPricingCardByPriceId } from '@/lib/registry/plans/pricing-config'
 import { useModal } from '@/providers/modal-provider'
 import { Plan } from '@/generated/prisma/client'
 import { StripeElementsOptions } from '@stripe/stripe-js'
@@ -130,10 +130,7 @@ const SubscriptionFormWrapper = ({ customerId, planExists, currentPriceId }: Pro
                       {price.nickname}
                     </p>
                     <p className="text-sm text-muted-foreground font-normal">
-                      {
-                        pricingCards.find((p) => p.priceId === price.id)
-                          ?.description
-                      }
+                      {getPricingCardByPriceId(price.id)?.description}
                     </p>
                   </div>
                 </CardTitle>

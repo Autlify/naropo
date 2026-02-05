@@ -10,6 +10,8 @@ import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
 import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
 import { logGLAudit } from './audit'
+import { emitEvent } from './fanout'
+import { EVENT_KEYS } from '@/lib/registry/events/trigger'
 import { Decimal } from 'decimal.js'
 import { ReconciliationStatus, ReconciliationItemStatus } from '@/generated/prisma/client'
 import { ReconciliationInput, reconciliationSchema, MatchTransactionsInput, matchTransactionsSchema } from '../../../../schemas/fi/general-ledger/reconciliation'
@@ -235,6 +237,19 @@ export const createReconciliation = async (
       description: `Created reconciliation for account: ${reconciliation.accountId}`,
     })
 
+    // Emit reconciliation started event
+    await emitEvent(
+      'fi.general_ledger',
+      EVENT_KEYS.fi.general_ledger.reconciliation.started,
+      { type: 'Reconciliation', id: reconciliation.id },
+      { 
+        amount: parsed.data.statementBalance,
+        reference: reconciliation.Account.code,
+        description: 'Reconciliation started',
+        accountId: reconciliation.accountId,
+      }
+    )
+
     revalidatePath(`/agency/${context.agencyId}/fi/general-ledger/reconciliation`)
 
     return { success: true, data: reconciliation }
@@ -423,6 +438,19 @@ export const completeReconciliation = async (
       subAccountId: context.subAccountId,
       description: `Completed reconciliation: ${reconciliation.Account?.code}`, 
     })
+
+    // Emit reconciliation completed event
+    await emitEvent(
+      'fi.general_ledger',
+      EVENT_KEYS.fi.general_ledger.reconciliation.completed,
+      { type: 'Reconciliation', id },
+      { 
+        amount: difference.toNumber(),
+        reference: reconciliation.Account?.code || 'Unknown',
+        description: 'Reconciliation completed',
+        accountId: reconciliation.accountId,
+      }
+    )
 
     revalidatePath(`/agency/${context.agencyId}/fi/general-ledger/reconciliation`)
 

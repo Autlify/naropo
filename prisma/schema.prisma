@@ -412,6 +412,14 @@ model Agency {
   IntegrationConnections IntegrationConnection[]
   AppInstallations       AppInstallation[]
   SupportTickets         SupportTicket[]
+  Settings               AgencySettings?
+
+  // Enhanced FI-GL integration
+  AutomationAccountMappings AutomationAccountMapping[]
+  IntegrationConnectors     IntegrationConnector[]
+  FanoutLogs                FanoutLog[]
+  Templates                 Template[]
+  JournalUploadBatches      JournalUploadBatch[]
 
   @@index([taxIdentityId])
   @@schema("public")
@@ -436,6 +444,7 @@ model SubAccount {
   country          String
   agencyId         String
   Agency           Agency                    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  Settings         SubAccountSettings?
   TaxIdentity      TaxIdentity?              @relation(fields: [taxIdentityId], references: [id], map: "FK_SUBACCOUNT_TAXIDENTITY")
   SidebarOption    SubAccountSidebarOption[]
 
@@ -476,8 +485,43 @@ model SubAccount {
   AppInstallations       AppInstallation[]
   SupportTickets         SupportTicket[]
 
+  // Enhanced FI-GL integration
+  AutomationAccountMappings AutomationAccountMapping[]
+  JournalUploadBatches      JournalUploadBatch[]
+
   @@index([agencyId])
   @@index([taxIdentityId])
+  @@schema("public")
+}
+
+// ========================================
+// Settings (Agency/SubAccount)
+// ========================================
+model AgencySettings {
+  id                               String  @id @default(uuid())
+  agencyId                         String  @unique
+  // If true, SUBACCOUNT effective entitlements inherit AGENCY entitlements unless overridden.
+  entitlementsInheritToSubaccounts Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@schema("public")
+}
+
+model SubAccountSettings {
+  id                            String   @id @default(uuid())
+  subAccountId                  String   @unique
+  // Optional override. null = follow AgencySettings / env default.
+  entitlementsInheritFromAgency Boolean?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  SubAccount SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+
   @@schema("public")
 }
 
@@ -732,7 +776,7 @@ model SidebarOption {
   icon      Icon     @default(info)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  order     Int      @default(0)
   // Module as a sidebar grouping label
   module    String?
   subModule String?
@@ -754,8 +798,8 @@ model SidebarOptionLink {
   icon      Icon?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  feature String?
+  order     Int      @default(0)
+  feature   String?
 
   // Scope flags
   agency     Boolean @default(false)
@@ -809,9 +853,13 @@ model Notification {
 }
 
 enum Plan {
-  price_1SpVOXJglUPlULDQt9Ejhunb
-  price_1SpVOYJglUPlULDQhsRkA5YV
-  price_1SpVOZJglUPlULDQoFq3iPES
+  price_1SxAiXJglUPlULDQJDOmcB2C
+  price_1SxAiYJglUPlULDQvHsvpsmi
+  price_1SxAiYJglUPlULDQtxTI8UwM
+  price_1SxAiZJglUPlULDQge6pU88h
+  price_1SxAiaJglUPlULDQ9K3ngV94
+  price_1SxAibJglUPlULDQDZjEsjSk
+  price_1SxAibJglUPlULDQOQAltSBS
 
   @@schema("public")
 }
@@ -2039,6 +2087,10 @@ model ChartOfAccount {
   // Open Item & Subledger Relations
   OpenItems  OpenItem[]  @relation("OpenItemAccount")
   SubLedgers SubLedger[] @relation("SubLedgerControl")
+
+  // Automation Account Mappings
+  DebitMappings  AutomationAccountMapping[] @relation("DebitMappings")
+  CreditMappings AutomationAccountMapping[] @relation("CreditMappings")
 
   // E-Invoice relations
   EInvoiceSettingsRevenue    EInvoiceSettings[] @relation("EInvoiceRevenueAccount")
@@ -4199,5 +4251,332 @@ model AppliedDiscount {
   @@index([discountId])
   @@index([invoiceId])
   @@index([subscriptionId])
+  @@schema("finance")
+}
+
+// ============================================================================
+// AUTOMATION ACCOUNT MAPPINGS
+// Defines debit/credit account pairs for automatic postings (forex, discrepancy, etc.)
+// ============================================================================
+
+enum AutomationCategory {
+  FOREX
+  DISCREPANCY
+  OPERATIONS
+  CLEARING
+  TAX
+  INVENTORY
+
+  @@schema("finance")
+}
+
+model AutomationAccountMapping {
+  id           String  @id @default(uuid())
+  agencyId     String?
+  subAccountId String?
+
+  // Mapping category
+  category    AutomationCategory
+  subcategory String // e.g., 'realizedGain', 'paymentDifference'
+
+  // Account references
+  debitAccountId  String
+  creditAccountId String
+
+  // Configuration
+  tolerance Decimal? @db.Decimal(18, 4)
+  isActive  Boolean  @default(true)
+
+  // Template source
+  templateId String?
+  isCustom   Boolean @default(false)
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  // Relations
+  Agency        Agency?        @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  SubAccount    SubAccount?    @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  DebitAccount  ChartOfAccount @relation("DebitMappings", fields: [debitAccountId], references: [id], onDelete: Restrict)
+  CreditAccount ChartOfAccount @relation("CreditMappings", fields: [creditAccountId], references: [id], onDelete: Restrict)
+
+  @@unique([agencyId, subAccountId, category, subcategory])
+  @@index([agencyId])
+  @@index([subAccountId])
+  @@map("AutomationAccountMapping")
+  @@schema("finance")
+}
+
+// ============================================================================
+// INTEGRATION CONNECTORS
+// Configuration for internal modules and external service connections
+// ============================================================================
+
+enum ConnectorType {
+  INTERNAL_MODULE
+  EXCHANGE_RATE
+  ERP
+  BANK
+  PAYMENT
+  CUSTOM
+
+  @@schema("finance")
+}
+
+enum ConnectorHealth {
+  HEALTHY
+  DEGRADED
+  ERROR
+  UNKNOWN
+
+  @@schema("finance")
+}
+
+model IntegrationConnector {
+  id       String @id @default(uuid())
+  agencyId String
+
+  // Connector info
+  connectorId   String // e.g., 'fi-ar', 'frankfurter', 'stripe'
+  connectorType ConnectorType
+  name          String
+
+  // Configuration
+  isEnabled   Boolean @default(true)
+  settings    Json    @default("{}")
+  credentials String? @db.Text // Encrypted
+
+  // Mappings
+  fieldMappings Json @default("[]")
+
+  // Status
+  lastSync     DateTime?
+  lastError    String?         @db.Text
+  healthStatus ConnectorHealth @default(UNKNOWN)
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  // Relations
+  Agency     Agency      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  FanoutLogs FanoutLog[]
+
+  @@unique([agencyId, connectorId])
+  @@index([agencyId])
+  @@map("IntegrationConnector")
+  @@schema("finance")
+}
+
+// ============================================================================
+// FANOUT LOGS
+// Tracks cross-module posting events and their results
+// ============================================================================
+
+enum FanoutStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  PARTIAL
+  FAILED
+  SKIPPED
+
+  @@schema("finance")
+}
+
+model FanoutLog {
+  id          String  @id @default(uuid())
+  agencyId    String
+  connectorId String?
+
+  // Event info
+  eventId      String
+  eventType    String
+  sourceModule String
+
+  // Entity reference
+  entityType String
+  entityId   String
+
+  // Result
+  status          FanoutStatus @default(PENDING)
+  entriesCreated  Int          @default(0)
+  journalEntryIds String[]     @default([])
+
+  // Error tracking
+  errorMessage String?   @db.Text
+  errorDetails Json?
+  retryCount   Int       @default(0)
+  lastRetry    DateTime?
+
+  // Timing
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  // Relations
+  Agency    Agency                @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  Connector IntegrationConnector? @relation(fields: [connectorId], references: [id], onDelete: SetNull)
+
+  @@index([agencyId])
+  @@index([eventType])
+  @@index([status])
+  @@index([entityType, entityId])
+  @@map("FanoutLog")
+  @@schema("finance")
+}
+
+// ============================================================================
+// TEMPLATES
+// System and custom templates for various configurations
+// ============================================================================
+
+enum TemplateCategory {
+  CHART_OF_ACCOUNTS
+  JOURNAL_UPLOAD
+  POSTING_RULES
+  REPORT_LAYOUT
+  TAX_CONFIGURATION
+  INTEGRATION_MAPPING
+  INDUSTRY_SETUP
+
+  @@schema("public")
+}
+
+enum TemplateSource {
+  SYSTEM
+  CUSTOM
+
+  @@schema("public")
+}
+
+model Template {
+  id       String  @id @default(uuid())
+  agencyId String? // null for system templates
+
+  // Metadata
+  category    TemplateCategory
+  name        String
+  description String?          @db.Text
+  version     String           @default("1.0.0")
+
+  // Source
+  source TemplateSource @default(CUSTOM)
+
+  // Content
+  schema Json // Column definitions
+  data   Json? // Default data if any
+
+  // Entitlements
+  requiredEntitlements String[] @default([])
+
+  // Usage
+  usageCount Int       @default(0)
+  lastUsed   DateTime?
+
+  // Status
+  isActive Boolean @default(true)
+  isPublic Boolean @default(false) // Visible to all agencies
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  // Relations
+  Agency Agency? @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([category])
+  @@index([source])
+  @@map("Template")
+  @@schema("public")
+}
+
+// ============================================================================
+// JOURNAL UPLOAD BATCH
+// Tracks bulk journal entry uploads
+// ============================================================================
+
+enum UploadStatus {
+  PENDING
+  VALIDATING
+  VALIDATED
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@schema("finance")
+}
+
+model JournalUploadBatch {
+  id           String  @id @default(uuid())
+  agencyId     String
+  subAccountId String?
+
+  // File info
+  filename String
+  fileSize Int
+  rowCount Int
+
+  // Template used
+  templateId String?
+
+  // Status
+  status    UploadStatus @default(PENDING)
+  validRows Int          @default(0)
+  errorRows Int          @default(0)
+
+  // Processing
+  validationErrors Json?
+  journalEntryIds  String[] @default([])
+
+  // Timing
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  // Audit
+  createdBy String
+
+  // Relations
+  Agency     Agency      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  SubAccount SubAccount? @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([status])
+  @@map("JournalUploadBatch")
+  @@schema("finance")
+}
+
+// ============================================================================
+// EXCHANGE RATE CACHE
+// Caches exchange rates from external providers
+// ============================================================================
+
+model ExchangeRateCache {
+  id String @id @default(uuid())
+
+  // Currency pair
+  baseCurrency   String
+  targetCurrency String
+  rateDate       DateTime @db.Date
+
+  // Rate data
+  rate        Decimal @db.Decimal(18, 10)
+  inverseRate Decimal @db.Decimal(18, 10)
+
+  // Provider
+  provider String // e.g., 'frankfurter', 'openexchangerates'
+
+  // Cache info
+  fetchedAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@unique([baseCurrency, targetCurrency, rateDate, provider])
+  @@index([baseCurrency, targetCurrency])
+  @@index([rateDate])
+  @@map("ExchangeRateCache")
   @@schema("finance")
 }

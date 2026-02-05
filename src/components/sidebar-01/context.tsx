@@ -10,7 +10,7 @@ import {
   ScopeType,
   DEFAULT_SIDEBAR_PREFERENCES,
   DEFAULT_SIDEBAR_STATE,
-} from './types'
+} from '@/types/sidebar'
 
 // ============================================================================
 // Context Types

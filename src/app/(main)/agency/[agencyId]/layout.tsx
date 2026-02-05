@@ -1,7 +1,7 @@
 import BlurPage from '@/components/global/blur-page'
 import InfoBar from '@/components/global/infobar'
 import Sidebar from '@/components/sidebar-01'
-import { LayoutWrapper } from '@/components/sidebar-01/layout-wrapper'
+import { LayoutWrapper } from '@/components/sidebar-01/sidebar-context'
 import Unauthorized from '@/components/unauthorized'
 import {
   getNotificationAndUser,

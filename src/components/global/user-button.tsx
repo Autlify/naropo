@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { signOut, useSession } from 'next-auth/react'
 import { LogOut, User } from 'lucide-react'
+import { PremiumSignout, PremiumSignin, PremiumSettings, PremiumTerms, PremiumHelp, PremiumUsers } from '@/components/icons/premium'
 
 export function UserButton() {
   const { data: session } = useSession()
@@ -47,26 +48,26 @@ export function UserButton() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="cursor-default hover:bg-transparent">
-          <User className="mr-2 h-4 w-4" />
+          <PremiumSignin animated className="mr-2 h-4 w-4" />
           <span>Signed in as {session.user.name}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         {/** More Menu Item for User based on industry best practices, other than Signout */}
         <DropdownMenuItem className="cursor-pointer">
-          <User className="mr-2 h-4 w-4" />
+          <PremiumUsers animated className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer">
-          <User className="mr-2 h-4 w-4" />
+          <PremiumSettings animated className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer">
-          <User className="mr-2 h-4 w-4" />
+          <PremiumTerms animated className="mr-2 h-4 w-4" />
           <span>Terms & Privacy</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="cursor-pointer">
-          <User className="mr-2 h-4 w-4" />
+          <PremiumHelp animated className="mr-2 h-4 w-4" />
           <span>Help</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -74,7 +75,7 @@ export function UserButton() {
           className="cursor-pointer"
           onSelect={() => signOut({ callbackUrl: '/agency/sign-in' })}
         >
-          <LogOut className="mr-2 h-4 w-4" />
+          <PremiumSignout animated className="mr-2 h-4 w-4" />
           <span>Sign out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

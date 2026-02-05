@@ -11,13 +11,15 @@ import type { SourceModule } from '@/generated/prisma/client'
 import { db } from '@/lib/db'
 import { POSTING_RULE_TEMPLATES, type PostingRuleTemplateKey } from '@/lib/schemas/fi/general-ledger/posting-rules'
 import { revalidatePath } from 'next/cache'
-import { getContextCreateData, getGLContext } from '../core/context'
+import { getGLContext } from '../core/context'
+import { getContextCreateData } from '../core/utils'
 import {
     ActionResult,
     errorResult,
     successResult,
 } from '../core/errors'
-import { checkGLPermission, FI_CONFIG_KEYS, FI_MASTER_DATA_KEYS } from '../core/permissions'
+import { checkGLPermission } from '../core/permissions'
+import { FI_CONFIG_KEYS, FI_MASTER_DATA_KEYS } from '../core/utils'
 import { logGLAudit } from './audit'
 
 /** Template application input */

@@ -5,23 +5,16 @@ import { Prisma } from '@/generated/prisma/client'
 import { db } from '@/lib/db'
 import { createCreditLedger } from '@/lib/features/core/billing/credits/ledger'
 
-function assertJobSecret(req: NextRequest) {
-  const configured = process.env.JOBS_SECRET
-  if (!configured) return
-
-  const provided = req.headers.get('x-job-secret') || req.nextUrl.searchParams.get('secret')
-  if (provided !== configured) {
-    throw new Response('Unauthorized', { status: 401 })
-  }
-}
+import { assertJobSecret, getSystemJobActor } from '@/lib/features/system/job-auth'
 
 export async function POST(req: NextRequest) {
   try {
     assertJobSecret(req)
   } catch (e: any) {
-    if (e instanceof Response) return e
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ ok: false, reason: 'UNAUTHORIZED' }, { status: 401 })
   }
+
+  const actor = await getSystemJobActor()
 
   const now = new Date()
 
@@ -63,5 +56,5 @@ export async function POST(req: NextRequest) {
     return { expiredCount }
   })
 
-  return NextResponse.json({ ok: true, now: now.toISOString(), ...results })
+  return NextResponse.json({ ok: true, now: now.toISOString(), actor, ...results })
 }

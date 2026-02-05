@@ -20,6 +20,7 @@ import {
 import Link from 'next/link'
 import { useModal } from '@/providers/modal-provider'
 import CustomModal from '@/components/global/custom-modal'
+import PremiumUpsellModal from '@/components/global/premium-upsell-modal'
 import SubAccountDetails from '@/components/forms/subaccount-details'
 import { Separator } from '@/components/ui/separator'
 import { icons } from '@/lib/constants'
@@ -29,14 +30,8 @@ import type { GroupedSidebarOptions, SidebarOptionWithLinks } from './index'
 import { usePathname } from 'next/navigation'
 import { useSidebar } from './sidebar-context'
 
-/** Premium features that require higher plans */
+/** Premium modules that require add-on subscriptions */
 const PREMIUM_MODULES = ['finance', 'fi']
-
-/** Features that require specific plan tiers */
-const FEATURE_PLAN_REQUIREMENTS: Record<string, string[]> = {
-    'fi.general_ledger': ['price_1SpVOYJglUPlULDQhsRkA5YV', 'price_1SpVOZJglUPlULDQoFq3iPES'],
-    'finance': ['price_1SpVOYJglUPlULDQhsRkA5YV', 'price_1SpVOZJglUPlULDQoFq3iPES'],
-}
 
 type Props = {
     defaultOpen?: boolean
@@ -49,6 +44,8 @@ type Props = {
     type: 'agency' | 'subaccount'
     agency: Agency
     currentPlan: string | null
+    /** Map of feature keys to their enabled status from actual entitlements */
+    entitledFeatures: Record<string, boolean>
 }
 
 const MenuOptions = ({
@@ -62,14 +59,13 @@ const MenuOptions = ({
     defaultOpen,
     agency,
     currentPlan,
+    entitledFeatures,
 }: Props) => {
     const { setOpen } = useModal()
     const { isCollapsed } = useSidebar()
-    const [isMounted, setIsMounted] = useState(false)
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
     const rememberedExpandedItems = useRef<Set<string>>(new Set())
     const pathname = usePathname()
-    const { title } = useSidebar()
 
 
     const basePath = type === 'agency' ? `/agency/${id}` : `/subaccount/${id}`
@@ -116,8 +112,6 @@ const MenuOptions = ({
 
     // Auto-expand items that have active children on mount and pathname change
     useEffect(() => {
-        setIsMounted(true)
-
         // Find all options with active children and expand them
         const itemsToExpand = new Set<string>()
         for (const group of groupedOptions) {
@@ -149,8 +143,6 @@ const MenuOptions = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isCollapsed])
 
-    if (!isMounted) return null
-
     const isAgencyOwnerOrAdmin = user?.AgencyMemberships?.some(
         (m: any) => m.isActive && (m.Role?.name === 'AGENCY_OWNER' || m.Role?.name === 'AGENCY_ADMIN')
     )
@@ -172,43 +164,44 @@ const MenuOptions = ({
     }
 
     const isFeatureEntitled = (feature: string | null): boolean => {
-        if (!feature) return true
-        if (!currentPlan) return false
+        if (!feature) return true 
 
-        // Check if feature requires specific plans
-        const requiredPlans = FEATURE_PLAN_REQUIREMENTS[feature]
-        if (requiredPlans) {
-            return requiredPlans.includes(currentPlan)
+        // Check exact feature match in entitlements
+        if (feature in entitledFeatures) {
+            return entitledFeatures[feature]
         }
 
-        // Check module-level entitlement
+        // Check parent feature (e.g., fi.general_ledger.settings → fi.general_ledger)
+        const parts = feature.split('.')
+        while (parts.length > 1) {
+            parts.pop()
+            const parentFeature = parts.join('.')
+            if (parentFeature in entitledFeatures) {
+                return entitledFeatures[parentFeature]
+            }
+        }
+
+        // For premium modules without matching entitlements, lock them
         const module = feature.split('.')[0]
-        const moduleRequiredPlans = FEATURE_PLAN_REQUIREMENTS[module]
-        if (moduleRequiredPlans) {
-            return moduleRequiredPlans.includes(currentPlan)
+        if (isPremiumModule(module)) {
+            // Check if any entitlement from this module is enabled
+            const hasModuleAccess = Object.entries(entitledFeatures).some(
+                ([key, enabled]) => key.startsWith(`${module}.`) && enabled
+            )
+            return hasModuleAccess
         }
 
+        // Non-premium feature not in entitlements - allow access (core feature)
         return true
     }
 
     const handleUpsellClick = (itemName: string) => {
         setOpen(
-            <CustomModal
-                title="Upgrade to access this feature"
-                subheading={`"${itemName}" is available on Professional and Enterprise plans.`}
-            >
-                <div className="flex flex-col gap-4 py-4">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                        <Sparkles className="h-5 w-5 text-primary" />
-                        <span>Unlock powerful features with an upgraded plan</span>
-                    </div>
-                    <Button asChild className="w-full">
-                        <Link href={`${basePath}/billing`}>
-                            View Plans & Upgrade
-                        </Link>
-                    </Button>
-                </div>
-            </CustomModal>
+            <PremiumUpsellModal
+                featureName={itemName}
+                billingPath={`${basePath}/billing`}
+                requiredPlan="Professional"
+            />
         )
     }
 
@@ -238,8 +231,8 @@ const MenuOptions = ({
                             <button
                                 type="button"
                                 className={cn(
-                                    'flex w-full items-center justify-center rounded-md p-2 text-sm',   
-                                     isSelected ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted/50 transition-colors',
+                                    'flex w-full items-center justify-center rounded-md p-2 text-sm',
+                                    isSelected ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted/50 transition-colors',
                                     isLocked && 'opacity-50 cursor-not-allowed'
                                 )}
                                 onClick={(e) => {
@@ -519,7 +512,7 @@ const MenuOptions = ({
                         'hidden md:inline-block z-0': defaultOpen,
                         'inline-block md:hidden z-[100] w-full': !defaultOpen,
                     },
-                    defaultOpen && (isCollapsed ? 'w-[80px]' : 'w-[300px]')
+                    defaultOpen && (isCollapsed ? 'w-[96px]' : 'w-[300px]')
                 )}
             >
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
@@ -532,8 +525,10 @@ const MenuOptions = ({
                         <Image
                             src={sidebarLogo}
                             alt="Sidebar Logo"
-                            fill
-                            className={cn(isCollapsed ? 'object-contain px-2' : 'rounded-md object-contain')}
+                            height={isCollapsed ? 76 : undefined}
+                            width={isCollapsed ? 76 : undefined}
+                            fill={isCollapsed ? false : true}
+                            className={cn(isCollapsed ? 'absolute top-0 left-1 w-[40px] h-[40px]' : 'rounded-md object-contain', 'transition-all duration-300')}
                         />
                     </AspectRatio>
 
@@ -542,8 +537,8 @@ const MenuOptions = ({
                         <PopoverTrigger asChild>
                             <Button
                                 className={cn(
-                                    'w-full my-4 flex items-center py-8 transition-all duration-200',
-                                    isCollapsed ? 'justify-center px-2' : 'justify-between'
+                                    'w-full my-4 flex items-center py-8 transition-all duration-300',
+                                    isCollapsed ? 'justify-center p-2 relative top-6' : 'justify-between'
                                 )}
                                 variant="ghost"
                             >
@@ -581,12 +576,12 @@ const MenuOptions = ({
                                                         href={`/agency/${agency.id}`}
                                                         className="flex gap-4 w-full h-full"
                                                     >
-                                                        <div className={cn(isCollapsed ? 'relative w-16 px-2' : 'relative w-16')}>
+                                                        <div className={cn(isCollapsed ? 'relative w-16 px-2' : 'relative w-16', 'transition-all duration-300')}>
                                                             <Image
                                                                 src={agency.agencyLogo || '/assets/glassmorphism/organization.svg'}
                                                                 alt="Agency Logo"
                                                                 fill
-                                                                className={cn(isCollapsed ? 'object-contain px-2' : 'rounded-md object-contain')}
+                                                                className={cn(isCollapsed ? 'object-contain px-2' : 'rounded-md object-contain', 'transition-all duration-300')}
                                                             />
                                                         </div>
                                                         <div className="flex flex-col flex-1">
@@ -600,7 +595,7 @@ const MenuOptions = ({
                                                     <SheetClose asChild>
                                                         <Link
                                                             href={`/agency/${agency.id}`}
-                                                            className= "flex gap-4 w-full h-full"
+                                                            className="flex gap-4 w-full h-full"
                                                         >
                                                             <div className="relative w-16">
                                                                 <Image
@@ -709,15 +704,19 @@ const MenuOptions = ({
                     </Popover>
 
                     {/* Navigation with Module Groups */}
-                    <nav className="relative flex-1 overflow-y-auto space-y-4">
+                    <nav className={cn("relative flex-1 overflow-y-auto space-y-4",
+                        isCollapsed ? "top-6" : ""
+
+
+                    )}>
                         {groupedOptions.map((group) => {
                             const moduleIsPremium = isPremiumModule(group.module)
 
                             return (
-                                <div key={group.module} className={clsx( isCollapsed ? "space-y-0" :"space-y-1")}>
+                                <div key={group.module} className={clsx(isCollapsed ? "space-y-0" : "space-y-1")}>
                                     {/* Module Group Label */}
                                     <div className={clsx("flex items-center transition-all duration-300",
-                                        isCollapsed  ? "hidden": "gap-2 px-2 py-1"
+                                        isCollapsed ? "hidden" : "gap-2 px-2 py-1"
                                     )}>
                                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                             {group.label}
@@ -742,7 +741,7 @@ const MenuOptions = ({
                         'flex items-center transition-all duration-200',
                         isCollapsed ? 'justify-center' : 'gap-3 px-2'
                     )}>
-                        <div className="relative h-8 w-8 rounded-full overflow-hidden bg-muted shrink-0">
+                        <div className="relative h-8 w-8 rounded-full  overflow-hidden bg-muted shrink-0">
                             {user?.avatarUrl ? (
                                 <Image
                                     src={user.avatarUrl}

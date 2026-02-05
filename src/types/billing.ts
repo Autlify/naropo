@@ -1,25 +1,20 @@
 /**
- * Billing Types
- * Contains types related to product, pricing, billing, payments, usage, promotions, and subscriptions.
  * 
- * @namespace Autlify.Types.Billing
- * @description Single source of truth for all billing-related types
+ * @namespace Billing
+ * @description Types and interfaces related to billing, pricing, subscriptions, and invoicing.
  * @see prisma/schema.prisma - Subscription, AddOns, Plan, SubscriptionStatus
  * @see Stripe API types for alignment reference
  * 
- * DESIGN PRINCIPLES:
- * 1. Align with Stripe types where possible to minimize mapping
- * 2. Use union types matching Stripe's exact values
- * 3. Support e-Invoice international standards (UBL 2.1, Peppol, EN16931)
- * 4. Industry classification codes (SIC, MSIC, ISIC, NACE) via external lookup
- * 5. ISO standards for currencies (4217), countries (3166), dates (8601)
- * 6. Leverage country-state-city library for geo data types
+ * @packageDocumentation
+ * 1. Alignment with Stripe types where applicable for consistency.
+ * 2. Clear distinction between plan types, billing schemes, and pricing models.
+ * 3. Comprehensive coverage of billing scenarios including tiered pricing and overages.
+ * 4. Extensibility for future billing features and models.
  */
 
-import type { ICountry, IState, ICity } from 'country-state-city'
-
-// Re-export geo types for convenience
-export type { ICountry, IState, ICity }
+import { PriceKey } from '@/lib/registry'
+import { ICountry, IState, ICity } from 'country-state-city'
+import Stripe from 'stripe'
 
 // ============================================================================
 // GEO TYPES (Derived from country-state-city library)
@@ -39,6 +34,25 @@ export type CurrencyCodeType = ICountry['currency']
 // ============================================================================
 
 /**
+ * Account Type Classification (Stripe.V2.Core.Account.Configuration.Type)
+ * @see Stripe V2 Core AccountsResource.d.ts: type Type = 'customer' | 'merchant' | 'recipient'
+ * 
+ * @description
+ * - 'customer': Account used to pay for subscriptions/services (eg., Agency ---pay---> Autlify)
+ * - 'merchant': Account acting as a connected account and collecting payments (eg., Agency <---collect--- Clients)
+ * - 'recipient': Account receiving funds but not acting as the Merchant of Record (eg., SubAccount <---receive--- Agency <--collect--- Clients)
+ */
+
+export type StripeAccountType = 'customer' | 'merchant' | 'recipient'
+export type StripeCustomerAccount = Stripe.V2.Core.Account.Configuration.Customer
+export type StripeMerchantAccount = Stripe.V2.Core.Account.Configuration.Merchant
+export type StripeRecipientAccount = Stripe.V2.Core.Account.Configuration.Recipient
+export type StripeAccount =
+  | { type: 'customer', account: StripeCustomerAccount }
+  | { type: 'merchant', account: StripeMerchantAccount }
+  | { type: 'recipient', account: StripeRecipientAccount }
+
+/**
  * Product Type Classification (Stripe.Product.Type)
  * @see Stripe Products.d.ts: type Type = 'good' | 'service'
  * 
@@ -47,6 +61,8 @@ export type CurrencyCodeType = ICountry['currency']
  * - 'service': Eligible for use with Subscriptions and Plans (revenue over_time)
  */
 export type ProductType = 'good' | 'service'
+
+
 
 /**
  * Billing Scheme Type (Stripe.Price.BillingScheme)
@@ -58,7 +74,12 @@ export type ProductType = 'good' | 'service'
  * - 'flat': Fixed price (Autlify extension for simple pricing)
  */
 export type StripeBillingSchemeType = 'per_unit' | 'tiered'
-export type BillingSchemeType = StripeBillingSchemeType | 'flat'
+export type BillingSchemeType = Stripe.Price.BillingScheme extends infer T ? T 
+  | 'flat'
+  | 'base_plus_overage'
+  | 'tiered_volume'
+  | 'tiered_graduated'
+  : never
 
 /**
  * Extended Billing Scheme for calculation purposes
@@ -152,30 +173,59 @@ export type StripeSubscriptionStatusType =
   | 'unpaid'
   | 'paused'
 
+// ============================================================================
+// PLAN & ADDON KEY TYPES
+// SSoT: @/lib/registry/plans/pricing-config.ts → PRICING_CONFIG
+// These types MUST be kept in sync with PRICING_CONFIG.
+// Runtime values should be imported from pricing-config; these are type-only.
+// ============================================================================
+
 /**
  * Plan Key Type (aligned with Prisma enum Plan price IDs)
+ * @ssot @/lib/registry/plans/pricing-config.ts → PRICING_CONFIG
+ * @description Must match keys in PRICING_CONFIG where type === 'plan'
  */
 export type PlanKeyType = 'STARTER' | 'BASIC' | 'ADVANCED' | 'ENTERPRISE'
 
 /**
- * Service Addon Key Type
+ * Yearly plan key variants (for annual billing)
+ * @ssot @/lib/registry/plans/pricing-config.ts → PRICING_CONFIG
  */
-export type ServiceAddonKeyType = 'PRIORITY_SUPPORT' | 'FI_GL' | 'FI_AR' | 'FI_AP' | 'WHITE_LABEL'
+export type YearlyPlanKeyType = 'STARTER_YEARLY' | 'BASIC_YEARLY' | 'ADVANCED_YEARLY'
+
+/**
+ * All plan keys including yearly variants
+ * @ssot @/lib/registry/plans/pricing-config.ts
+ */
+export type AllPlanKeyType = PlanKeyType | YearlyPlanKeyType
+
+/**
+ * Service Addon Key Type (recurring monthly add-ons)
+ * @ssot @/lib/registry/plans/pricing-config.ts → PRICING_CONFIG
+ * @description Must match keys in PRICING_CONFIG where type === 'addon' and billingInterval !== 'one_time'
+ */
+export type ServiceAddonKeyType = 
+    | 'PRIORITY_SUPPORT' 
+    | 'FI_GL' | 'FI_AR' | 'FI_AP' | 'FI_BL' | 'FI_FS' 
+    | 'WHITE_LABEL'
 
 /**
  * Good Addon Key Type (one-time purchases)
+ * @ssot @/lib/registry/plans/pricing-config.ts → PRICING_CONFIG
  */
 export type GoodAddonKeyType = 'SETUP_FEE' | 'API_CREDITS' | 'DATA_MIGRATION'
 
 /**
  * All Addon Keys
+ * @ssot @/lib/registry/plans/pricing-config.ts → PRICING_CONFIG
  */
 export type AddonKeyType = ServiceAddonKeyType | GoodAddonKeyType
 
 /**
- * All Config Keys (Plans + Addons)
+ * All Config Keys (Plans + Addons + Yearly)
+ * @ssot @/lib/registry/plans/pricing-config.ts → PRICING_CONFIG
  */
-export type PricingConfigKeyType = PlanKeyType | AddonKeyType
+export type PricingConfigKeyType = AllPlanKeyType | AddonKeyType
 
 // ============================================================================
 // STRIPE-ALIGNED TIER TYPES
@@ -298,6 +348,7 @@ export interface PricingTax {
  * Complete Pricing Configuration
  * @description Full configuration for a plan or addon
  */
+
 export interface PricingConfig {
   // Identification
   key: string
@@ -318,7 +369,7 @@ export interface PricingConfig {
   interval: BillingIntervalType
 
   // Billing Behavior
-  billingScheme: ExtendedBillingSchemeType
+  billingScheme: BillingSchemeType
   pricingUnit: PricingUnitType
 
   // Tiered Pricing
@@ -341,6 +392,49 @@ export interface PricingConfig {
   isActive?: boolean
   sortOrder?: number
 }
+// export interface PricingConfig {
+//   // Identification
+//   key: string
+//   type: 'plan' | 'addon'
+//   name: string
+//   description?: string
+
+//   // Product Classification (for accounting)
+//   productType: ProductType
+//   revenueRecognition: import('./finance').RevenueRecognitionType
+//   deferredRevenue?: import('./finance').DeferredRevenueConfig
+//   tax?: PricingTax
+//   accounting?: import('./finance').AccountingConfig
+
+//   // Base Pricing
+//   baseAmount: number   // In cents
+//   currency: string
+//   interval: BillingIntervalType
+
+//   // Billing Behavior
+//   billingScheme: ExtendedBillingSchemeType
+//   pricingUnit: PricingUnitType
+
+//   // Tiered Pricing
+//   tiers?: PricingTier[]
+
+//   // Overage Pricing
+//   overage?: PricingOverage
+
+//   // Feature Grants
+//   featureOverrides?: Record<string, number | boolean | '∞'>
+
+//   // Stripe Integration
+//   stripePriceId?: string
+//   stripeProductId?: string
+//   stripeTieredPriceId?: string
+
+//   // Metadata
+//   tier?: number
+//   trialDays?: number
+//   isActive?: boolean
+//   sortOrder?: number
+// }
 
 // ============================================================================
 // PRICE CALCULATION TYPES
@@ -350,7 +444,7 @@ export interface PricingConfig {
  * Price Calculation Input
  */
 export interface PriceCalculationInput {
-  configKey: string
+  configKey: PriceKey
   quantity?: number
   previousQuantity?: number
 }
@@ -457,7 +551,7 @@ export interface DunningInvoice {
   amount: string;
   currency: string;
   hostedUrl: string | null;
-} 
+}
 
 // ============================================================================
 // Usage Types
@@ -1430,3 +1524,196 @@ export type LanguageCodeType =
   | 'es'    // Spanish
   | 'ar'    // Arabic
   | string  // Allow any ISO 639-1 code
+
+// ============================================================================
+// STRIPE CATALOG TYPES (For local catalog sync with Stripe)
+// ============================================================================
+
+/**
+ * Addon Type Classification
+ * @description Types of add-on products
+ */
+export type AddonClassificationType = 'support' | 'branding' | 'finance' | 'integration' | 'feature'
+
+/**
+ * Addon Category Classification
+ * @description Categories for grouping add-ons (matches module structure)
+ */
+export type AddonCategoryType = 'core' | 'fi' | 'co' | 'crm' | 'apps' | 'iam'
+
+/**
+ * Catalog Product - Local representation of a Stripe Product
+ * @description Used for deterministic ID generation and Stripe catalog sync
+ * Uses deterministic IDs generated from product attributes
+ */
+export interface CatalogProduct {
+  /** Deterministic product ID (prod_xxxx) - generated locally */
+  id: string
+  /** Product name displayed to customers */
+  name: string
+  /** Product description */
+  description: string
+  /** Product type */
+  type: ProductType
+  /** Unit label (account, headcount, etc.) */
+  unitLabel: string
+  /** Whether this is an add-on (vs base plan) */
+  isAddon: boolean
+  /** Addon category (if addon) - matches module codes */
+  category?: AddonCategoryType
+  /** Addon type (if addon) */
+  addonType?: AddonClassificationType
+  /** Module this addon belongs to (e.g., fi-gl) */
+  module?: string
+  /** Required addon key (dependency) */
+  requires?: string
+  /** Features this product grants access to (FeatureKey strings) */
+  features?: string[]
+  /** Marketing features for display */
+  marketingFeatures?: string[]
+  /** Product images */
+  images?: string[]
+  /** Active status */
+  active: boolean
+  /** Additional metadata */
+  metadata?: Record<string, string>
+}
+
+/**
+ * Catalog Price - Local representation of a Stripe Price
+ * @description Used for deterministic ID generation and Stripe catalog sync
+ * Uses deterministic IDs generated from price attributes
+ */
+export interface CatalogPrice {
+  /** Deterministic price ID (price_xxxx) - generated locally */
+  id: string
+  /** Reference to product ID */
+  productId: string
+  /** Price nickname for display */
+  nickname: string
+  /** Currency code (lowercase) */
+  currency: string
+  /** Unit amount in smallest currency unit (cents/sen) */
+  unitAmount: number | null
+  /** Billing scheme */
+  billingScheme: StripeBillingSchemeType
+  /** Recurring configuration (null for one-time) */
+  recurring?: {
+    interval: RecurringIntervalType
+    intervalCount: number
+    trialPeriodDays: number | null
+    usageType: UsageType
+  }
+  /** Tiered pricing configuration */
+  tiers?: {
+    upTo: number | null
+    unitAmount: number | null
+    flatAmount: number | null
+  }[]
+  /** Tiers mode (if tiered) */
+  tiersMode?: TiersModeType
+  /** Lookup key for easy retrieval */
+  lookupKey?: string
+  /** Active status */
+  active: boolean
+  /** Additional metadata */
+  metadata?: Record<string, string>
+}
+
+/**
+ * Plan Definition - Base subscription plan with entitlements
+ * @description Used for plan configuration and pricing display
+ */
+export interface PlanDefinition {
+  /** Plan key (STARTER, BASIC, ADVANCED, ENTERPRISE) */
+  key: PlanKeyType
+  /** Display name */
+  name: string
+  /** Description */
+  description: string
+  /** Monthly price in MYR (display only) */
+  monthlyPrice: number
+  /** Tier level (1-4) for comparison */
+  tier: number
+  /** Trial days */
+  trialDays: number
+  /** Whether this is the recommended/popular plan */
+  isPopular?: boolean
+  /** Product ID reference */
+  productId: string
+  /** Monthly price ID reference */
+  monthlyPriceId: string
+  /** Yearly price ID reference */
+  yearlyPriceId?: string
+  /** Feature limits (maps to FeatureKey strings) */
+  limits: Record<string, number | boolean | 'unlimited'>
+}
+
+/**
+ * Addon Definition - Add-on product with feature grants
+ * @description Used for addon configuration and pricing display
+ */
+export interface AddonDefinition {
+  /** Addon key (PRIORITY_SUPPORT, WHITE_LABEL, FI_GL, etc.) */
+  key: AddonKeyType
+  /** Display name */
+  name: string
+  /** Description */
+  description: string
+  /** Monthly price in MYR (display only) */
+  monthlyPrice: number
+  /** Category for grouping */
+  category: AddonCategoryType
+  /** Type for classification */
+  addonType: AddonClassificationType
+  /** Product ID reference */
+  productId: string
+  /** Monthly price ID reference */
+  monthlyPriceId: string
+  /** Yearly price ID reference */
+  yearlyPriceId?: string
+  /** Required addon key (dependency) */
+  requires?: AddonKeyType
+  /** Features this addon grants (maps to FeatureKey strings) */
+  grants: Record<string, number | boolean | 'unlimited'>
+}
+
+// ============================================================================
+// PRICING UI TYPES
+// SSoT: This interface is the canonical type for pricing card display
+// @see @/lib/registry/plans/pricing-config.ts for implementation
+// ============================================================================
+
+/**
+ * Pricing Card Data for UI display
+ * @ssot types/billing.ts - This is the canonical type definition
+ * @description Used by getPricingCards() in pricing-config.ts
+ */
+export interface PricingCardData {
+  /** Plan/config key (e.g., 'STARTER', 'BASIC', 'ADVANCED') */
+  key: string
+  /** Display title */
+  title: string
+  /** Plan description */
+  description: string
+  /** Formatted price string (e.g., "RM 79.00") */
+  price: string
+  /** Price amount in cents */
+  priceAmount: number
+  /** Stripe price ID */
+  priceId: string
+  /** Billing interval */
+  interval: 'month' | 'year'
+  /** Feature list for display */
+  features: string[]
+  /** Whether to highlight this plan (e.g., "Most Popular") */
+  highlight: boolean
+  /** Whether trial is enabled */
+  trialEnabled: boolean
+  /** Number of trial days */
+  trialDays: number
+  /** Whether this uses tiered pricing */
+  isTiered: boolean
+  /** Savings description for yearly plans */
+  savings?: string
+}

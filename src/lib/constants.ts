@@ -1,3 +1,15 @@
+/**
+ * @abstraction UI Constants
+ * @description Icons, EditorBtns, and default styles for the UI.
+ * 
+ * For pricing/products, use:
+ * - @/lib/registry/plans/pricing-config.ts (SSoT: PRICING_CONFIG, PLAN_IDS, pricing cards)
+ * - @/lib/registry/plans/plan-entitlements.ts (entitlements, feature limits)
+ * 
+ * @namespace Autlify.Lib.Constants
+ * @module LIB
+ */
+
 import BarChart from '@/components/icons/bar_chart'
 import BarChart3 from '@/components/icons/bar-chart-3'
 import Building from '@/components/icons/building'
@@ -41,67 +53,6 @@ import Tune from '@/components/icons/tune'
 import Video from '@/components/icons/video_recorder'
 import Wallet from '@/components/icons/wallet'
 import Warning from '@/components/icons/warning'
-import { StripePriceProps, StripeProductProps } from './types'
-
-
-export const pricingCards = [
-  {
-    title: 'Starter',
-    description: 'Perfect for trying out autlify',
-    currency: 'MYR',
-    price: 'RM 79',
-    monthlyPrice: 79,
-    discountRate: null, // null = no yearly plan
-    duration: 'month',
-    highlight: 'Key features',
-    features: ['3 Sub-Accounts', '2 Team Members', 'Unlimited Pipelines'],
-    priceId: 'price_1SpVOXJglUPlULDQt9Ejhunb',
-    trialEnabled: true,
-    trialPeriodDays: 14,
-  },
-  {
-    title: 'Basic',
-    description: 'For serious agency owners',
-    currency: 'MYR',
-    price: 'RM 149',
-    monthlyPrice: 149,
-    discountRate: null, // null = no yearly plan
-    duration: 'month',
-    highlight: 'Everything in Starter, plus',
-    features: ['Unlimited Sub-Accounts', 'Unlimited Team Members'],
-    priceId: 'price_1SpVOYJglUPlULDQhsRkA5YV',
-    trialEnabled: true,
-    trialPeriodDays: 14,
-  },
-  {
-    title: 'Advanced',
-    description: 'The ultimate agency kit',
-    currency: 'MYR',
-    price: 'RM 399',
-    monthlyPrice: 399,
-    discountRate: null, // null = no yearly plan
-    duration: 'month',
-    highlight: 'Key features',
-    features: ['Rebilling', '24/7 Support Team'],
-    priceId: 'price_1SpVOZJglUPlULDQoFq3iPES',
-    trialEnabled: false, // No trial for premium plan
-    trialPeriodDays: 0,
-  },
-]
-
-
-
-export const addOnProducts = [
-  {
-    title: 'Priority Support',
-    description: '24/7 priority support with dedicated account manager',
-    currency: 'MYR',
-    price: 'RM 99',
-    duration: 'month',
-    id: 'prod_Tn5ZVynuKgwkQ9',
-    priceId: 'price_1SpVObJglUPlULDQRfhLJNEo',
-  },
-]
 
 export const icons = [
   {
@@ -313,6 +264,11 @@ export const icons = [
     value: 'image',
     label: 'Image',
     path: ImageIcon,
+  },
+  {
+    value: 'file-text',
+    label: 'File Text',
+    path: FileText,
   },
 ]
 

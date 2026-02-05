@@ -56,46 +56,51 @@ const Page = async ({
   })
 
   if (agencyDetails.connectAccountId) {
-    const response = await stripe.accounts.retrieve({
-      stripeAccount: agencyDetails.connectAccountId,
-    })
+    try {
+      const response = await stripe.accounts.retrieve({
+        stripeAccount: agencyDetails.connectAccountId,
+      })
 
-    currency = response.default_currency?.toUpperCase() || 'USD'
-    const checkoutSessions = await stripe.checkout.sessions.list(
-      {
-        created: { gte: startDate, lte: endDate },
-        limit: 100,
-      },
-      { stripeAccount: agencyDetails.connectAccountId }
-    )
-    sessions = checkoutSessions.data
-    totalClosedSessions = checkoutSessions.data
-      .filter((session) => session.status === 'complete')
-      .map((session) => ({
-        ...session,
-        created: new Date(session.created).toLocaleDateString(),
-        amount_total: session.amount_total ? session.amount_total / 100 : 0,
-      }))
+      currency = response.default_currency?.toUpperCase() || 'USD'
+      const checkoutSessions = await stripe.checkout.sessions.list(
+        {
+          created: { gte: startDate, lte: endDate },
+          limit: 100,
+        },
+        { stripeAccount: agencyDetails.connectAccountId }
+      )
+      sessions = checkoutSessions.data
+      totalClosedSessions = checkoutSessions.data
+        .filter((session) => session.status === 'complete')
+        .map((session) => ({
+          ...session,
+          created: new Date(session.created).toLocaleDateString(),
+          amount_total: session.amount_total ? session.amount_total / 100 : 0,
+        }))
 
-    totalPendingSessions = checkoutSessions.data
-      .filter((session) => session.status === 'open')
-      .map((session) => ({
-        ...session,
-        created: new Date(session.created).toLocaleDateString(),
-        amount_total: session.amount_total ? session.amount_total / 100 : 0,
-      }))
-    net = +totalClosedSessions
-      .reduce((total, session) => total + (session.amount_total || 0), 0)
-      .toFixed(2)
+      totalPendingSessions = checkoutSessions.data
+        .filter((session) => session.status === 'open')
+        .map((session) => ({
+          ...session,
+          created: new Date(session.created).toLocaleDateString(),
+          amount_total: session.amount_total ? session.amount_total / 100 : 0,
+        }))
+      net = +totalClosedSessions
+        .reduce((total, session) => total + (session.amount_total || 0), 0)
+        .toFixed(2)
 
     potentialIncome = +totalPendingSessions
       .reduce((total, session) => total + (session.amount_total || 0), 0)
       .toFixed(2)
 
-    closingRate = +(
-      (totalClosedSessions.length / checkoutSessions.data.length) *
-      100
-    ).toFixed(2)
+    const totalSessions = checkoutSessions.data.length
+    closingRate = totalSessions > 0
+      ? +(((totalClosedSessions.length / totalSessions) * 100).toFixed(2))
+      : 0
+    } catch (error) {
+      // Connected account no longer accessible - log and continue with defaults
+      console.error('Failed to fetch Stripe Connect account data:', error)
+    }
   }
 
   return (
@@ -191,8 +196,8 @@ const Page = async ({
             <Goal className="absolute right-4 top-4 text-muted-foreground" />
           </Card>
         </div>
-        <div className="flex gap-4 xl:!flex-row flex-col">
-          <Card className="p-4 flex-1">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 flex-grow">
+          <Card className="col-span-3">
             <CardHeader>
               <CardTitle>Transaction History</CardTitle>
             </CardHeader>
@@ -207,9 +212,9 @@ const Page = async ({
               colors={['primary']}
               yAxisWidth={30}
               showAnimation={true}
-            />
+            /> 
           </Card>
-          <Card className="xl:w-[400px] w-full">
+          <Card className="col-span-1 flex flex-col">
             <CardHeader>
               <CardTitle>Conversions</CardTitle>
             </CardHeader>
@@ -228,7 +233,7 @@ const Page = async ({
                       </div>
                     )}
                     {totalClosedSessions && (
-                      <div className="felx flex-col">
+                      <div className="flex flex-col">
                         Won Carts
                         <div className="flex gap-2">
                           <ShoppingCart className="text-emerald-700" />

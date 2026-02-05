@@ -11,7 +11,7 @@ import Stripe from 'stripe'
  * 
  * Request body:
  * - customerId: string - Stripe customer ID
- * - priceId: string - Stripe price ID for the subscription
+ * - priceId: string - Stripe price ID for the subscription (real Stripe ID from constants.ts)
  * - agencyId: string - Agency ID to associate the subscription with
  * - countryCode: string (optional) - Country code for tax purposes
  * - coupon: string (optional) - Coupon code to apply to the subscription
@@ -28,6 +28,8 @@ import Stripe from 'stripe'
  */
 export async function POST(req: Request) {
   const { customerId, priceId, agencyId, countryCode, coupon, paymentMethodId, trialEnabled, trialPeriodDays } = await req.json()
+  
+  // Price ID is now always the real Stripe ID (after sync script updates constants.ts)
   
   if (!customerId || !priceId || !agencyId) {
     return NextResponse.json(

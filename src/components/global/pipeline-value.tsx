@@ -4,6 +4,7 @@ import { Prisma } from '@/generated/prisma/client'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader } from '../ui/card'
 import { Progress } from '../ui/progress'
+import { cn } from '@/lib/utils'
 import {
   Select,
   SelectContent,
@@ -16,54 +17,56 @@ import {
 
 type Props = {
   subaccountId: string
+  className?: string
 }
 
-const PipelineValue = ({ subaccountId }: Props) => {
+const PipelineValue = ({ subaccountId, className }: Props) => {
   const [pipelines, setPipelines] = useState<
     Awaited<ReturnType<typeof getPipelines>>
   >([])
 
   const [selectedPipelineId, setselectedPipelineId] = useState('')
-  const [pipelineClosedValue, setPipelineClosedValue] = useState(0)
 
   useEffect(() => {
     const fetchData = async () => {
       const res = await getPipelines(subaccountId)
       setPipelines(res)
-      setselectedPipelineId(res[0]?.id)
+      setselectedPipelineId(res[0]?.id ?? '')
     }
     fetchData()
   }, [subaccountId])
 
-  const totalPipelineValue = useMemo(() => {
-    if (pipelines.length) {
-      return (
-        pipelines
-          .find((pipeline: any) => pipeline.id === selectedPipelineId)
-          ?.Lane?.reduce((totalLanes: number, lane: any, currentLaneIndex: number, array: any[]) => {
-            const laneTicketsTotal = lane.Tickets.reduce(
-              (totalTickets: number, ticket: any) => totalTickets + Number(ticket?.value),
-              0
-            )
-            if (currentLaneIndex === array.length - 1) {
-              setPipelineClosedValue(laneTicketsTotal || 0)
-              return totalLanes
-            }
-            return totalLanes + laneTicketsTotal
-          }, 0) || 0
-      )
+  const pipelineMetrics = useMemo(() => {
+    const pipeline = pipelines.find((p: any) => p.id === selectedPipelineId)
+    const lanes = pipeline?.Lane ?? []
+    if (!Array.isArray(lanes) || lanes.length === 0) {
+      return { openValue: 0, closedValue: 0 }
     }
-    return 0
-  }, [selectedPipelineId, pipelines])
 
-  const pipelineRate = useMemo(
-    () =>
-      (pipelineClosedValue / (totalPipelineValue + pipelineClosedValue)) * 100,
-    [pipelineClosedValue, totalPipelineValue]
-  )
+    let openValue = 0
+    let closedValue = 0
+
+    for (let i = 0; i < lanes.length; i++) {
+      const lane = lanes[i]
+      const laneTicketsTotal = (lane?.Tickets ?? []).reduce(
+        (total: number, ticket: any) => total + Number(ticket?.value ?? 0),
+        0
+      )
+      if (i === lanes.length - 1) {
+        closedValue += laneTicketsTotal
+      } else {
+        openValue += laneTicketsTotal
+      }
+    }
+
+    return { openValue, closedValue }
+  }, [pipelines, selectedPipelineId])
+
+  const totalValue = pipelineMetrics.openValue + pipelineMetrics.closedValue
+  const pipelineRate = totalValue > 0 ? (pipelineMetrics.closedValue / totalValue) * 100 : 0
 
   return (
-    <Card className="relative w-full xl:w-[350px]">
+    <Card className={cn('relative w-full h-full', className)}>
       <CardHeader>
         <CardDescription>Pipeline Value</CardDescription>
         <small className="text-xs text-muted-foreground">
@@ -72,18 +75,18 @@ const PipelineValue = ({ subaccountId }: Props) => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground">
-              Closed ${pipelineClosedValue}
+              Closed ${pipelineMetrics.closedValue}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">
-              Total ${totalPipelineValue + pipelineClosedValue}
+              Total ${totalValue}
             </p>
           </div>
         </div>
         <Progress
           color="green"
-          value={pipelineRate}
+          value={Number.isFinite(pipelineRate) ? pipelineRate : 0}
           className="h-2"
         />
       </CardHeader>

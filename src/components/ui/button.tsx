@@ -55,7 +55,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     if (tooltip) {
       return (
-        <Tooltip delayDuration={1500}>
+        <Tooltip delayDuration={0} disableHoverableContent>
           <TooltipTrigger asChild>
             {button}
           </TooltipTrigger>

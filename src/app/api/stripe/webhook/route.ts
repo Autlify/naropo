@@ -18,6 +18,9 @@ const stripeWebhookEvents = new Set([
   'invoice.payment_succeeded',
   'invoice.payment_failed',
   'setup_intent.succeeded',
+  // Connect events
+  'account.application.authorized',
+  'account.application.deauthorized',
   // 'checkout.session.completed',
 ])
 
@@ -173,6 +176,41 @@ export async function POST(req: NextRequest) {
               customer: session.customer,
               payment_intent: session.payment_intent,
             })
+          }
+          break
+        }
+
+        case 'account.application.authorized': {
+          const application = stripeEvent.data.object as Stripe.Application
+          console.log('✅ Connect account authorized', {
+            applicationId: application.id,
+            name: application.name,
+          })
+          // Note: The actual connectAccountId is saved via OAuth callback in launchpad
+          break
+        }
+
+        case 'account.application.deauthorized': {
+          const application = stripeEvent.data.object as Stripe.Application
+          // The account ID comes from the event's account field, not the application object
+          const accountId = stripeEvent.account
+          console.log('🚫 Connect account deauthorized', {
+            applicationId: application.id,
+            accountId,
+          })
+          
+          // Clear connectAccountId from both Agency and SubAccount
+          // This handles cases where access is revoked
+          if (accountId) {
+            await db.agency.updateMany({
+              where: { connectAccountId: accountId },
+              data: { connectAccountId: '' },
+            })
+            await db.subAccount.updateMany({
+              where: { connectAccountId: accountId },
+              data: { connectAccountId: '' },
+            })
+            console.log('✅ Cleared deauthorized connectAccountId:', accountId)
           }
           break
         }

@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import { pricingCards } from '@/lib/constants'
+import { getPricingCardByPriceId } from '@/lib/registry/plans/pricing-config'
 import { CheckoutForm } from './_components/checkout-form'
 import { auth } from '@/auth'
 import { getUser } from '@/lib/queries'
@@ -13,7 +13,7 @@ type Props = {
 export default async function CheckoutPage({ params }: Props) {
     const { priceId } = await params
     const session = await auth()
-    const priceDetails = pricingCards.find((card) => card.priceId === priceId)
+    const priceDetails = getPricingCardByPriceId(priceId)
     const user = await getUser(session?.user?.id || '')
 
     if (!priceDetails) {
@@ -77,11 +77,21 @@ export default async function CheckoutPage({ params }: Props) {
         } : null,
     }))
 
+    // Map PricingCardData to the shape expected by CheckoutForm
+    const planConfig = {
+        title: priceDetails.title,
+        price: priceDetails.price,
+        duration: priceDetails.interval === 'month' ? 'Monthly' : 'Yearly',
+        features: priceDetails.features,
+        trialEnabled: priceDetails.trialEnabled,
+        trialPeriodDays: priceDetails.trialDays,
+    }
+
     return (
         <div className="w-full min-h-screen justify-center">
             <CheckoutForm 
                 priceId={priceId}
-                planConfig={priceDetails}
+                planConfig={planConfig}
                 agencyEmail={session?.user.email!}
                 user={{
                     id: user.id,

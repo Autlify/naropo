@@ -10,6 +10,8 @@ import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
 import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
 import { logGLAudit } from './audit'
+import { emitEvent } from './fanout'
+import { EVENT_KEYS } from '@/lib/registry/events/trigger'
 import { Decimal } from 'decimal.js'
 import { ActionKey } from '@/lib/registry'
 
@@ -464,6 +466,18 @@ export const recalculateBalances = async (
             description: `Recalculated balances for period:${period.name}`,
         })
 
+        // Emit balance recalculated event
+        await emitEvent(
+            'fi.general_ledger',
+            EVENT_KEYS.fi.general_ledger.balances.recalculated,
+            { type: 'FinancialPeriod', id: periodId },
+            { 
+                amount: accountsUpdated,
+                reference: period.name || periodId,
+                description: 'Balances recalculated',
+            }
+        )
+
         revalidatePath(`/agency/${context.agencyId}/fi/general-ledger/reports`)
 
         return { success: true, data: { accountsUpdated } }
@@ -541,6 +555,18 @@ export const rollForwardBalances = async (
             subAccountId: context.subAccountId,
             description: `Rolled forward ${accountsRolled} balances from period ${fromPeriodId}`,
         })
+
+        // Emit carry forward event
+        await emitEvent(
+            'fi.general_ledger',
+            EVENT_KEYS.fi.general_ledger.carry_forward.processed,
+            { type: 'FinancialPeriod', id: toPeriodId },
+            { 
+                amount: accountsRolled,
+                reference: `${fromPeriodId} -> ${toPeriodId}`,
+                description: 'Balances carried forward',
+            }
+        )
 
         revalidatePath(`/agency/${context.agencyId}/fi/general-ledger/reports`)
 

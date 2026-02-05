@@ -3,7 +3,6 @@ import Stripe from 'stripe'
 import { db } from '../db'
 import { stripe } from '.'
 import { Plan, SubscriptionStatus } from '@/generated/prisma/enums'
-import { pricingCards } from '@/lib/constants'
 import { applyTopUpCreditsFromCheckout } from '@/lib/features/core/billing/credits/grant'
 
 export const subscriptionCreated = async (
@@ -77,6 +76,29 @@ export const subscriptionCreated = async (
       create: data,
       update: data,
     })
+
+    // Update user's trialEligible to false after first subscription
+    // Find the user via the agency's membership
+    if (isTrialing || isActive) {
+      const agencyOwner = await db.user.findFirst({
+        where: {
+          AgencyMemberships: {
+            some: {
+              agencyId: agency.id,
+              Role: { name: 'AGENCY_OWNER' }
+            }
+          }
+        }
+      })
+
+      if (agencyOwner?.trialEligible) {
+        await db.user.update({
+          where: { id: agencyOwner.id },
+          data: { trialEligible: false }
+        })
+        console.log('🔄 Updated user trialEligible to false:', agencyOwner.id)
+      }
+    }
 
     console.log(`🟢 Created/Updated Subscription`, {
       subscriptionId: subscription.id,

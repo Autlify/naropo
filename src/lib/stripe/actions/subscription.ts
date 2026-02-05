@@ -2,7 +2,7 @@
 
 import { stripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
-import { revalidatePath } from 'next/cache' 
+import { revalidatePath } from 'next/cache'
 import type Stripe from 'stripe'
 
 type ActionResult<T = void> =
@@ -121,11 +121,11 @@ export const syncSubscriptionStatus = async (
         // Determine correct period end from subscription (use any cast for Stripe API compatibility)
         const stripeSubAny = stripeSub as any
         const periodEnd = stripeSubAny.current_period_end
-        
+
         // Map Stripe status to DB status
         // Stripe statuses: active, past_due, unpaid, canceled, incomplete, incomplete_expired, trialing, paused
         let dbStatus = stripeSub.status.toUpperCase()
-        
+
         // Check if trial has ended - if trialing but trial_end is in the past, update to ACTIVE
         const now = Math.floor(Date.now() / 1000)
         if (stripeSub.status === 'trialing' && stripeSub.trial_end && stripeSub.trial_end < now) {
@@ -143,8 +143,6 @@ export const syncSubscriptionStatus = async (
             },
         })
 
-        // Revalidate billing page
-        revalidatePath(`/agency/${agencyId}/billing`)
         return { success: true, data: undefined }
     } catch (error) {
         console.error('Error syncing subscription status:', error)

@@ -17,6 +17,8 @@ import {
   type AccountHierarchyMoveInput,
 } from '@/lib/schemas/fi/general-ledger/chart-of-accounts';
 import { logGLAudit } from './audit';
+import { emitEvent } from './fanout';
+import { EVENT_KEYS } from '@/lib/registry/events/trigger';
 
 type ActionResult<T> = {
   success: boolean;
@@ -223,6 +225,19 @@ export const createAccount = async (input: CreateAccountInput): Promise<ActionRe
       description: `Account ${account.code} - ${account.name} created`,
     });
 
+    // Emit account created event
+    await emitEvent(
+      'fi.general_ledger',
+      EVENT_KEYS.fi.general_ledger.accounts.created,
+      { type: 'ChartOfAccount', id: account.id },
+      { 
+        amount: 0,
+        reference: account.code,
+        description: account.name || 'Account created',
+        accountId: account.id,
+      }
+    );
+
     const basePath = context.subAccountId
       ? `/subaccount/${context.subAccountId}/fi/general-ledger/chart-of-accounts`
       : `/agency/${context.agencyId}/fi/general-ledger/chart-of-accounts`;
@@ -303,6 +318,19 @@ export const updateAccount = async (input: UpdateAccountInput): Promise<ActionRe
       previousValues: existing,
       newValues: account,
     });
+
+    // Emit account updated event
+    await emitEvent(
+      'fi.general_ledger',
+      EVENT_KEYS.fi.general_ledger.accounts.updated,
+      { type: 'ChartOfAccount', id: account.id },
+      { 
+        amount: 0,
+        reference: account.code,
+        description: account.name || 'Account updated',
+        accountId: account.id,
+      }
+    );
 
     const basePath = context.subAccountId
       ? `/subaccount/${context.subAccountId}/fi/general-ledger/chart-of-accounts`
@@ -393,6 +421,19 @@ export const archiveAccount = async (accountId: string, reason: string): Promise
       description: `Account ${account.code} - ${account.name} archived`,
       reason,
     });
+
+    // Emit account archived event
+    await emitEvent(
+      'fi.general_ledger',
+      EVENT_KEYS.fi.general_ledger.accounts.archived,
+      { type: 'ChartOfAccount', id: accountId },
+      { 
+        amount: 0,
+        reference: account.code,
+        description: reason || 'Account archived',
+        accountId: accountId,
+      }
+    );
 
     const basePath = context.subAccountId
       ? `/subaccount/${context.subAccountId}/fi/general-ledger/chart-of-accounts`

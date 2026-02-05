@@ -5,6 +5,8 @@
  */
 
 import { getAuthUserDetails, getSidebarOptions } from '@/lib/queries'
+import { resolveEffectiveEntitlements } from '@/lib/features/core/billing/entitlements/resolve'
+import { syncSubscriptionStatus } from '@/lib/stripe/actions/subscription'
 import React from 'react'
 import MenuOptions from './menu-options'
 import type { SidebarOption, SidebarOptionLink } from '@/generated/prisma/client'
@@ -115,9 +117,26 @@ const Sidebar = async ({ id, type }: Props) => {
     // Group by module
     const groupedOptions = groupByModule(sidebarOptions)
 
-    // Get subscription info for entitlement checking
+    // Ensure subscription is synced from Stripe (handles webhook latency)
+    await syncSubscriptionStatus(agency.id, agency.Subscription?.subscritiptionId || '')
+
+    // Get subscription info for entitlement checking (refetch after sync)
     const subscription = agency.Subscription
     const currentPlan = subscription?.priceId || null
+
+    // Fetch effective entitlements for proper feature gating
+    const scope = type === 'agency' ? 'AGENCY' : 'SUBACCOUNT'
+    const entitlementsMap = await resolveEffectiveEntitlements({
+        agencyId: agency.id,
+        subAccountId: type === 'subaccount' ? id : null,
+        scope: scope as 'AGENCY' | 'SUBACCOUNT',
+    })
+    
+    // Serialize entitlements for client component (only pass what's needed)
+    const entitledFeatures: Record<string, boolean> = {}
+    for (const [key, ent] of Object.entries(entitlementsMap)) {
+        entitledFeatures[key] = ent.isEnabled
+    }
 
     return (
         <>
@@ -133,6 +152,7 @@ const Sidebar = async ({ id, type }: Props) => {
                 user={user}
                 agency={agency}
                 currentPlan={currentPlan}
+                entitledFeatures={entitledFeatures}
             />
             {/* Mobile sidebar - sheet trigger */}
             <MenuOptions
@@ -145,6 +165,7 @@ const Sidebar = async ({ id, type }: Props) => {
                 user={user}
                 agency={agency}
                 currentPlan={currentPlan}
+                entitledFeatures={entitledFeatures}
             />
         </>
     )
@@ -152,6 +173,5 @@ const Sidebar = async ({ id, type }: Props) => {
 
 export default Sidebar
 
-// Re-export types and utilities
-export * from './types'
+// Re-export types and utilities 
 

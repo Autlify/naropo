@@ -8,19 +8,20 @@ type Props = {
 }
 
 const CircleProgress = ({ description, value = 0 }: Props) => {
+  const safeValue = Number.isFinite(value) && value > 0 ? value : 0
   return (
     <div className="flex gap-4 items-center">
       <ProgressCircle
         showAnimation={true}
-        value={value}
+        value={safeValue}
         radius={70}
         strokeWidth={20}
       >
-        {value}%
+        {safeValue !== 0 ? `${safeValue}%` : '0%'}
       </ProgressCircle>
       <div>
         <b>Closing Rate</b>
-        <p className="text-muted-foreground">{description}</p>
+        <div className="text-muted-foreground">{description}</div>
       </div>
     </div>
   )

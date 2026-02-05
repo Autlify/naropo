@@ -1,5 +1,6 @@
 'use client'
 import Loading from '@/components/global/loading'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
 import { EditorBtns } from '@/lib/constants'
@@ -25,6 +26,8 @@ const Checkout = (props: Props) => {
   const [clientSecret, setClientSecret] = useState('')
   const [livePrices, setLivePrices] = useState([])
   const [subAccountConnectAccId, setSubAccountConnectAccId] = useState('')
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const [fetchNonce, setFetchNonce] = useState(0)
   const options = useMemo(() => ({ clientSecret }), [clientSecret])
   const styles = props.element.styles
 
@@ -53,42 +56,49 @@ const Checkout = (props: Props) => {
   useEffect(() => {
     if (livePrices.length && subaccountId && subAccountConnectAccId) {
       const getClientSercet = async () => {
+        setCheckoutError(null)
         try {
           const body = JSON.stringify({
             subAccountConnectAccId,
             prices: livePrices,
             subaccountId,
           })
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_URL}api/stripe/create-checkout-session`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body,
-            }
-          )
-          const responseJson = await response.json()
-          console.log(responseJson)
-          if (!responseJson) throw new Error('something went wrong')
-          if (responseJson.error) {
-            throw new Error(responseJson.error)
+          // Use a relative URL to avoid NEXT_PUBLIC_URL misconfiguration (which can lead to
+          // a stuck loading state when the request never reaches the API route).
+          const response = await fetch('/api/stripe/create-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            cache: 'no-store',
+          })
+
+          const responseJson = await response.json().catch(() => null)
+          if (!response.ok) {
+            const message =
+              (responseJson && (responseJson.error || responseJson.message)) ||
+              `Request failed (${response.status})`
+            throw new Error(message)
           }
-          if (responseJson.clientSecret) {
-            setClientSecret(responseJson.clientSecret)
+
+          if (!responseJson || !responseJson.clientSecret) {
+            throw new Error('Missing clientSecret from checkout session')
           }
+          setClientSecret(responseJson.clientSecret)
         } catch (error) {
+          const message = error instanceof Error ? error.message : 'An error occurred'
+          setCheckoutError(message)
           toast({
             open: true,
             className: 'z-[100000]',
             variant: 'destructive',
             title: 'Oops!',
-            description: error instanceof Error ? error.message : 'An error occurred',
+            description: message,
           })
         }
       }
       getClientSercet()
     }
-  }, [livePrices, subaccountId, subAccountConnectAccId])
+  }, [livePrices, subaccountId, subAccountConnectAccId, fetchNonce])
 
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
     if (type === null) return
@@ -165,9 +175,29 @@ const Checkout = (props: Props) => {
             </div>
           )}
 
-          {!options.clientSecret && (
+          {!options.clientSecret && !checkoutError && (
             <div className="flex items-center justify-center w-full h-40">
               <Loading />
+            </div>
+          )}
+
+          {checkoutError && (
+            <div className="flex flex-col items-center justify-center w-full h-40 gap-2 text-center">
+              <p className="text-sm text-destructive">Checkout failed to load.</p>
+              <p className="text-xs text-muted-foreground max-w-[520px]">{checkoutError}</p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  // Trigger re-fetch of clientSecret.
+                  setClientSecret('')
+                  setCheckoutError(null)
+                  setFetchNonce((n) => n + 1)
+                }}
+              >
+                Retry
+              </Button>
             </div>
           )}
         </div>

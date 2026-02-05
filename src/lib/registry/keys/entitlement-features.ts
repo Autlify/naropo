@@ -21,7 +21,7 @@ import type {
   MeteringScope,
   UsagePeriod 
 } from '@/generated/prisma/client'
-import type { FeatureKey } from '@/lib/registry'
+import type { FeatureKey } from '@/lib/registry/keys'
 
 /** 
  * Entitlement feature definition for seeding/catalog.
@@ -36,8 +36,33 @@ export interface EntitlementFeatureSeed {
   unit?: string
 
   // Metering configuration
-  // MeteringType: NONE | COUNT | SUM
+  /**
+   * How the feature is metered with/without period consideration.
+   * Examples:
+   * - NONE: enable/disable or unlimited access
+    * - COUNT: count of items
+    *   - Standing limit (no `period`): e.g. number of sub-accounts until subscription cancelled
+    *   - Period quota (with `period`): e.g. invoices created per month
+    * - SUM: cumulative usage
+    *   - Period cumulative (with `period`): e.g. total GB storage used across all sub-accounts in a month
+    *   - Period grant w/ count aggregation: e.g. journal entries per month (metering: SUM, aggregation: COUNT)
+   */
   metering: MeteringType
+  /**
+    * How usage is aggregated.
+    *
+    * Notes on period vs non-period (refresh/grant) behavior:
+    * - Non-period (no `period`): the entitlement acts like a standing limit or toggle.
+    *   - Example (standing limit): "Max sub-accounts" with `metering: COUNT`, `aggregation: COUNT`, no `period`.
+    *     The allowed amount does not automatically refresh each month; it’s the maximum at any time.
+    *   - Example (toggle): "Priority Support" with `metering: NONE`, no `period`.
+    *
+    * - Period-based (with `period`): the entitlement refreshes each period; usage is evaluated within the period window.
+    *   - Example (monthly grant/quota): "Journal entries per month" with `metering: SUM`, `aggregation: COUNT`, `period: MONTHLY`.
+    *     Each month a fresh allowance is effectively granted; usage resets at period boundary.
+    *   - Example (monthly cumulative): "API calls per month" could use `metering: SUM`, `aggregation: SUM`, `period: MONTHLY`.
+    *     The period window refreshes monthly and the total is accumulated over that month.
+   */
   aggregation: MeterAggregation
   scope: MeteringScope
   period?: UsagePeriod
@@ -67,6 +92,32 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
   // CORE: Agency & Platform Features
   // ─────────────────────────────────────────────────────────
   {
+    key: 'core.agency.account',
+    name: 'Agency Account',
+    description: 'Access to core agency features and management',
+    category: 'CORE',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Agency Account',
+    icon: 'building-office',
+    displayOrder: 0,
+  },
+  {
+    key: 'core.billing.account',
+    name: 'Billing Account',
+    description: 'Access to billing and subscription management features',
+    category: 'CORE',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Billing Account',
+    icon: 'credit-card',
+    displayOrder: 5,
+  },
+  {
     key: 'core.agency.subaccounts',
     name: 'Sub-Accounts',
     description: 'Maximum number of sub-accounts (clients) per agency',
@@ -94,6 +145,33 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     icon: 'user-group',
     displayOrder: 20,
   },
+  {
+    key: 'iam.authZ.roles',
+    name: 'Role Management',
+    description: 'Maximum number of custom roles with IAM permissions management access',
+    category: 'IAM',
+    valueType: 'INTEGER',
+    metering: 'COUNT',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Role Management',
+    icon: 'shield-check',
+  },
+  {
+    key: 'iam.authZ.members',
+    name: 'Role Assignments', 
+    description: 'Maximum number of role assignments to team members',
+    category: 'IAM',
+    valueType: 'INTEGER',
+    unit: 'USER',
+    metering: 'COUNT',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Role Assignments',
+    icon: 'user-group',
+    displayOrder: 30,
+  },
+  
   {
     key: 'core.agency.storage',
     name: 'Storage',
@@ -234,6 +312,25 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     icon: 'webhook',
     displayOrder: 310,
   },
+  // ─────────────────────────────────────────────────────────
+  // CORE: Support & Tickets
+  // ─────────────────────────────────────────────────────────
+  {
+    key: 'core.support.tickets',
+    name: 'Support Tickets',
+    description: 'Access to support ticketing system',
+    category: 'CORE',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Support Tickets',
+    icon: 'ticket',
+    displayOrder: 320,
+    isToggleable: true,
+    defaultEnabled: false,
+  },
+
 
   // ─────────────────────────────────────────────────────────
   // FI: Financial Modules (Add-ons)
@@ -450,7 +547,7 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
   {
     key: 'fi.bank_ledger.bank_accounts',
     name: 'Bank Ledger Access',
-    description: 'Access to FI-BL module (Bank Sync, Reconciliation)',
+    description: 'Access to FI-BL module (Bank Transactions, Statements upload)',
     category: 'FI',
     valueType: 'BOOLEAN',
     metering: 'NONE',
@@ -463,7 +560,22 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     defaultEnabled: false,
   },
   {
-    key: 'fi.controlling.cost_centers',
+    key: 'fi.bank_ledger.subledgers',
+    name: 'Bank Transitory Accounts',
+    description: 'Access to bank transitory accounts for clearing',
+    category: 'FI',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Bank Transitory Accounts',
+    icon: 'building-bank',
+    displayOrder: 700,
+    isToggleable: false,
+    defaultEnabled: false,
+  },
+  {
+    key: 'co.cost_centers.master_data',
     name: 'Controlling Access',
     description: 'Access to FI-CO module (Cost Centers, Allocations)',
     category: 'FI',
@@ -573,6 +685,52 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     isToggleable: false,
     defaultEnabled: false,
   },
+
+  {
+    key: 'co.cost_centers.hierarchy',
+    name: 'Cost Center Hierarchy',
+    description: 'Manage cost center groups and hierarchy structures',
+    category: 'CO',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Cost Center Hierarchy',
+    icon: 'network',
+    displayOrder: 910,
+    isToggleable: false,
+    defaultEnabled: false,
+  },
+  {
+    key: 'co.cost_centers.allocations',
+    name: 'Cost Allocations',
+    description: 'Perform allocations and distributions across cost centers',
+    category: 'CO',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Allocations',
+    icon: 'shuffle',
+    displayOrder: 920,
+    isToggleable: false,
+    defaultEnabled: false,
+  },
+  {
+    key: 'co.cost_centers.reports',
+    name: 'Cost Center Reports',
+    description: 'Reporting and analysis for cost center performance',
+    category: 'CO',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Cost Center Reports',
+    icon: 'file-chart',
+    displayOrder: 930,
+    isToggleable: false,
+    defaultEnabled: false,
+  },
   {
     key: 'co.profit_centers.master_data',
     name: 'Profit Center Accounting',
@@ -585,6 +743,37 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     displayName: 'Profit Centers',
     icon: 'trending-up',
     displayOrder: 910,
+    isToggleable: false,
+    defaultEnabled: false,
+  },
+
+  {
+    key: 'co.profit_centers.hierarchy',
+    name: 'Profit Center Hierarchy',
+    description: 'Manage profit center groups and hierarchy structures',
+    category: 'CO',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Profit Center Hierarchy',
+    icon: 'network',
+    displayOrder: 950,
+    isToggleable: false,
+    defaultEnabled: false,
+  },
+  {
+    key: 'co.profit_centers.reports',
+    name: 'Profit Center Reports',
+    description: 'Reporting and analysis for profit center performance',
+    category: 'CO',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Profit Center Reports',
+    icon: 'file-chart',
+    displayOrder: 960,
     isToggleable: false,
     defaultEnabled: false,
   },
@@ -618,6 +807,22 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     isToggleable: false,
     defaultEnabled: false,
   },
+
+  {
+    key: 'co.profitability.reports',
+    name: 'Profitability Reports',
+    description: 'Profitability analysis and reporting by segment',
+    category: 'CO',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Profitability Reports',
+    icon: 'file-chart',
+    displayOrder: 980,
+    isToggleable: false,
+    defaultEnabled: false,
+  },
   {
     key: 'co.budgets.planning',
     name: 'Budget Planning',
@@ -630,6 +835,22 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     displayName: 'Budgets',
     icon: 'calculator',
     displayOrder: 940,
+    isToggleable: false,
+    defaultEnabled: false,
+  },
+
+  {
+    key: 'co.budgets.monitoring',
+    name: 'Budget Monitoring',
+    description: 'Monitor budget consumption and variance reporting',
+    category: 'CO',
+    valueType: 'BOOLEAN',
+    metering: 'NONE',
+    aggregation: 'COUNT',
+    scope: 'AGENCY',
+    displayName: 'Budget Monitoring',
+    icon: 'activity',
+    displayOrder: 1010,
     isToggleable: false,
     defaultEnabled: false,
   },

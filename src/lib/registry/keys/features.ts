@@ -10,7 +10,7 @@
  */
 
 import type { ModuleCode, SubModuleOf, ResourceOf, KEYS } from '@/lib/registry/keys/permissions'
-import type { ActionKey } from '@/lib/registry/keys/actions'
+ 
 
 /** Resource codes (e.g., 'account', 'subaccounts', 'team_member') */
 export type FeatureCode = {

@@ -15,6 +15,24 @@
 
 export const KEYS = {
     core: {
+        organization: {
+            profile: {
+                view: 'core.organization.profile.view',
+                manage: 'core.organization.profile.manage',
+            },
+            security: {
+                view: 'core.organization.security.view',
+                manage: 'core.organization.security.manage',
+            },
+            integrations: {
+                view: 'core.organization.integrations.view',
+                manage: 'core.organization.integrations.manage',
+            },
+            automation: {
+                view: 'core.organization.automation.view',
+                manage: 'core.organization.automation.manage',
+            },
+        },
         agency: {
             // Data entity - CRUD pattern
             account: {
@@ -98,12 +116,12 @@ export const KEYS = {
             team_member: {
                 invite: 'core.subaccount.team_member.invite',
                 remove: 'core.subaccount.team_member.remove',
-            },
+            }, 
         },
-        features: {
+        experimental: {
             // User preferences - action pattern
-            preference: {
-                toggle: 'core.features.preference.toggle',
+            flag: {
+                toggle: 'core.experimental.flag.toggle',
             },
         },
         apps: {
@@ -125,6 +143,17 @@ export const KEYS = {
                 create: 'core.apps.api_keys.create',
                 delete: 'core.apps.api_keys.delete',
             },
+        },
+        support: {
+            tickets: {
+                view: 'core.support.tickets.view',
+                create: 'core.support.tickets.create',
+                update: 'core.support.tickets.update',
+                close: 'core.support.tickets.close',
+            },
+            diagnostics: {
+                run: 'core.support.diagnostics.run',
+            }
         },
     },
     iam: {
@@ -192,6 +221,10 @@ export const KEYS = {
 
         },
         general_ledger: {
+            accounts: {
+                view: 'fi.general_ledger.accounts.view',
+                manage: 'fi.general_ledger.accounts.manage',
+            },
             subledgers: {
                 view: 'fi.general_ledger.subledgers.view',
                 allocate: 'fi.general_ledger.subledgers.allocate',
@@ -543,7 +576,7 @@ export type SubModuleOf<M extends ModuleCode> = M extends keyof typeof KEYS
 export type ResourceOf<M extends ModuleCode, S extends SubModuleOf<M>> = Extract<
     keyof (typeof KEYS)[M][S],
     string
->;
+>; 
 
 export type ActionOf<
     M extends ModuleCode,

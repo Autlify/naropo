@@ -8,7 +8,7 @@ import { checkUsage } from '@/lib/features/core/billing/usage/consume'
 import type { UsageDecision } from '@/lib/features/core/billing/usage/consume'
 
 import { POLICY_MESSAGES, type PolicyReason, type PolicySuggestion } from './messages'
-import type { ActionKey, FeatureKey } from '@/lib/registry'
+import type { ActionKey, FeatureKey } from '@/lib/registry/keys'
 
 export type CanPerformArgs = {
   userId: string

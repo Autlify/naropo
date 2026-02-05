@@ -36,7 +36,7 @@ import {
   type SidebarWidth,
   type AnimationLevel,
   SIDEBAR_PRESETS,
-} from '@/components/sidebar-01/types'
+} from '@/types/sidebar'
 import {
   LayoutTemplate,
   PanelLeft,

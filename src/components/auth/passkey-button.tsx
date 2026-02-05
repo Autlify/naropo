@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Fingerprint } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -14,7 +14,9 @@ import { cn } from '@/lib/utils'
 
 interface PasskeyButtonProps {
     email: string
-    variant?: 'signin' | 'signup'
+    variant?: 'signin' | 'signup' | 'icon-signup' | 'icon-signin'
+    buttonText?: string
+    tooltip?: string
     onSuccess?: (result: any) => void
     onError?: (error: string) => void
     disabled?: boolean
@@ -27,11 +29,26 @@ export function PasskeyButton({
     onSuccess,
     onError,
     disabled = false,
-    className
+    className,
+    tooltip,
+    buttonText
 }: PasskeyButtonProps) {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
+    const [buttonTextState, setButtonTextState] = useState('')
+
+    useEffect(() => {
+        if (buttonText) {
+            setButtonTextState(buttonText)
+        } else if (variant === 'icon-signup' || variant === 'icon-signin') {
+            setButtonTextState('')
+        } else if (variant === 'signup') {
+            setButtonTextState('Sign up with Passkey')
+        } else {
+            setButtonTextState('Sign in with Passkey')
+        }
+    }, [variant, buttonText])
 
     const handlePasskeySignup = async () => {
         try {
@@ -178,9 +195,10 @@ export function PasskeyButton({
                 className={cn("w-full", className, isLoading && 'opacity-70')}
                 onClick={handlePasskey}
                 disabled={isLoading || disabled || (variant === 'signup' && !email)}
+                tooltip={tooltip || buttonTextState}
             >
-                <Fingerprint className="mr-2 h-4 w-4" />
-                {variant === 'signup' ? 'Sign up with Passkey' : 'Sign in with Passkey'}
+                <Fingerprint className="h-8 w-8" />
+                {buttonTextState}
             </Button>
             {error && (
                 <Alert className="border-destructive/30 bg-destructive/10">

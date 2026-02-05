@@ -1,8 +1,17 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react'
+import { cn } from '@/lib/utils'
+
+// ============================================================================
+// Storage Key
+// ============================================================================
 
 const STORAGE_KEY = 'sidebar-collapsed'
+
+// ============================================================================
+// Simple Sidebar Context
+// ============================================================================
 
 type SidebarContextType = {
   isCollapsed: boolean
@@ -12,7 +21,11 @@ type SidebarContextType = {
   setTitle: (title: string) => void
 }
 
-const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
+const SimpleSidebarContext = createContext<SidebarContextType | undefined>(undefined)
+
+// ============================================================================
+// Provider
+// ============================================================================
 
 export function SidebarProvider({ children, defaultCollapsed = false }: { children: ReactNode; defaultCollapsed?: boolean }) {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
@@ -44,16 +57,61 @@ export function SidebarProvider({ children, defaultCollapsed = false }: { childr
   }, [])
 
   return (
-    <SidebarContext.Provider value={{ isCollapsed, setCollapsed, toggle, title, setTitle }}>
+    <SimpleSidebarContext.Provider value={{ isCollapsed, setCollapsed, toggle, title, setTitle }}>
       {children}
-    </SidebarContext.Provider>
+    </SimpleSidebarContext.Provider>
   )
 }
 
+// ============================================================================
+// Hook
+// ============================================================================
+
 export function useSidebar() {
-  const context = useContext(SidebarContext)
+  const context = useContext(SimpleSidebarContext)
   if (context === undefined) {
     throw new Error('useSidebar must be used within a SidebarProvider')
   }
   return context
+}
+
+// ============================================================================
+// Layout Wrapper Component
+// ============================================================================
+
+type LayoutWrapperProps = {
+  children: ReactNode
+  sidebar: ReactNode
+  infobar: ReactNode
+  allyPanel?: ReactNode
+}
+
+function LayoutContent({ children, sidebar, infobar, allyPanel }: LayoutWrapperProps) {
+  const { isCollapsed } = useSidebar()
+
+  return (
+    <div className="h-screen overflow-hidden">
+      {sidebar}
+      <div className={cn(
+        'transition-all duration-300',
+        isCollapsed ? 'md:pl-[96px]' : 'md:pl-[300px]'
+      )}>
+        {infobar}
+        <div className="relative">
+          {children}
+        </div>
+        {allyPanel}
+      </div>
+    </div>
+  )
+}
+
+export function LayoutWrapper({ children, sidebar, infobar, allyPanel }: LayoutWrapperProps) {
+  return (
+    <SidebarProvider>
+      <LayoutContent sidebar={sidebar} infobar={infobar} allyPanel={allyPanel}>
+        {children}
+      </LayoutContent>
+    </SidebarProvider>
+  )
 }

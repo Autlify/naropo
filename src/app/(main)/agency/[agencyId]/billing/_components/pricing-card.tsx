@@ -116,4 +116,4 @@ const PricingCard = ({
   )
 }
 
-export default PricingCard
+export default PricingCard 

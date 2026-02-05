@@ -3,6 +3,7 @@ import { DM_Sans } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/providers/theme-provider'
 import { AuthProvider } from '@/providers/auth-provider'
+import { PreferencesProvider } from '@/providers/preferences-provider'
 import ModalProvider from '@/providers/modal-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as SonnarToaster } from '@/components/ui/sonner'
@@ -26,7 +27,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
-      <body className={`${font.className } w-full min-h-screen`}>
+      <body className={`${font.className } min-w-screen min-h-screen`}>
         <AuthProvider>
           <ThemeProvider
             attribute="class"
@@ -35,15 +36,17 @@ export default function RootLayout({
             enableSystem={false}
             disableTransitionOnChange
           >
-            <TooltipProvider>
-              <ModalProvider>
-                <SidebarProvider>
-                  {children}
-                  <Toaster />
-                  <SonnarToaster position="bottom-left" />
-                </SidebarProvider>
-              </ModalProvider>
-            </TooltipProvider>
+            <PreferencesProvider>
+              <TooltipProvider delayDuration={0} skipDelayDuration={0} disableHoverableContent>
+                <ModalProvider>
+                  <SidebarProvider>
+                    {children}
+                    <Toaster />
+                    <SonnarToaster position="bottom-left" />
+                  </SidebarProvider>
+                </ModalProvider>
+              </TooltipProvider>
+            </PreferencesProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

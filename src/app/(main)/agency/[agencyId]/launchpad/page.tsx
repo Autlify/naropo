@@ -7,24 +7,24 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { db } from '@/lib/db'
+import { stripe } from '@/lib/stripe'
 import { getStripeOAuthLink } from '@/lib/utils'
 import { CheckCircleIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
-import { stripe } from '@/lib/stripe'
 import { redirect } from 'next/navigation'
 
 type Props = {
   params: Promise<{
     agencyId: string
   }>
-  searchParams: Promise<{ code: string }>
+  searchParams: Promise<{ code?: string }>
 }
 
 const LaunchPadPage = async ({ params, searchParams }: Props) => {
   const { agencyId } = await params
-  const searchParamsData = await searchParams
+  const { code } = await searchParams
   
   const agencyDetails = await db.agency.findUnique({
     where: { id: agencyId },
@@ -47,34 +47,38 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
     `launchpad___${agencyDetails.id}`
   )
 
-  let connectedStripeAccount = false
-
-  if (searchParamsData.code) {
-    if (!agencyDetails.connectAccountId) {
-      try {
-        const response = await stripe.oauth.token({
-          grant_type: 'authorization_code',
-          code: searchParamsData.code,
-        })
-        await db.agency.update({
-          where: { id: agencyId },
-          data: { connectAccountId: response.stripe_user_id },
-        })
-        // Redirect to remove code from URL and prevent re-processing
-        return redirect(`/agency/${agencyId}/launchpad`)
-      } catch (error) {
-        console.log('🔴 Could not connect stripe account', error)
-        // Redirect to remove invalid/used code from URL
-        return redirect(`/agency/${agencyId}/launchpad`)
-      }
-    } else {
-      // Already connected, redirect to remove code from URL
-      return redirect(`/agency/${agencyId}/launchpad`)
+  // Handle OAuth callback
+  if (code) {
+    try {
+      const response = await stripe.oauth.token({
+        grant_type: 'authorization_code',
+        code,
+      })
+      
+      // Verify connection works before saving
+      await stripe.accounts.retrieve({
+        stripeAccount: response.stripe_user_id,
+      })
+      
+      await db.agency.update({
+        where: { id: agencyId },
+        data: { connectAccountId: response.stripe_user_id },
+      })
+    } catch (error: any) {
+      // Log but don't crash - code might already be used (double render) or expired
+      console.log('🔴 Could not connect stripe account:', error?.message || error)
     }
+    // Always redirect to remove code from URL
+    return redirect(`/agency/${agencyId}/launchpad`)
   }
 
-  // Check if already connected (for display purposes)
-  connectedStripeAccount = !!agencyDetails.connectAccountId
+  // Re-fetch to get updated connectAccountId after OAuth
+  const updatedAgency = await db.agency.findUnique({
+    where: { id: agencyId },
+    select: { connectAccountId: true },
+  })
+  
+  const connectedStripeAccount = !!updatedAgency?.connectAccountId
 
   return (
     <div className="flex flex-col justify-center items-center">
@@ -114,7 +118,7 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
                   dashboard.
                 </p>
               </div>
-              {agencyDetails.connectAccountId || connectedStripeAccount ? (
+              {connectedStripeAccount ? (
                 <CheckCircleIcon
                   size={50}
                   className=" text-primary p-2 flex-shrink-0"

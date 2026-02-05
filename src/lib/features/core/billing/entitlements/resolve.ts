@@ -8,6 +8,29 @@ import { normalizeEntitlement } from '@/lib/features/core/billing/entitlements/n
 
 const ACTIVE_STATUSES = new Set(['ACTIVE', 'TRIALING'] as const)
 
+
+const ENV_INHERIT_AGENCY = process.env.ENTITLEMENTS_SUBACCOUNT_INHERIT_AGENCY !== 'false'
+
+async function resolveInheritAgencyEntitlements(args: ResolveEntitlementsArgs): Promise<boolean> {
+  if (args.scope !== ('SUBACCOUNT' as any)) return false
+  if (args.inheritAgencyEntitlements != null) return !!args.inheritAgencyEntitlements
+
+  // Optional per-subaccount override
+  if (args.subAccountId) {
+    const sub = await db.subAccountSettings.findUnique({
+      where: { subAccountId: args.subAccountId },
+      select: { entitlementsInheritFromAgency: true },
+    })
+    if (sub?.entitlementsInheritFromAgency != null) return !!sub.entitlementsInheritFromAgency
+  }
+
+  const agency = await db.agencySettings.findUnique({
+    where: { agencyId: args.agencyId },
+    select: { entitlementsInheritToSubaccounts: true },
+  })
+  return agency?.entitlementsInheritToSubaccounts ?? ENV_INHERIT_AGENCY
+}
+
 export async function resolvePlanIdForAgency(agencyId: string, now: Date = new Date()): Promise<string | null> {
   const sub = await db.subscription.findFirst({
     where: {
@@ -114,7 +137,23 @@ export async function resolveEffectiveEntitlements(args: ResolveEntitlementsArgs
     planFeatures.push(list.length === 1 ? list[0] : mergePlanFeatures(list))
   }
 
-  const overrides = await db.entitlementOverride.findMany({
+
+const inheritAgency = await resolveInheritAgencyEntitlements(args)
+
+// Fetch overrides: optionally include agency-level overrides when resolving in subaccount scope.
+const overridesAgency = inheritAgency
+  ? await db.entitlementOverride.findMany({
+      where: {
+        scope: 'AGENCY' as any,
+        agencyId: args.agencyId,
+        subAccountId: null,
+        startsAt: { lte: now },
+        OR: [{ endsAt: null }, { endsAt: { gte: now } }],
+      },
+    })
+  : []
+
+const overridesSub = await db.entitlementOverride.findMany({
     where: {
       scope: args.scope,
       agencyId: args.agencyId,
@@ -123,8 +162,12 @@ export async function resolveEffectiveEntitlements(args: ResolveEntitlementsArgs
       OR: [{ endsAt: null }, { endsAt: { gte: now } }],
     },
   })
+
+const overrides = [...overridesAgency, ...overridesSub]
   const overrideMap = new Map<string, typeof overrides[number]>()
-  for (const o of overrides) overrideMap.set(o.featureKey, o)
+// Agency overrides first, then subaccount overrides (subaccount wins)
+for (const o of overridesAgency) overrideMap.set(o.featureKey, o)
+for (const o of overridesSub) overrideMap.set(o.featureKey, o)
 
   const out: Record<string, EffectiveEntitlement> = {}
   for (const pf of planFeatures) {
