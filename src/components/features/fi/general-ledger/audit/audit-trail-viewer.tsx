@@ -234,14 +234,13 @@ const AuditTrailViewer = ({ agencyId, entityTypes, initialData }: Props) => {
             </div>
 
             <Select value={entityType} onValueChange={setEntityType}>
-              <SelectTrigger className="w-44 bg-background">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Entity type" />
+              <SelectTrigger className="w-48 bg-background">
+                <SelectValue placeholder="Entity Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All entities</SelectItem>
-                {entityTypes.map((type) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                <SelectItem value="all">All entities</SelectItem>
+                {entityTypes.map((et) => (
+                  <SelectItem key={et} value={et}>{et}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -251,7 +250,7 @@ const AuditTrailViewer = ({ agencyId, entityTypes, initialData }: Props) => {
                 <SelectValue placeholder="Action" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All actions</SelectItem>
+                <SelectItem value="all">All actions</SelectItem>
                 {ACTIONS.map((a) => (
                   <SelectItem key={a} value={a}>{a}</SelectItem>
                 ))}

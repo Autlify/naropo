@@ -73,59 +73,6 @@ export function PricingSection({
                     value={interval}
                     onValueChange={handleValueChange}
                 />
-
-                {/* 
-                    <button
-                        type="button"
-                        onClick={() => setInterval("monthly")}
-                        className={cn(
-                            "px-8 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                            interval === "monthly"
-                                ? "bg-primary text-primary-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                        )}
-                    >
-                        Monthly
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setInterval("annually")}
-                        className={cn(
-                            "px-8 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                            interval === "annually"
-                                ? "bg-primary text-primary-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                        )}
-                    >
-                        Yearly <span className="text-xs">(Save 20%)</span>
-                    </button> */}
-
-
-                {/* <button
-                        onClick={() => setInterval('monthly')}
-                        className={cn(
-                            "px-6 py-2.5 rounded-md transition-all duration-200",
-                            interval === 'monthly'
-                                ? "bg-background text-foreground shadow-sm border border-border"
-                                : "text-muted-foreground hover:text-foreground"
-                        )}
-                    >
-                        Monthly
-                    </button>
-                    <button
-                        onClick={() => setInterval('annually')}
-                        className={cn(
-                            "px-6 py-2.5 rounded-md transition-all duration-200 flex items-center gap-2",
-                            interval === 'annually'
-                                ? "bg-background text-foreground shadow-sm border border-border"
-                                : "text-muted-foreground hover:text-foreground"
-                        )}
-                    >
-                        Annually
-                        <span className="text-xs bg-brand-bg text-white px-2 py-0.5 rounded-full">
-                            Save 20%
-                        </span>
-                    </button> */}
             </div>
 
 
@@ -272,7 +219,8 @@ export function PricingSection({
                                         </button>
                                     ) : (
                                         <Link
-                                            href={`/site/pricing/checkout/${card.priceId}`}
+                                            // href={`/site/pricing/checkout/${card.priceId}`}
+                                             href={`/site/pricing/checkout/${card.priceId}`}
                                             className={clsx(
                                                 "group/cta w-full text-center rounded-md font-medium text-sm transition-all duration-300",
                                                 "h-9 inline-flex items-center justify-center gap-1",
@@ -379,7 +327,7 @@ export function PricingSection({
                         <Button
                             onClick={() => {
                                 if (selectedEnterpriseCard) {
-                                    router.push(`/site/pricing/checkout/${selectedEnterpriseCard.priceId}?quantity=${subAccountCount}`)
+                                    router.push(`/site/pricing/checkout/${selectedEnterpriseCard.priceId}`)
                                 }
                             }}
                             className="bg-brand-gradient hover:bg-brand-gradient-hover"

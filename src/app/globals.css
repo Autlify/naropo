@@ -1365,7 +1365,7 @@ B (255 */
      ============================================ */
 
   /* Background Hierarchy */
-  --color-bg-primary: hsl(var(--bg-primary));
+  --color-bg-primary: hsl(var(--bg-primary)); /*  Question: Frontend classname is ? Answer: bg-primary */
   --color-bg-secondary: hsl(var(--bg-secondary));
   --color-bg-tertiary: hsl(var(--bg-tertiary));
   --color-bg-quaternary: hsl(var(--bg-quaternary));

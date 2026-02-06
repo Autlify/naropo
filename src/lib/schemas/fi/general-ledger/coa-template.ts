@@ -51,7 +51,7 @@ export const createCOATemplateSchema = coaTemplateSchema.extend({
 })
 
 export const updateCOATemplateSchema = coaTemplateSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
 })
 
 export type COATemplateInput = z.infer<typeof coaTemplateSchema>

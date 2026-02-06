@@ -41,11 +41,11 @@ const Pricing: React.FC = async () => {
           yearlyCards={yearlyCards}
           user={user ? { trialEligible: user.trialEligible ?? false } : null}
         />
-  
 
         {/* Bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
       </section>
+      
       <section className="relative mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 text-center pb-16">
         <p className="text-base text-content-secondary">
           Have questions?{" "}

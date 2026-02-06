@@ -25,15 +25,15 @@ import { logGLAudit } from './audit'
 const automationMappingSchema = z.object({
   category: z.nativeEnum(AutomationCategory),
   subcategory: z.string().min(1).max(100),
-  debitAccountId: z.string().uuid(),
-  creditAccountId: z.string().uuid(),
+  debitAccountId: z.uuid(),
+  creditAccountId: z.uuid(),
   tolerance: z.number().min(0).optional(),
   templateId: z.string().optional(),
   isCustom: z.boolean().default(true),
 })
 
 const updateMappingSchema = automationMappingSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
 })
 
 export type AutomationMappingInput = z.infer<typeof automationMappingSchema>

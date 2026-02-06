@@ -94,7 +94,7 @@ function LayoutContent({ children, sidebar, infobar, allyPanel }: LayoutWrapperP
       {sidebar}
       <div className={cn(
         'transition-all duration-300',
-        isCollapsed ? 'md:pl-[96px]' : 'md:pl-[300px]'
+        isCollapsed ? 'md:pl-[80px]' : 'md:pl-[280px]'
       )}>
         {infobar}
         <div className="relative">

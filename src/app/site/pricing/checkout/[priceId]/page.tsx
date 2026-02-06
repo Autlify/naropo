@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import { getPricingCardByPriceId } from '@/lib/registry/plans/pricing-config'
+import { getPricingCardByPriceId, getAddonCards } from '@/lib/registry/plans/pricing-config'
 import { CheckoutForm } from './_components/checkout-form'
 import { auth } from '@/auth'
 import { getUser } from '@/lib/queries'
@@ -15,6 +15,9 @@ export default async function CheckoutPage({ params }: Props) {
     const session = await auth()
     const priceDetails = getPricingCardByPriceId(priceId)
     const user = await getUser(session?.user?.id || '')
+    
+    // Get all available addons for upsell during checkout
+    const availableAddons = getAddonCards()
 
     if (!priceDetails) {
         notFound()
@@ -103,6 +106,7 @@ export default async function CheckoutPage({ params }: Props) {
                 }}
                 existingCustomer={customerData}
                 existingPaymentMethods={paymentMethodsData}
+                availableAddons={availableAddons}
             />
      </div>
     )

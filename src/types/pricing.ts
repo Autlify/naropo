@@ -8,6 +8,8 @@
  * - Provide IFRS-oriented accounting metadata for a pricing engine schema.
  */
 
+import { BillingIntervalType, PricingTax } from '@/types/billing'
+
 // ------------------------------
 // Pillar: Catalog / Product
 // ------------------------------
@@ -455,6 +457,7 @@ export type PricingEnginePlan = {
   /** Optional promotions/coupons available for this plan (UI + mapping). */
   promotions?: readonly CouponConfig[]
 }
+ 
 
 /**
  * Product config that supports *one product* with *multiple prices* (intervals/cycles).

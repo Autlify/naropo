@@ -1,116 +1,37 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
+import {
+  CitySelector,
+  CountrySelector,
+  PhoneCodeSelector,
+  PostalCodeInput,
+  StateSelector,
+} from '@/components/global/location'
+import { SavedBankCardsGallery } from '@/components/ui/bank-card'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { MultiStepLoader } from '@/components/ui/multi-step-loader'
+import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, Check, ChevronLeft, Tag, MoreVertical, Trash2, CreditCard, X } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
+import type { AddonCardData, CheckoutFormProps } from '@/types/billing'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
-import { StripePaymentElement } from './stripe-payment-element'
+import { City, Country, State } from 'country-state-city'
+import { Check, ChevronLeft, CreditCard, Loader2, Plus, Tag, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { v4 as uuid } from 'uuid'
-import {
-  CountrySelector,
-  StateSelector,
-  CitySelector,
-  PostalCodeInput,
-  PhoneCodeSelector,
-} from '@/components/global/location'
-import { MultiStepLoader } from '@/components/ui/multi-step-loader'
-import { Country, State, City } from 'country-state-city'
-import { Separator } from '@/components/ui/separator'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
-import { SavedBankCardsGallery, InteractiveBankCard } from '@/components/ui/bank-card'
+import * as z from 'zod'
+import { StripePaymentElement } from './stripe-payment-element'
+import { checkoutFormSchema, type CheckoutFormData } from '@/lib/schemas/checkout'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
-
-const checkoutFormSchema = z.object({
-  // User Details
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  userEmail: z.string().email('Invalid email address'),
-
-  // Agency Details
-  agencyName: z.string().min(2, 'D.B.A. is required for your agency'),
-  agencyEmail: z.string().email('Invalid email address'),
-  companyPhone: z.string().min(1, 'Phone number is required'),
-  phoneCode: z.string().optional(),
-
-
-  // Billing Address 
-  companyName: z.string().optional(),
-  tinNumber: z.string().optional(),
-  line1: z.string().min(1, 'Address line 1 is required'),
-  line2: z.string().optional(),
-  city: z.string().min(1, 'City is required'),
-  state: z.string().min(1, 'State is required'),
-  postalCode: z.string().min(1, 'Postal code is required'),
-  country: z.string().min(2, 'Country is required'),
-  countryCode: z.string().optional(),
-  stateCode: z.string().optional(),
-})
-
-type CheckoutFormData = z.infer<typeof checkoutFormSchema>
-
-type Props = {
-  priceId: string
-  planConfig: {
-    title: string
-    price: string
-    duration: string
-    features: string[]
-    trialEnabled: boolean
-    trialPeriodDays: number
-  }
-  user: {
-    id: string
-    email: string
-    name: string
-    firstName: string
-    lastName: string
-    trialEligible: boolean
-  }
-  agencyEmail: string
-  existingCustomer: {
-    id: string
-    email: string | null
-    name: string | null
-    phone: string | null
-    address: {
-      line1: string | null
-      line2: string | null
-      city: string | null
-      state: string | null
-      postal_code: string | null
-      country: string | null
-    } | null
-    metadata: Record<string, string>
-  } | null
-  existingPaymentMethods: {
-    id: string
-    card: {
-      cardholder_name: string | null
-      brand: string
-      last4: string
-      exp_month: number
-      exp_year: number
-      isDefault: boolean
-    } | null
-  }[]
-}
-
+ 
 type Step = 'billing' | 'payment' | 'review'
 
 const steps: { id: Step; label: string; description: string }[] = [
@@ -119,7 +40,7 @@ const steps: { id: Step; label: string; description: string }[] = [
   { id: 'review', label: 'Review', description: 'Review & Confirm' },
 ]
 
-export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingCustomer, existingPaymentMethods }: Props) {
+export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingCustomer, existingPaymentMethods, availableAddons = [] }: CheckoutFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isTrialAccepted, setIsTrialAccepted] = useState<boolean>(false)
@@ -127,6 +48,9 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
   const [customerId, setCustomerId] = useState<string | null>(existingCustomer?.id || null)
   const [currentStep, setCurrentStep] = useState<Step>('billing')
   const [completedSteps, setCompletedSteps] = useState<Set<Step>>(new Set())
+  
+  // Selected addons state
+  const [selectedAddonKeys, setSelectedAddonKeys] = useState<string[]>([])
 
   // Stateful data storage for navigation
   const [savedBillingData, setSavedBillingData] = useState<CheckoutFormData | null>(null)
@@ -146,6 +70,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
     isFlipped: false,
   })
   const [cardToReplace, setCardToReplace] = useState<string | null>(null)
+  const [isCreatingSetupIntent, setIsCreatingSetupIntent] = useState(false)
 
   // Multi-step loader state
   const [showLoader, setShowLoader] = useState(false)
@@ -538,7 +463,39 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
       const subscriptionData = await subscriptionRes.json()
       console.log('✅ Subscription created:', subscriptionData.subscriptionId)
 
-      // Step 4: Redirect to agency
+      // Step 4: Add selected addons to subscription
+      if (selectedAddonKeys.length > 0) {
+        console.log('➕ Adding addons:', selectedAddonKeys)
+        for (const addonKey of selectedAddonKeys) {
+          const addon = availableAddons.find(a => a.key === addonKey)
+          if (!addon) continue
+          
+          try {
+            const addonRes = await fetch('/api/stripe/addon', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'add',
+                customerId: finalCustomerId,
+                agencyId: agencyId,
+                addonKey: addon.key,
+                priceId: addon.priceId,
+              }),
+            })
+            
+            if (addonRes.ok) {
+              console.log('✅ Addon added:', addon.key)
+            } else {
+              console.warn('⚠️ Failed to add addon:', addon.key)
+            }
+          } catch (addonError) {
+            console.error('Failed to add addon:', addonKey, addonError)
+            // Continue with other addons even if one fails
+          }
+        }
+      }
+
+      // Step 5: Redirect to agency
       toast({
         title: 'Success!',
         description: 'Your agency has been created successfully.',
@@ -1018,9 +975,36 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                 setUseExistingPayment(true)
                                 setSelectedPaymentMethodId(cardId)
                               }}
-                              onAddCard={() => {
-                                setCardModalMode('add')
-                                setCardModalOpen(true)
+                              onAddCard={async () => {
+                                if (isCreatingSetupIntent) return
+                                setIsCreatingSetupIntent(true)
+                                try {
+                                  const response = await fetch('/api/stripe/create-setup-intent', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ customerId: customerId }),
+                                  })
+                                  if (!response.ok) {
+                                    const errorData = await response.json()
+                                    throw new Error(errorData.error || 'Failed to create setup intent')
+                                  }
+                                  const { clientSecret: secret, customerId: newCustomerId } = await response.json()
+                                  setClientSecret(secret)
+                                  if (newCustomerId && newCustomerId !== customerId) {
+                                    setCustomerId(newCustomerId)
+                                  }
+                                  setCardModalMode('add')
+                                  setCardModalOpen(true)
+                                } catch (error: any) {
+                                  console.error('Error creating setup intent:', error)
+                                  toast({
+                                    title: 'Error',
+                                    description: error.message || 'Failed to initialize card setup. Please try again.',
+                                    variant: 'destructive',
+                                  })
+                                } finally {
+                                  setIsCreatingSetupIntent(false)
+                                }
                               }}
                               onSetDefault={(cardId) => {
                                 // TODO: Implement set as default via Stripe API
@@ -1029,10 +1013,37 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                   description: 'This feature will be available soon.',
                                 })
                               }}
-                              onReplaceCard={(cardId) => {
+                              onReplaceCard={async (cardId) => {
+                                if (isCreatingSetupIntent) return
+                                setIsCreatingSetupIntent(true)
                                 setCardToReplace(cardId)
-                                setCardModalMode('replace')
-                                setCardModalOpen(true)
+                                try {
+                                  const response = await fetch('/api/stripe/create-setup-intent', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ customerId: customerId }),
+                                  })
+                                  if (!response.ok) {
+                                    const errorData = await response.json()
+                                    throw new Error(errorData.error || 'Failed to create setup intent')
+                                  }
+                                  const { clientSecret: secret, customerId: newCustomerId } = await response.json()
+                                  setClientSecret(secret)
+                                  if (newCustomerId && newCustomerId !== customerId) {
+                                    setCustomerId(newCustomerId)
+                                  }
+                                  setCardModalMode('replace')
+                                  setCardModalOpen(true)
+                                } catch (error: any) {
+                                  console.error('Error creating setup intent:', error)
+                                  toast({
+                                    title: 'Error',
+                                    description: error.message || 'Failed to initialize card setup. Please try again.',
+                                    variant: 'destructive',
+                                  })
+                                } finally {
+                                  setIsCreatingSetupIntent(false)
+                                }
                               }}
                               onRemoveCard={async (cardId) => {
                                 // TODO: Implement remove card via Stripe API
@@ -1062,18 +1073,54 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                         {!useExistingPayment && !savedPaymentMethodId && (
                           <div className="mt-4">
                             <div
-                              onClick={() => {
-                                setCardModalMode('add')
-                                setCardModalOpen(true)
+                              onClick={async () => {
+                                if (isCreatingSetupIntent) return
+                                setIsCreatingSetupIntent(true)
+                                try {
+                                  // Create SetupIntent first (like the working billing flow)
+                                  // API will create a Stripe customer if one doesn't exist
+                                  const response = await fetch('/api/stripe/create-setup-intent', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ customerId: customerId }),
+                                  })
+                                  if (!response.ok) {
+                                    const errorData = await response.json()
+                                    throw new Error(errorData.error || 'Failed to create setup intent')
+                                  }
+                                  const { clientSecret: secret, customerId: newCustomerId } = await response.json()
+                                  setClientSecret(secret)
+                                  // Update customerId if a new one was created
+                                  if (newCustomerId && newCustomerId !== customerId) {
+                                    setCustomerId(newCustomerId)
+                                  }
+                                  setCardModalMode('add')
+                                  setCardModalOpen(true)
+                                } catch (error: any) {
+                                  console.error('Error creating setup intent:', error)
+                                  toast({
+                                    title: 'Error',
+                                    description: error.message || 'Failed to initialize card setup. Please try again.',
+                                    variant: 'destructive',
+                                  })
+                                } finally {
+                                  setIsCreatingSetupIntent(false)
+                                }
                               }}
                               className="p-6 border-2 border-dashed border-primary/30 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all"
                             >
                               <div className="flex flex-col items-center gap-3 text-center">
                                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <CreditCard className="h-6 w-6 text-primary" />
+                                  {isCreatingSetupIntent ? (
+                                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                                  ) : (
+                                    <CreditCard className="h-6 w-6 text-primary" />
+                                  )}
                                 </div>
                                 <div>
-                                  <p className="font-semibold text-fg-primary">Add New Payment Method</p>
+                                  <p className="font-semibold text-fg-primary">
+                                    {isCreatingSetupIntent ? 'Preparing...' : 'Add New Payment Method'}
+                                  </p>
                                   <p className="text-sm text-fg-tertiary mt-1">Click to securely add your card details</p>
                                 </div>
                               </div>
@@ -1083,7 +1130,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
 
                         {/* Card Addition/Update Modal */}
                         {cardModalOpen && (
-                          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setCardModalOpen(false)}>
+                          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => { setCardModalOpen(false); setClientSecret(null) }}>
                             <div
                               className="relative bg-card rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
@@ -1100,7 +1147,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() => setCardModalOpen(false)}
+                                  onClick={() => { setCardModalOpen(false); setClientSecret(null) }}
                                   className="text-muted-foreground hover:text-foreground transition-colors"
                                 >
                                   <X className="h-6 w-6" />
@@ -1141,6 +1188,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                               </div> */}
 
                               {/* Stripe Elements */}
+                              {clientSecret ? (
                               <div className="relative rounded-2xl p-[1.5px] bg-gradient-to-br from-border/60 via-border/40 to-border/60 overflow-hidden shadow-md">
                                 <div className="relative overflow-hidden rounded-2xl bg-card p-6">
                                   <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
@@ -1150,21 +1198,17 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                     <Elements
                                       stripe={stripePromise}
                                       options={{
-                                        mode: 'setup',
-                                        currency: 'myr',
-                                        paymentMethodCreation: 'manual',
+                                        clientSecret,
                                         appearance: {
+                                          theme: 'stripe',
                                           variables: {
-                                            colorSuccess: 'var(--success-text)',
-                                            colorPrimary: 'var(--primary)',
-                                            colorBackground: 'linear-gradient(to_br, var(--bg-muted/30), var(--bg-muted/20), var(--bg-muted/10))',
-                                            colorText: 'var(--fg-primary)',
-                                            colorDanger: 'var(--warning-text)',
-                                            fontFamily: 'system-ui, sans-serif',
-                                            borderRadius: '0.75rem',
-                                            spacingUnit: '4px',
+                                            colorPrimary: '#2563eb',
+                                            colorBackground: '#ffffff',
+                                            colorText: '#1f2937',
+                                            colorDanger: '#dc2626',
+                                            fontFamily: 'system-ui, -apple-system, sans-serif',
+                                            borderRadius: '8px',
                                           },
-
                                         },
                                       }}
                                     >
@@ -1173,8 +1217,8 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                         onPaymentMethodCollected={(paymentMethodId) => {
                                           setSavedPaymentMethodId(paymentMethodId)
                                           setCardModalOpen(false)
+                                          setClientSecret(null)
                                           if (cardModalMode === 'replace' && cardToReplace) {
-                                            // TODO: Implement replace logic - detach old, attach new
                                             toast({
                                               title: 'Card Replaced',
                                               description: 'Your payment method has been updated.',
@@ -1200,13 +1244,18 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                   </div>
                                 </div>
                               </div>
+                              ) : (
+                                <div className="flex items-center justify-center p-8">
+                                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                </div>
+                              )}
 
                               {/* Modal Footer */}
                               <div className="mt-6 flex gap-3">
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  onClick={() => setCardModalOpen(false)}
+                                  onClick={() => { setCardModalOpen(false); setClientSecret(null) }}
                                   className="flex-1"
                                 >
                                   Cancel
@@ -1355,6 +1404,70 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                             </div>
                           </div>
 
+                          {/* Add-ons Upsell Section */}
+                          {availableAddons.length > 0 && (
+                            <div>
+                              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <Plus className="h-5 w-5 text-brand-bg" />
+                                Enhance Your Plan (Optional)
+                              </h3>
+                              <div className="space-y-2">
+                                {availableAddons.slice(0, 4).map(addon => {
+                                  const isSelected = selectedAddonKeys.includes(addon.key)
+                                  const hasRequirement = addon.requires && !selectedAddonKeys.includes(addon.requires)
+                                  
+                                  return (
+                                    <div
+                                      key={addon.key}
+                                      className={cn(
+                                        "flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer",
+                                        isSelected 
+                                          ? "border-brand-bg bg-brand-bg/5" 
+                                          : "border-border hover:border-brand-bg/50 bg-muted/30",
+                                        hasRequirement && "opacity-50 cursor-not-allowed"
+                                      )}
+                                      onClick={() => {
+                                        if (hasRequirement) return
+                                        setSelectedAddonKeys(prev => 
+                                          isSelected 
+                                            ? prev.filter(k => k !== addon.key)
+                                            : [...prev, addon.key]
+                                        )
+                                      }}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                          "w-5 h-5 rounded border-2 flex items-center justify-center transition-colors",
+                                          isSelected 
+                                            ? "border-brand-bg bg-brand-bg" 
+                                            : "border-muted-foreground"
+                                        )}>
+                                          {isSelected && <Check className="h-3 w-3 text-white" />}
+                                        </div>
+                                        <div>
+                                          <p className="font-medium text-sm">{addon.title}</p>
+                                          <p className="text-xs text-muted-foreground">{addon.description}</p>
+                                          {hasRequirement && (
+                                            <p className="text-xs text-amber-600">Requires {addon.requires}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="font-semibold text-sm">{addon.price}</p>
+                                        <p className="text-xs text-muted-foreground">/month</p>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                                {availableAddons.length > 4 && (
+                                  <p className="text-xs text-muted-foreground text-center py-2">
+                                    +{availableAddons.length - 4} more add-ons available in your dashboard
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
                           {/* Subscription Summary */}
                           <div>
                             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -1377,10 +1490,37 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
 
                               <Separator />
 
+                              {/* Selected Addons Summary */}
+                              {selectedAddonKeys.length > 0 && (
+                                <>
+                                  <div className="space-y-2">
+                                    <p className="text-sm font-medium text-muted-foreground">Add-ons included:</p>
+                                    {selectedAddonKeys.map(key => {
+                                      const addon = availableAddons.find(a => a.key === key)
+                                      if (!addon) return null
+                                      return (
+                                        <div key={key} className="flex justify-between items-center text-sm">
+                                          <span>{addon.title}</span>
+                                          <span className="font-medium">{addon.price}/mo</span>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                  <Separator />
+                                </>
+                              )}
+
                               <div className="flex justify-between items-center">
                                 <p className="font-semibold">Total Due Today</p>
                                 <p className="font-bold text-xl text-blue-600">
-                                  {isTrialAccepted ? 'RM 0.00' : `$${planConfig.price}`}
+                                  {isTrialAccepted ? 'RM 0.00' : (() => {
+                                    const planAmount = parseInt(planConfig.price.replace(/[^0-9]/g, '')) || 0
+                                    const addonTotal = selectedAddonKeys.reduce((sum, key) => {
+                                      const addon = availableAddons.find(a => a.key === key)
+                                      return sum + (addon ? addon.priceAmount / 100 : 0)
+                                    }, 0)
+                                    return `RM ${(planAmount + addonTotal).toLocaleString('en-MY')}`
+                                  })()}
                                 </p>
                               </div>
 

@@ -39,7 +39,7 @@ export default function Home() {
           <div className="flex flex-col items-start">
 
             {/* Hero Headline - Linear Typography */}
-            <h1 className="max-w-[900px] font-semibold leading-[1.1] tracking-[-0.022em]">
+            <h1 className="max-w-6xl font-semibold leading-[1.1] tracking-[-0.022em]">
               <span className="block text-4xl md:text-5xl lg:text-6xl text-fg-primary">
                 Autlify is a{' '}
                 <span className="relative inline-block">
@@ -89,7 +89,7 @@ export default function Home() {
 
         {/* Hero Image Section - Linear's refined presentation */}
         <div className="relative mx-auto max-w-[1400px] px-6 lg:px-8">
-          <div className="relative aspect-[16/9] overflow-hidden rounded-2xl border border-quaternary bg-gradient-to-b from-bg-level-1 to-bg-level-2 shadow-[var(--color-shadow-xl)]">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-2xl border bg-gradient-to-b from-bg-level-1 to-bg-level-2 shadow-[var(--color-shadow-xl)]">
             {/* Premium: Blue rim glow */}
             <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-accent-base/20" aria-hidden="true"></div>
 

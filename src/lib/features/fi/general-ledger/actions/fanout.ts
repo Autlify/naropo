@@ -26,7 +26,7 @@ import { getTriggerType } from '@/lib/registry/events/trigger-mappings'
 // =====================================================
 
 const moduleEventSchema = z.object({
-    id: z.string().uuid(),
+    id: z.uuid(),
     timestamp: z.date().default(() => new Date()),
     source: z.object({
         module: z.string(),

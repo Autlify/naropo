@@ -2,8 +2,8 @@
 import { z } from 'zod';
 
 export const createReconciliationSchema = z.object({
-  accountId: z.string().uuid(),
-  periodId: z.string().uuid(),
+  accountId: z.uuid(),
+  periodId: z.uuid(),
   description: z.string().max(500).optional(),
   statementBalance: z.number(),
   notes: z.string().max(1000).optional(),
@@ -19,12 +19,12 @@ export const reconciliationItemSchema = z.object({
 });
 
 export const matchItemsSchema = z.object({
-  reconciliationId: z.string().uuid(),
+  reconciliationId: z.uuid(),
   itemIds: z.array(z.string().uuid()).min(2),
 });
 
 export const unmatchItemSchema = z.object({
-  itemId: z.string().uuid(),
+  itemId: z.uuid(),
 });
 
 export const reconciliationRuleSchema = z.object({
@@ -50,9 +50,9 @@ export const reconciliationSchema = z.object({
 })
  
 export const matchTransactionsSchema = z.object({
-  reconciliationId: z.string().uuid(),
+  reconciliationId: z.uuid(),
   transactions: z.array(z.object({
-    itemId: z.string().uuid(),
+    itemId: z.uuid(),
     matchedItemId: z.string().uuid().optional(),
     status: z.enum(['UNMATCHED', 'MATCHED', 'EXCLUDED', 'DISCREPANCY']),
   })),

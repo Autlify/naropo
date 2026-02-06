@@ -22,7 +22,7 @@ export const taxCodeSchema = z.object({
   description: z.string().max(500).optional(),
   rate: z.number().min(0).max(100),
   type: taxTypeEnum,
-  accountId: z.string().uuid(),
+  accountId: z.uuid(),
   reverseChargeAccountId: z.string().uuid().optional(),
   isDefault: z.boolean().default(false),
   isActive: z.boolean().default(true),
@@ -37,7 +37,7 @@ export const createTaxCodeSchema = taxCodeSchema
 
 /** Update tax code schema */
 export const updateTaxCodeSchema = taxCodeSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
 })
 
 export type UpdateTaxCodeInput = z.infer<typeof updateTaxCodeSchema>
@@ -70,7 +70,7 @@ export type TaxSettingsInput = z.infer<typeof taxSettingsSchema>
 
 /** Tax clearing entry schema */
 export const taxClearingEntrySchema = z.object({
-  periodId: z.string().uuid(),
+  periodId: z.uuid(),
   clearingDate: z.coerce.date(),
   description: z.string().max(200).optional(),
   clearInputVAT: z.boolean().default(true),

@@ -49,8 +49,8 @@ export type ToleranceConfig = z.infer<typeof toleranceConfigSchema>
 
 /** Forex side configuration (gain/loss accounts) */
 export const forexSideConfigSchema = z.object({
-  gainAccountId: z.string().uuid(),
-  lossAccountId: z.string().uuid(),
+  gainAccountId: z.uuid(),
+  lossAccountId: z.uuid(),
   realizedOnly: z.boolean().default(false),
   unrealizedAccountId: z.string().uuid().optional(),
 })
@@ -110,7 +110,7 @@ export const postingRuleSchema = z.object({
 })
 
 export const updatePostingRuleSchema = postingRuleSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
 })
 
 export const createPostingRuleSchema = postingRuleSchema

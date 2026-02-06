@@ -189,7 +189,7 @@ const templateSchema = z.object({
 })
 
 const updateTemplateSchema = templateSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
 })
 
 export type TemplateInput = z.infer<typeof templateSchema>

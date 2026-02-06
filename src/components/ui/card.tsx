@@ -10,7 +10,7 @@ const Card = React.forwardRef<
     ref={ref}
     className={cn(
       // Responsive to screen sizes
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "bg-gradient-to-b from-muted/30 via-muted/20 to-muted/30 rounded-lg border bg-level-0 text-card-foreground shadow-sm",
       // rounded-lg border bg-card text-card-foreground shadow-sm
       className
     )}

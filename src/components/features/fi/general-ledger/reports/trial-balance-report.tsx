@@ -103,7 +103,7 @@ export function TrialBalanceReport({ data, agencyId, periodId, asOfDate }: Props
         <div>
           <CardTitle>Trial Balance</CardTitle>
           <p className="text-sm text-muted-foreground">
-            {data.metadata.periodName ?? `As of ${data.metadata.asOfDate}`}
+            {data.metadata?.periodName ?? `As of ${data.metadata?.asOfDate}`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -144,10 +144,10 @@ export function TrialBalanceReport({ data, agencyId, periodId, asOfDate }: Props
       <div className="hidden print:block text-center mb-6">
         <h1 className="text-2xl font-bold">Trial Balance</h1>
         <p className="text-muted-foreground">
-          {data.metadata.periodName ?? `As of ${data.metadata.asOfDate}`}
+          {data.metadata?.periodName ?? `As of ${data.metadata?.asOfDate}`}
         </p>
         <p className="text-sm text-muted-foreground">
-          Generated: {new Date(data.metadata.generatedAt).toLocaleString()}
+          Generated: {new Date(data.metadata?.generatedAt).toLocaleString()}
         </p>
       </div>
 
@@ -172,12 +172,12 @@ export function TrialBalanceReport({ data, agencyId, periodId, asOfDate }: Props
                 </TableCell>
                 <TableCell className="text-right">
                   {account.debit > 0
-                    ? formatCurrency(account.debit, data.metadata.currency)
+                    ? formatCurrency(account.debit, data.metadata?.currency)
                     : '-'}
                 </TableCell>
                 <TableCell className="text-right">
                   {account.credit > 0
-                    ? formatCurrency(account.credit, data.metadata.currency)
+                    ? formatCurrency(account.credit, data.metadata?.currency)
                     : '-'}
                 </TableCell>
               </TableRow>
@@ -187,10 +187,10 @@ export function TrialBalanceReport({ data, agencyId, periodId, asOfDate }: Props
             <TableRow className="font-bold">
               <TableCell colSpan={3}>Total</TableCell>
               <TableCell className="text-right">
-                {formatCurrency(data.totals.debit, data.metadata.currency)}
+                {formatCurrency(data.totals.debit, data.metadata?.currency)}
               </TableCell>
               <TableCell className="text-right">
-                {formatCurrency(data.totals.credit, data.metadata.currency)}
+                {formatCurrency(data.totals.credit, data.metadata?.currency)}
               </TableCell>
             </TableRow>
           </TableFooter>
@@ -202,7 +202,7 @@ export function TrialBalanceReport({ data, agencyId, periodId, asOfDate }: Props
             {isBalanced ? (
               '✓ Trial balance is balanced (debits = credits)'
             ) : (
-              `⚠ Trial balance is out of balance by ${formatCurrency(Math.abs(data.totals.debit - data.totals.credit), data.metadata.currency)}`
+              `⚠ Trial balance is out of balance by ${formatCurrency(Math.abs(data.totals.debit - data.totals.credit), data.metadata?.currency)}`
             )}
           </p>
         </div>
