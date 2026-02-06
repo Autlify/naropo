@@ -20,6 +20,7 @@ export interface SegmentedControlProps {
   className?: string
   size?: 'default' | 'sm' | 'lg'
   variant?: 'glass' | 'mercury' | 'frosted'
+  equalWidth?: boolean
 }
 
 export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedControlProps>(
@@ -32,6 +33,7 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
       className,
       size = 'default',
       variant = 'mercury',
+      equalWidth = false,
     },
     ref
   ) => {
@@ -39,7 +41,9 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
     const activeTab = controlledValue ?? internalValue
     const [isDragging, setIsDragging] = useState(false)
     const [dragVelocity, setDragVelocity] = useState(0)
+    const [glassPosition, setGlassPosition] = useState({ x: 0, width: 0 })
     const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
+    const labelRefs = useRef<Map<string, HTMLSpanElement>>(new Map())
     const containerRef = useRef<HTMLDivElement | null>(null)
     const innerRef = useRef<HTMLDivElement | null>(null)
 
@@ -68,7 +72,7 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
         glassHeight: 32,
         glassTop: 4,
         buttonPadding: 'px-4 py-1.5',
-        fontSize: 'text-sm',
+        fontSize: 'text-[13px]',
         cornerRadius: 16,
         gap: 'gap-0.5',
       },
@@ -78,7 +82,7 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
         glassHeight: 40,
         glassTop: 4,
         buttonPadding: 'px-5 py-2',
-        fontSize: 'text-sm',
+        fontSize: 'text-[13px]',
         cornerRadius: 20,
         gap: 'gap-1',
       },
@@ -98,24 +102,24 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
 
     const glassStyle = {
       height: isDragging ? config.glassHeight + 10 : config.glassHeight,
-      width: isDragging ? glassWidth! + 18 : glassWidth!,
-      borderRadius: config.cornerRadius,
-      opacity: isDragging ? 0 : 1,
-      blur: isDragging ? 10 : 0,
-      brightness: isDragging ? 50 : 0,
-      displace: isDragging ? 5 : 0,
-      backgroundOpacity: isDragging ? 0 : 0,
-      saturation: isDragging ? 1.15 : 0,
-      distortionScale: isDragging ? 20 : 0,
-      redOffset: 0,
+      width: isDragging ? glassWidth! + 12 : glassWidth!,
+      borderWidth: 0.5,
+      borderRadius: 100,
+      opacity: 1,
+      blur: 15,
+      brightness: 70,
+      displace: 10,
+      backgroundOpacity: 0.02,
+      saturation: 1.3,
+      distortionScale: -220,
+      redOffset: 3,
       greenOffset: 0,
-      blueOffset: 0,
+      blueOffset: -3,
       xChannel: 'R' as const,
       yChannel: 'G' as const,
-      mixBlendMode: 'difference' as const,
+      mixBlendMode: 'normal' as const,
       style: {
         pointerEvents: 'none',
-        color: isDragging ? 'rgba(255, 255, 255, 0)' : 'rgba(255, 255, 255, 1)',
       } as React.CSSProperties,
     }
 
@@ -198,6 +202,11 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
 
     const handleDrag = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       setDragVelocity(info.velocity.x)
+
+      // Track glass position for per-character highlight
+      const currentX = glassX.get()
+      const currentWidth = glassWidth || 80
+      setGlassPosition({ x: currentX, width: currentWidth })
     }
 
     const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -211,6 +220,47 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
         setInternalValue(closestTab)
       }
       onValueChange?.(closestTab)
+    }
+
+    // Helper to calculate character highlight based on glass position
+    const getCharacterColors = (tabId: string, label: string): string[] => {
+      const isActive = activeTab === tabId
+      const tabPos = tabPositions.get(tabId)
+      const labelEl = labelRefs.current.get(tabId)
+
+      // If active and not dragging, all characters are blue
+      if (isActive && !isDragging) {
+        return label.split('').map(() => 'rgb(251, 191, 36)')
+      }
+
+      // If not dragging, all characters are dim white
+      if (!isDragging) {
+        return label.split('').map(() => 'rgba(255, 255, 255, 0.6)')
+      }
+
+      // During drag, calculate per-character overlap
+      if (!tabPos || !labelEl || !innerRef.current) {
+        return label.split('').map(() => 'rgba(255, 255, 255, 0.6)')
+      }
+
+      const containerRect = innerRef.current.getBoundingClientRect()
+      const labelRect = labelEl.getBoundingClientRect()
+      const labelStartX = labelRect.left - containerRect.left
+      const charWidth = labelRect.width / label.length
+
+      const glassLeft = glassPosition.x
+      const glassRight = glassPosition.x + glassPosition.width
+
+      return label.split('').map((_, charIndex) => {
+        const charStartX = labelStartX + charIndex * charWidth
+        const charEndX = charStartX + charWidth
+
+        // Check if character overlaps with glass
+        const overlap = charStartX < glassRight && charEndX > glassLeft
+
+        // Apple style: text stays white, glass displacement creates the effect
+        return overlap ? 'rgb(251, 191, 36)' : 'rgba(255, 255, 255, 0.6)'
+      })
     }
 
     // Calculate drag constraints
@@ -259,54 +309,62 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
             )}
           >
 
-            {/* Mercury Droplet Visual - Behind labels */}
-            <motion.div
-              style={{
-                x: glassX,
-                width: glassWidth || 80,
-                height: config.glassHeight,
-                scaleX: isDragging ? scaleX : 1,
-                scaleY: isDragging ? scaleY : 1,
-                transform: 'translateX(-50%) translateY(-50%)',
-                zIndex: 100,
-              }}
-              className={cn(
-                'absolute rounded-full pointer-events-none',
-                'origin-center will-change-transform',
-                'z-10'
-              )}
-              animate={{
-                scale: isDragging ? 1.15 : 1,
-                y: isDragging ? -4 : 0,
-              }}
-              transition={{
-                scale: { type: 'spring', stiffness: 600, damping: 25 },
-                y: { type: 'spring', stiffness: 600, damping: 25 },
-              }}
-            >
-              {/* LiquidGlass for proper displacement effect */}
-              <GlassSurface {...glassStyle} >
-                <div className="w-full h-full rounded-full" />
-              </GlassSurface>
-              {/* Inner content for glass thickness feel */}
-
-              {/* Ripple effect on drag start */}
-              <AnimatePresence>
-                {isDragging && (
-                  <motion.div
-                    initial={{ scale: 0.8, opacity: 0.5 }}
-                    animate={{ scale: 1.5, opacity: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="absolute inset-0 rounded-full bg-white/30 pointer-events-none"
-                  />
+            {/* Selected Tab Background - Dark gradient with border (Idle state) */}
+            {!isDragging && (
+              <motion.div
+                style={{
+                  x: glassX,
+                  width: glassWidth || 80,
+                  height: config.glassHeight,
+                }}
+                className={cn(
+                  'absolute rounded-[20px] pointer-events-none z-10',
+                  'bg-gradient-to-b from-zinc-700 to-zinc-800',
+                  'border border-zinc-600/50',
+                  'shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_-1px_2px_rgba(0,0,0,0.4)]',
                 )}
-              </AnimatePresence>
-            </motion.div>
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              />
+            )}
+
+            {/* Glass Surface - Only during dragging */}
+            {isDragging && (
+              <motion.div
+                style={{
+                  x: glassX,
+                  width: glassWidth || 80,
+                  height: config.glassHeight,
+                  scaleX: scaleX,
+                  scaleY: scaleY,
+                }}
+                className={cn(
+                  'absolute rounded-full pointer-events-none z-10',
+                  'origin-center will-change-transform',
+                )}
+                initial={{ opacity: 0, scale: 1.05 }}
+                animate={{ 
+                  opacity: 1,
+                  scale: 1.15,
+                  y: -5,
+                }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 500,
+                  damping: 28,
+                }}
+              >
+                <GlassSurface {...glassStyle}> 
+                </GlassSurface>
+              </motion.div>
+            )}
 
             {/* Tab buttons - text layer */}
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id
+              const characterColors = getCharacterColors(tab.id, tab.label)
+
               return (
                 <button
                   key={tab.id}
@@ -320,9 +378,10 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
                   onClick={() => handleTabClick(tab.id)}
                   className={cn(
                     'relative rounded-full flex justify-center items-center gap-2',
-                    'cursor-pointer transition-all duration-200 ease-out',
-                    'select-none z-10',
-                    config.buttonPadding
+                    'cursor-pointer color transition-all duration-200 ease-out',
+                    'select-none z-[150]',
+                    config.buttonPadding,
+                    'flex-1 min-w-0'
                   )}
                   aria-selected={isActive}
                   role="tab"
@@ -330,26 +389,53 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
                   {tab.icon && (
                     <motion.span
                       animate={{
-                        color: isDragging ? 'rgba(255,255,255,1)' : isActive ? 'rgb(255,255,255,1)' : 'rgba(255, 255, 255, 0.85)',
+                        color: !isDragging && isActive
+                          ? 'rgb(251, 191, 36)' // amber-400 for selected (matching Apple)
+                          : 'rgba(255, 255, 255, 0.6)',
                       }}
-                      transition={{ duration: 0.15 }}
-                      className="flex items-center justify-center"
+                      transition={{ duration: 0.12 }}
+                      className={cn('flex items-center justify-center', config.fontSize)}
                     >
                       {tab.icon}
                     </motion.span>
                   )}
-                  <motion.span
-                    animate={{
-                      color: isDragging ? 'rgba(255,255,255,1)' : isActive ? 'rgb(255,255,255,1)' : 'rgba(255, 255, 255, 0.85)',
+                  <span
+                    ref={(el) => {
+                      if (el) {
+                        labelRefs.current.set(tab.id, el)
+                      } else {
+                        labelRefs.current.delete(tab.id)
+                      }
                     }}
-                    transition={{ duration: 0.15 }}
                     className={cn(
-                      'text-center leading-tight whitespace-nowrap font-medium transition-colors',
-                      config.fontSize
+                      'text-center leading-tight whitespace-nowrap font-medium',
+                      config.fontSize,
                     )}
                   >
-                    {tab.label}
-                  </motion.span>
+                    {tab.label.split('').map((char, charIndex) => {
+                      // Calculate gradient color for active state (blue -> white -> blue)
+                      const totalChars = tab.label.length
+                      const position = totalChars > 1 ? charIndex / (totalChars - 1) : 0.5
+                      // Sine curve for smooth blue-white-blue transition
+                      const whiteness = Math.sin(position * Math.PI)
+                      const r = Math.round(96 + (255 - 96) * whiteness * 0.4)
+                      const g = Math.round(165 + (255 - 165) * whiteness * 0.4)
+                      const b = 250
+                      const gradientColor = `rgb(${r}, ${g}, ${b})`
+
+                      return (
+                        <span
+                          key={charIndex}
+                          style={{
+                            color: characterColors[charIndex],
+                            transition: 'color 0.12s ease-out',
+                          }}
+                        >
+                          {char}
+                        </span>
+                      )
+                    })}
+                  </span>
                 </button>
               )
             })}
@@ -369,7 +455,7 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
                 width: glassWidth || 80,
                 height: config.glassHeight,
               }}
-              className="absolute z-20 cursor-grab active:cursor-grabbing rounded-full touch-pan-y"
+              className="absolute z-[200] cursor-grab active:cursor-grabbing rounded-full touch-pan-y"
             />
           </div>
         </div>

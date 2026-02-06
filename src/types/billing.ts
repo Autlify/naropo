@@ -12,7 +12,7 @@
  * 4. Extensibility for future billing features and models.
  */
 
-import { PriceKey } from '@/lib/registry'
+import { FeatureKey, PriceKey } from '@/lib/registry'
 import { ICountry, IState, ICity } from 'country-state-city'
 import Stripe from 'stripe'
 
@@ -379,7 +379,7 @@ export interface PricingConfig {
   overage?: PricingOverage
 
   // Feature Grants
-  featureOverrides?: Record<string, number | boolean | '∞'>
+  featureOverrides?: Partial<Record<FeatureKey, number | boolean | '∞'>>
 
   // Stripe Integration
   stripePriceId?: string
@@ -1716,4 +1716,308 @@ export interface PricingCardData {
   isTiered: boolean
   /** Savings description for yearly plans */
   savings?: string
+}
+
+export type CheckoutFormProps = {
+  priceId: string
+  planConfig: {
+    title: string
+    price: string
+    duration: string
+    features: string[]
+    trialEnabled: boolean
+    trialPeriodDays: number
+  }
+  user: {
+    id: string
+    email: string
+    name: string
+    firstName: string
+    lastName: string
+    trialEligible: boolean
+  }
+  agencyEmail: string
+  existingCustomer: {
+    id: string
+    email: string | null
+    name: string | null
+    phone: string | null
+    address: {
+      line1: string | null
+      line2: string | null
+      city: string | null
+      state: string | null
+      postal_code: string | null
+      country: string | null
+    } | null
+    metadata: Record<string, string>
+  } | null
+  existingPaymentMethods: {
+    id: string
+    card: {
+      cardholder_name: string | null
+      brand: string
+      last4: string
+      exp_month: number
+      exp_year: number
+      isDefault: boolean
+    } | null
+  }[]
+  /** Available addons for upsell during checkout */
+  availableAddons?: AddonCardData[]
+}
+
+// ============================================================================
+// UNIFIED CHECKOUT TYPES
+// ============================================================================
+
+/**
+ * Checkout Type - What kind of purchase is being made
+ */
+export type CheckoutType = 'plan' | 'addon' | 'credits'
+
+/**
+ * Checkout Mode - How the checkout is displayed
+ */
+export type CheckoutMode = 'page' | 'modal'
+
+/**
+ * Checkout Item - Generic item being purchased
+ */
+export interface CheckoutItem {
+  /** Unique key for the item */
+  key: string
+  /** Item type */
+  type: CheckoutType
+  /** Display title */
+  title: string
+  /** Description */
+  description: string
+  /** Formatted price string (e.g., "RM 79.00") */
+  price: string
+  /** Price amount in cents */
+  priceAmount: number
+  /** Stripe price ID */
+  priceId: string
+  /** Quantity (for credits) */
+  quantity?: number
+  /** Billing interval */
+  interval: 'month' | 'year' | 'one_time'
+  /** Feature list for display */
+  features?: string[]
+  /** Trial configuration */
+  trial?: {
+    enabled: boolean
+    days: number
+  }
+}
+
+/**
+ * Existing Customer Data for pre-fill
+ */
+export interface CustomerData
+ {
+  id: string
+  email: string | null
+  name: string | null
+  phone: string | null
+  address: {
+    line1: string | null
+    line2: string | null
+    city: string | null
+    state: string | null
+    postal_code: string | null
+    country: string | null
+  } | null
+  metadata: Record<string, string>
+}
+
+/**
+ * Existing Payment Method
+ */
+export interface PaymentMethod {
+  id: string
+  card: {
+    cardholder_name: string | null
+    brand: string
+    last4: string
+    exp_month: number
+    exp_year: number
+    isDefault: boolean
+  } | null
+}
+
+/**
+ * Checkout User - User information for checkout
+ */
+export interface User {
+  id: string
+  email: string
+  name: string
+  firstName: string
+  lastName: string
+  trialEligible?: boolean
+}
+
+/**
+ * Checkout Context - Agency/account context for the checkout
+ */
+export interface CheckoutContext {
+  /** Existing agency ID (for addon/credits checkout) */
+  agencyId?: string
+  /** Existing customer ID */
+  customerId?: string
+  /** Whether this is a new subscription */
+  isNewSubscription: boolean
+}
+
+/**
+ * Unified Checkout Props - Props for the unified checkout component
+ */
+export interface CheckoutProps {
+  /** Checkout mode - page or modal */
+  mode: CheckoutMode
+  /** Primary item being purchased */
+  item: CheckoutItem
+  /** Additional items (addons during plan checkout) */
+  additionalItems?: CheckoutItem[]
+  /** Available addons for upsell */
+  availableAddons?: AddonCardData[]
+  /** User information */
+  user: User
+  /** Checkout context (agency, customer) */
+  context: CheckoutContext
+  /** Existing customer data for pre-fill */
+  existingCustomer?: CustomerData | null
+  /** Existing payment methods */
+  existingPaymentMethods?: PaymentMethod[]
+  /** Callback when checkout is complete */
+  onComplete?: (result: CheckoutResult) => void
+  /** Callback when checkout is cancelled (modal mode) */
+  onCancel?: () => void
+  /** Custom success redirect URL */
+  successUrl?: string
+  /** Custom cancel redirect URL */
+  cancelUrl?: string
+  /** Whether to show back button (page mode) */
+  showBackButton?: boolean
+  /** Custom back URL */
+  backUrl?: string
+  /** Additional CSS classes */
+  className?: string
+}
+ 
+/**
+ * Checkout Result - Result of a successful checkout
+ */
+export interface CheckoutResult {
+  /** Whether checkout was successful */
+  success: boolean
+  /** Checkout type that was completed */
+  type: CheckoutType
+  /** Created subscription ID (for plan/addon) */
+  subscriptionId?: string
+  /** Created agency ID (for new plan checkout) */
+  agencyId?: string
+  /** Stripe session ID (for credits) */
+  sessionId?: string
+  /** Error message (if failed) */
+  error?: string
+}
+
+/**
+ * Checkout Step - Wizard steps
+ */
+export type CheckoutStep = 'billing' | 'payment' | 'review'
+
+/**
+ * Checkout Step Config
+ */
+export interface CheckoutStepConfig {
+  id: CheckoutStep
+  label: string
+  description: string
+  /** Whether this step is required for this checkout type */
+  required: (type: CheckoutType, context: CheckoutContext) => boolean
+}
+
+/**
+ * Default checkout steps configuration
+ */
+export const CHECKOUT_STEPS: CheckoutStepConfig[] = [
+  {
+    id: 'billing',
+    label: 'Billing',
+    description: 'Billing information',
+    required: (type, context) => type === 'plan' && context.isNewSubscription,
+  },
+  {
+    id: 'payment',
+    label: 'Payment',
+    description: 'Payment method',
+    required: () => true, // Always required unless existing payment
+  },
+  {
+    id: 'review',
+    label: 'Review',
+    description: 'Review & Confirm',
+    required: () => true,
+  },
+]
+
+/**
+ * Get active checkout steps based on checkout type and context
+ */
+export function getActiveCheckoutSteps(
+  type: CheckoutType,
+  context: CheckoutContext,
+  hasExistingPayment: boolean
+): CheckoutStepConfig[] {
+  return CHECKOUT_STEPS.filter((step) => {
+    // Skip billing if not new subscription (addon/credits for existing agency)
+    if (step.id === 'billing' && !context.isNewSubscription) return false
+    // Skip payment if customer has existing payment method and not new subscription
+    if (step.id === 'payment' && hasExistingPayment && !context.isNewSubscription) {
+      // Still include payment step but it will show saved cards
+      return true
+    }
+    return step.required(type, context)
+  })
+}
+
+
+/**
+ * Addon Card Data for UI display
+ * @ssot types/billing.ts - This is the canonical type definition
+ * @description Used by getAddonCards() in pricing-config.ts
+ */
+export interface AddonCardData {
+  /** Addon config key (e.g., 'PRIORITY_SUPPORT', 'FI_GL') */
+  key: string
+  /** Display title */
+  title: string
+  /** Addon description */
+  description: string
+  /** Formatted price string (e.g., "RM 99.00") */
+  price: string
+  /** Price amount in cents */
+  priceAmount: number
+  /** Currency code (e.g., "MYR") */
+  currency: string
+  /** Stripe price ID */
+  priceId: string
+  /** Billing interval ('month' for recurring, 'one_time' for goods) */
+  interval: 'month' | 'year' | 'one_time'
+  /** Feature list for display */
+  features: string[]
+  /** Addon category for grouping */
+  category: AddonCategoryType
+  /** Addon type for classification */
+  addonType: AddonClassificationType
+  /** Whether this is a recommended addon */
+  recommended?: boolean
+  /** Module this addon belongs to (e.g., 'fi-gl') */
+  module?: string
+  /** Required addon key (dependency) */
+  requires?: string
 }

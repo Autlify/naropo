@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { postcodeValidator, type CountryCode } from "postcode-validator";
 import { Country as ICountry, State as IState, City as ICity } from "country-state-city";
+import getSymbolFromCurrency from 'currency-symbol-map';
 
 // Dynamic imports for heavy dependencies
 let countries: any;
@@ -44,6 +45,22 @@ const formatPhoneNumber = (phoneNumber: string) => {
   if (cleaned.length <= 6) return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
   return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
 };
+
+export const getCountries = async () => {
+  await loadDependencies();
+  const allCountries = Country.getAllCountries();
+  const countries = allCountries.map((country: any) => ({
+    name: country.name,
+    isoCode: country.isoCode,
+    phonecode: country.phonecode,
+    currency: country.currency,
+    currencySymbol: getSymbolFromCurrency(country.currency),
+    flag: country.flag,
+  }));
+  return countries;
+
+}
+
 
 const formatPhoneNumberByCountryFormat = (phoneNumber: string, countryCode: string): string => {
     const country = Country.getAllCountries().find((c: any) => c.isoCode === countryCode);

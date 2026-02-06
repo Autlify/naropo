@@ -19,6 +19,8 @@ export function BillingNav(props: { baseHref: string; className?: string }) {
     { href: `${base}/payment-methods`, label: 'Payment Methods', icon: CreditCard },
     { href: `${base}/usage`, label: 'Usage', icon: BarChart3 },
     { href: `${base}/credits`, label: 'Credits & Coupons', icon: Gift },
+    { href: `${base}/invoices`, label: 'Invoices', icon: Receipt },
+    { href: `${base}/addons`, label: 'Add-ons', icon: Gift },
   ]
 
   return (

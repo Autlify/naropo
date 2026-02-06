@@ -5,17 +5,17 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useToast } from '@/components/ui/use-toast'
+import { Button } from '@/components/ui-2/button'
+import { Input } from '@/components/ui-2/input'
+import { Label } from '@/components/ui-2/label'
+import { useToast } from '@/components/ui-2/use-toast'
 import { Loader2, Check, ChevronLeft, Tag, MoreVertical, Trash2, CreditCard, X } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/ui-2/dropdown-menu'
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { StripePaymentElement } from './stripe-payment-element'
@@ -29,10 +29,12 @@ import {
 } from '@/components/global/location'
 import { MultiStepLoader } from '@/components/ui/multi-step-loader'
 import { Country, State, City } from 'country-state-city'
-import { Separator } from '@/components/ui/separator'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui-2/separator'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui-2/card'
 import { cn } from '@/lib/utils'
 import { SavedBankCardsGallery, InteractiveBankCard } from '@/components/ui/bank-card'
+import { motion } from 'motion/react'
+import GlassContainer from '@/components/ui/glass-container'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -281,7 +283,6 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
       setIsTrialAccepted(false)
     }
   }, [planConfig, user])
-
 
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep)
 
@@ -555,8 +556,6 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
     }
   }
 
-
-
   const applyCoupon = async () => {
     if (!couponCode.trim()) return
 
@@ -605,26 +604,17 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
   const total = basePrice - discount
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-bg-primary text-fg-primary">
+    <div className="bg-bg-primary">
       {/* Background (premium: blobs + subtle grid mask) */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-gradient-to-br from-blue-300/25 to-purple-300/25 blur-3xl" />
-        <div className="absolute bottom-[-180px] right-[-180px] h-[520px] w-[520px] rounded-full bg-gradient-to-br from-cyan-300/20 to-pink-300/20 blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:72px_72px] opacity-[0.15] [mask-image:radial-gradient(ellipse_55%_45%_at_50%_0%,#000_55%,transparent_78%)]" />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/40 via-background to-purple-50/30" />
-      </div>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12 relative z-10">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-brand-gradient pb-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-brand-gradient pb-1">
               Complete Your Subscription
             </h1>
-            <p className="text-sm text-fg-tertiary mt-3 font-medium">
-              Home / Pricing / <span className="text-fg-primary font-semibold">Checkout</span>
-            </p>
           </div>
           <Button
             variant="ghost"
@@ -636,7 +626,109 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
             Back to Pricing
           </Button>
         </div>
-        <Separator className="my-8 bg-gradient-to-r from-transparent via-border to-transparent" />
+
+        {/* Stepper */}
+        <motion.div
+          className="my-8 h-0.5 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ scaleX: 1, opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.8, ease: 'easeOut' }}
+        />
+
+
+        <div className="flex items-center justify-between w-full mb-6 px-10">
+          {steps.map((step, index) => {
+            const isCompleted = completedSteps.has(step.id)
+            const isCurrent = currentStep === step.id
+            const isAccessible = index <= currentStepIndex || isCompleted
+            const isLast = index === steps.length - 1
+
+            return (
+              <React.Fragment key={step.id}>
+                {/* Step Item */}
+                <Button
+                  variant={'ghost'} 
+                  onClick={() => isAccessible && goToStep(step.id)}
+                  disabled={!isAccessible}
+                  className={cn(
+                    'h-full group flex flex-col items-center gap-1.5 transition-all duration-300',
+                    isAccessible && 'cursor-pointer hover:scale-105',
+                    !isAccessible && 'cursor-not-allowed opacity-50'
+                  )}
+                >
+                  {/* Step Indicator */}
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      scale: isCurrent ? 1.1 : 1,
+                      backgroundColor: isCompleted
+                        ? 'hsl(var(--primary))'
+                        : isCurrent
+                          ? 'hsl(var(--primary))'
+                          : 'hsl(var(--muted))',
+                    }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    className={cn(
+                      'relative flex items-center justify-center w-9 h-9 rounded-full font-medium text-sm',
+                      (isCompleted || isCurrent) ? 'text-primary-foreground' : 'text-muted-foreground'
+                    )}
+                  >
+                    {isCompleted ? (
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                      >
+                        <Check className="h-4 w-4" strokeWidth={3} />
+                      </motion.div>
+                    ) : (
+                      <span>{index + 1}</span>
+                    )}
+
+                    {/* Active ring animation */}
+                    {isCurrent && (
+                      <motion.div
+                        className="absolute inset-0 rounded-full border-2 border-primary"
+                        initial={{ scale: 1, opacity: 0.8 }}
+                        animate={{ scale: 1.4, opacity: 0 }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut' }}
+                      />
+                    )}
+                  </motion.div>
+
+                  {/* Step Label - Below Circle */}
+                  <motion.span
+                    initial={false}
+                    animate={{
+                      color: isCurrent
+                        ? 'hsl(var(--primary))'
+                        : isCompleted
+                          ? 'hsl(var(--primary))'
+                          : 'hsl(var(--muted-foreground))',
+                      fontWeight: isCurrent ? 600 : 500,
+                    }}
+                    className="text-xs whitespace-nowrap"
+                  >
+                    {step.label}
+                  </motion.span>
+                </Button>
+
+                {/* Connector Line with Gradient */}
+                {!isLast && (
+                  <div className="relative -top-2 w-full flex-1 h-0.5 mx-2 rounded-full overflow-hidden min-w-[80px] bg-gradient-to-r from-transparent via-border to-transparent">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-primary via-blue-500 to-primary/80 rounded-full"
+                      initial={{ width: '0%' }}
+                      animate={{ width: isCompleted ? '100%' : '0%' }}
+                      transition={{ duration: 0.4, ease: 'easeOut' }}
+                    />
+                  </div>
+                )}
+              </React.Fragment>
+            )
+          })}
+        </div>
+
 
         {/* Main Content */}
         <div className="grid lg:grid-cols-3 gap-6">
@@ -645,72 +737,10 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
           <div className="lg:col-span-2 space-y-4 w-full">
 
 
-            {/* Step Indicator */}
-            <div className="relative bg-card backdrop-blur-sm rounded-2xl p-2 sm:p-4 shadow-[0_8px_30px_hsl(var(--shadow-lg))] border border-border">
-              {/* Progress Lines Background */}
-              <div className="absolute top-[calc(1.5rem+16px)] left-[8%] right-[8%] flex items-center z-0">
-                {steps.slice(0, -1).map((step, index) => (
-                  <div key={`line-${index}`} className={`h-1 bg-border rounded-full ${index === 0 ? 'flex-1' : 'flex-1'}`}>
-                    <div
-                      className={`h-1 rounded-full transition-all duration-500 ${completedSteps.has(step.id) ? 'bg-gradient-to-r from-blue-500 to-blue-600 w-full' : 'w-0'
-                        }`}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {/* Step Circles */}
-              <div className="flex justify-between relative z-10">
-                {steps.map((step, index) => {
-                  const isCompleted = completedSteps.has(step.id)
-                  const isCurrent = currentStep === step.id
-                  const isAccessible = index <= currentStepIndex || isCompleted
-
-                  return (
-                    <div key={step.id} className="flex flex-col items-center">
-                      <button
-                        onClick={() => isAccessible && goToStep(step.id)}
-                        disabled={!isAccessible}
-                        className="flex flex-col items-center group cursor-pointer disabled:cursor-not-allowed transition-all duration-300 hover:scale-105"
-                      >
-                        <div
-                          className={`
-                         w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-1 transition-all duration-500 bg-card
-                        ${isCompleted
-                              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-[0_8px_20px_rgba(59,130,246,0.3)]'
-                              : isCurrent
-                                ? 'bg-gradient-to-br from-primary via-blue-500 to-cyan-500 text-white shadow-[0_10px_30px_rgba(59,130,246,0.4)] scale-110'
-                                : 'bg-gradient-to-br from-muted to-muted-foreground/10 text-muted-foreground shadow-sm'
-                            }
-                      `}
-                        >
-                          {isCompleted ? (
-                            <Check className="h-5 w-5" />
-                          ) : (
-                            <span className="text-base font-semibold">{index + 1}</span>
-                          )}
-                        </div>
-                        <div className="text-center">
-                          <div className={cn(
-                            'text-sm font-medium transition-colors',
-                            isCurrent ? 'text-blue-600' : isCompleted ? 'text-blue-500' : 'text-muted-foreground'
-                          )}>
-                            {step.label}
-                          </div>
-                          <div className="text-xs text-muted-foreground hidden sm:block mt-0.5">
-                            {step.description}
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
             {/* Main Form */}
-            <div className="group relative rounded-2xl p-[1.5px] bg-gradient-to-br from-border/70 via-border/50 to-border/70 transition-all duration-500 shadow-sm">
-              <Card className="border-0  card rounded-2xl">
+          <div className="module__WDhx3G__outer p-[8px] border rounded-2xl">
+            <div className='module__WDhx3G__inner rounded-full'>
+              <div className="w-full p-[8px] pb-0 border-0 rounded-2xl">
                 <CardContent className="pt-6 pb-7 px-6 sm:px-7">
                   <form>
                     {/* Billing Information */}
@@ -1452,8 +1482,9 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                     )}
                   </form>
                 </CardContent>
-              </Card>
-            </div>
+              </div>
+              </div>
+              </div>
           </div>
 
           {/* Right Column - Order Summary Sidebar */}

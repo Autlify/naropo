@@ -231,7 +231,7 @@ const MenuOptions = ({
                             <button
                                 type="button"
                                 className={cn(
-                                    'flex w-full items-center justify-center rounded-md p-2 text-sm',
+                                    'flex w-full items-center justify-center rounded-md text-sm',
                                     isSelected ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted/50 transition-colors',
                                     isLocked && 'opacity-50 cursor-not-allowed'
                                 )}
@@ -512,7 +512,7 @@ const MenuOptions = ({
                         'hidden md:inline-block z-0': defaultOpen,
                         'inline-block md:hidden z-[100] w-full': !defaultOpen,
                     },
-                    defaultOpen && (isCollapsed ? 'w-[96px]' : 'w-[300px]')
+                    defaultOpen && (isCollapsed ? 'w-[80px]' : 'w-[280px]')
                 )}
             >
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
@@ -528,7 +528,7 @@ const MenuOptions = ({
                             height={isCollapsed ? 76 : undefined}
                             width={isCollapsed ? 76 : undefined}
                             fill={isCollapsed ? false : true}
-                            className={cn(isCollapsed ? 'absolute top-0 left-1 w-[40px] h-[40px]' : 'rounded-md object-contain', 'transition-all duration-300')}
+                            className={cn(isCollapsed ? 'absolute top-0 left-0 w-[40px] h-[40px]' : 'rounded-md object-contain', 'transition-all duration-300')}
                         />
                     </AspectRatio>
 

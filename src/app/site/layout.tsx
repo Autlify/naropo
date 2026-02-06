@@ -9,7 +9,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname()
   const hideNavigation =
     pathname.includes('/checkout') ||
-    pathname.includes('/docs')
+    pathname.includes('/docs') || 
+    pathname.includes('/0') ||
+    pathname.includes('/1')
 
 
   return ( 

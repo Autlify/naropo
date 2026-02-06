@@ -33,7 +33,7 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
   const [isLoading, setIsLoading] = useState(false)
   const [liveProducts, setLiveProducts] = useState<
     { productId: string; recurring: boolean }[] | []
-  >(JSON.parse(defaultData.liveProducts || '[]'))
+  >(JSON.parse(defaultData?.liveProducts || '[]'))
 
   const handleSaveProducts = async () => {
     setIsLoading(true)
@@ -53,7 +53,7 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
   const handleAddProduct = async (product: Stripe.Product) => {
     const productIdExists = liveProducts.find(
       //@ts-ignore
-      (prod) => prod.productId === product.default_price.id
+      (prod) => prod.productId === product.default_price?.id
     )
     productIdExists
       ? setLiveProducts(
@@ -69,9 +69,9 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
           ...liveProducts,
           {
             //@ts-ignore
-            productId: product.default_price.id as string,
+            productId: product.default_price?.id as string,
             //@ts-ignore
-            recurring: !!product.default_price.recurring,
+            recurring: !!product.default_price?.recurring,
           },
         ])
   }
@@ -95,7 +95,7 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
                   defaultChecked={
                     !!liveProducts.find(
                       //@ts-ignore
-                      (prod) => prod.productId === product.default_price.id
+                      (prod) => prod.productId === product.default_price?.id
                     )
                   }
                   onChange={() => handleAddProduct(product)}

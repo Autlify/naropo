@@ -1,5 +1,7 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { City, Country, State } from 'country-state-city'
+import getSymbolFromCurrency from 'currency-symbol-map'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -19,3 +21,17 @@ export function formatCurrency(amount: number, currency: string = 'MYR'): string
     currency: currency,
   }).format(amount)
 }
+
+export const getCountries = () => {
+  const countries = Country.getAllCountries().sort((a, b) => a.name.localeCompare(b.name))
+  return countries.map((country) => ({
+    name: country.name,
+    isoCode: country.isoCode,
+    phoneCode: country.phonecode,
+    currency: country.currency,
+    currencySymbol: getSymbolFromCurrency(country.currency),
+    currencyFormat: formatCurrency(0, country.currency),
+  }))
+
+}
+

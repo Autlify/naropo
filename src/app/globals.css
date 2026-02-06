@@ -890,7 +890,7 @@ B (255 */
     --button-primary-text-hover: 0 0% 100%;
     --button-primary-text-disabled: 219 6% 50%;
     /* #787882 */
-    
+
     --button-success-bg: 145 63.64% 40%;
     --button-success-bg-hover: 145 63.64% 45%;
     --button-success-text: 145 63.64% 97%;
@@ -1366,6 +1366,7 @@ B (255 */
 
   /* Background Hierarchy */
   --color-bg-primary: hsl(var(--bg-primary));
+  /*  Question: Frontend classname is ? Answer: bg-primary */
   --color-bg-secondary: hsl(var(--bg-secondary));
   --color-bg-tertiary: hsl(var(--bg-tertiary));
   --color-bg-quaternary: hsl(var(--bg-quaternary));
@@ -1839,6 +1840,7 @@ B (255 */
   background-color: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
 }
+
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }
@@ -3157,4 +3159,140 @@ h6,
 [id] {
   scroll-margin-top: 5rem;
   /* 80px - accounts for sticky header (56px) + padding */
+}
+
+/* Glass Container */
+.glass-outer {
+  --glass-border-size: 1px;
+  --glass-border-gradient: linear-gradient(to bottom right, rgba(255,255,255,0.07), transparent);
+  border-radius: 18px;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  background:   var(--glass-border-gradient);
+}
+
+.glass-inner {
+  isolation: isolate;
+  --glass-border-size: 1px;
+  --glass-border-gradient: linear-gradient(to bottom right, rgba(255,255,255,0.17), transparent);
+  background: var(--glass-border-gradient);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.glass-inner::after {
+  content: "";
+  pointer-events: none;
+  filter: url(#noiseFilter);
+  mix-blend-mode: overlay;
+  opacity: 0.1;
+  position: absolute;
+  inset: 0;
+}
+
+/* Hide noise when data-noise="false" */
+.glass-inner[data-noise="false"]::after {
+  display: none;
+}
+
+/* Light theme glass adjustments */
+.light .glass-outer {
+  background: linear-gradient(to bottom right, rgba(0,0,0,0.03), transparent);
+}
+
+.light .glass-inner {
+  background: linear-gradient(134deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7), rgba(255,255,255,0.5) 55%);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+
+/* Premium/Dark theme glass - more visible effect */
+.dark .glass-outer,
+.premium .glass-outer {
+  background: linear-gradient(to bottom right, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+}
+
+.dark .glass-inner,
+.premium .glass-inner {
+  background: linear-gradient(134deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04), transparent 55%);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.mask-fade-br {
+  mask-image: linear-gradient(to bottom, black 50%, transparent 100%),
+    linear-gradient(to right, black 20%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%),
+    linear-gradient(to right, black 20%, transparent 100%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+.glass-card {
+    -webkit-user-select: none;
+    user-select: none;
+    aspect-ratio: 432/320;
+    --mask-bottom: linear-gradient(to bottom,var(--mask-visible)50%,var(--mask-invisible)100%);
+    --mask-right: linear-gradient(to right,var(--mask-visible)20%,var(--mask-invisible)100%);
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    -webkit-mask-image: var(--mask-bottom),var(--mask-right);
+    -webkit-mask-image: var(--mask-bottom),var(--mask-right);
+    mask-image: var(--mask-bottom),var(--mask-right);
+    -webkit-mask-composite: source-in;
+    overflow: hidden;
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+}
+
+.glass-border-gradient {
+  --invisible: rgba(255,255,255,0);
+  --visible: rgba(255,255,255,0.2);
+  --mask-visible: var(--visible);
+  --mask-invisible: var(--invisible);
+    --glass-border-size: 1px;
+    --glass-border-gradient: linear-gradient(to bottom right, var(--visible), var(--invisible));
+    border-radius: 18px; 
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+    border: 1px solid var(--glass-border-gradient);
+    background: var(--glass-border-gradient);
+}
+
+.premium .module__C0ELRa__root {
+    -webkit-user-select: none;
+    user-select: none;
+    aspect-ratio: 432 / 320;
+    --mask-bottom: linear-gradient(to bottom, var(--mask-visible) 50%, var(--mask-invisible) 100%);
+    --mask-right: linear-gradient(to right, var(--mask-visible) 20%, var(--mask-invisible) 100%);
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    -webkit-mask-image: var(--mask-bottom), var(--mask-right);
+    -webkit-mask-image: var(--mask-bottom), var(--mask-right);
+    mask-image: var(--mask-bottom), var(--mask-right);
+    -webkit-mask-composite: source-in;
+    overflow: hidden;
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+}
+
+.premium .module__WDhx3G__outer {
+    --gradientBorder-size: 1px;
+    --gradientBorder-gradient: linear-gradient(to bottom right, #ffffff12, transparent); 
+    border-radius: 18px;
+    width: 100%;
+    padding: 8px;
+}
+
+.premium .module__WDhx3G__inner {
+    isolation: isolate;
+    --gradientBorder-size: 1px;
+    --gradientBorder-gradient: linear-gradient(to bottom right, #ffffff2b, transparent);
+    background: linear-gradient(134deg, #ffffff14, #ffffff05, #fff0 55%);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
 }

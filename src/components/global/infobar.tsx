@@ -147,7 +147,7 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
       <div
         className={twMerge(
           'fixed z-[20] left-0 right-0 top-0 py-4 pr-4 bg-background/80 backdrop-blur-md flex gap-4 items-center border-b-[1px] transition-all duration-300',
-          isCollapsed ? 'md:left-[96px]' : 'md:left-[300px]',
+          isCollapsed ? 'md:left-[80px]' : 'md:left-[280px]',
           className
         )}
       >
@@ -180,17 +180,15 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
           </Breadcrumb>
         )}
 
-        {title && (() => {
+        {/* {title && (() => {
           const [pageTitle, pageDescription] = title.split('|')
           return (
             <div className="flex-1 min-w-0">
               <span className="font-semibold text-2xl">{pageTitle}</span>
-              {/* {pageDescription && (
-                <span className="hidden sm:inline text-sm text-muted-foreground ml-2">{pageDescription}</span>
-              )} */}
+           
             </div>
           )
-        })()}
+        })()} */}
         <div className="flex items-center gap-2 ml-auto">
 
           <UserButton />

@@ -853,13 +853,13 @@ model Notification {
 }
 
 enum Plan {
-  price_1SxAiXJglUPlULDQJDOmcB2C
-  price_1SxAiYJglUPlULDQvHsvpsmi
-  price_1SxAiYJglUPlULDQtxTI8UwM
-  price_1SxAiZJglUPlULDQge6pU88h
-  price_1SxAiaJglUPlULDQ9K3ngV94
-  price_1SxAibJglUPlULDQDZjEsjSk
-  price_1SxAibJglUPlULDQOQAltSBS
+  price_1SxrtiJglUPlULDQ6Q47g9ua
+  price_1SxrtiJglUPlULDQNfTnrEaH
+  price_1SxrtjJglUPlULDQgtNaxHa9
+  price_1SxrtkJglUPlULDQt7hxe8OD
+  price_1SxrtlJglUPlULDQgA5RR4VG
+  price_1SxrtnJglUPlULDQhNpJz0OW
+  price_1SxrtnJglUPlULDQ96ygSCfB
 
   @@schema("public")
 }

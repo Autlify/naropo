@@ -1,7 +1,7 @@
 ---
 agent: agent
 description: Complete the specified feature or code based on current codebase architecture, design patterns, coding standards, and best practices using to work towards enterprise grade readiness, industry best practices, aligned to Stripe, and IFRS compliance based on the provided feature context or incomplete code snippet.
-model: Claude Opus 4.5 (copilot)
+model: GPT-5.2 (copilot)
 tools: ['vscode', 'execute', 'read', 'agent', 'edit', 'search', 'web', 'com.stripe/mcp/*', 'memory', 'todo']
 --- 
 # Feature/Code Completion
@@ -52,4 +52,5 @@ Complete the specified feature or code based on current codebase architecture, d
 ## Feature/Code to Complete
 {{input}}
 
-FI-GL Feature: Analyze the codebase comprehensively to identify and implement the General Ledger (GL) functionality, ensuring compliance with IFRS standards, accurate financial reporting, and seamless integration with existing accounting modules.
+FI-GL Feature: Analyze the FI-GL related implementation from codebase comprehensively to identify and further enhance or implement where is necessary for General Ledger (GL) functionality, flexibility and scalability to meet enterprise-grade standards and simplify for users to use, automated financial processes as much as possible, seamless integration with banking and payment systems using Stripe's MCP (Multi-Party Payments) capabilities
+, ensuring compliance with IFRS standards, accurate financial reporting, and seamless integration with existing accounting modules.

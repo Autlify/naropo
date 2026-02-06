@@ -23,11 +23,11 @@ export const createExchangeRateSchema = z.object({
 );
 
 export const currencyRevaluationSchema = z.object({
-  periodId: z.string().uuid(),
+  periodId: z.uuid(),
   currencyCode: z.string().length(3),
   revaluationDate: z.coerce.date(),
   exchangeRate: z.number().positive(),
-  gainLossAccountId: z.string().uuid(),
+  gainLossAccountId: z.uuid(),
   notes: z.string().max(500).optional(),
 });
 

@@ -37,10 +37,11 @@ import type {
     PriceCalculationResult,
     PricingConfigKeyType,
     PricingCardData,
+    AddonCardData,
 } from '@/types/billing'
 
-// Re-export PricingCardData for consumers
-export type { PricingCardData } from '@/types/billing'
+// Re-export PricingCardData and AddonCardData for consumers
+export type { PricingCardData, AddonCardData } from '@/types/billing'
 
 // ============================================================================
 // PRICING_CONFIG (Single Source of Truth)
@@ -60,7 +61,6 @@ const definePricingConfig = <T extends Record<string, Omit<PricingConfig, 'key'>
 export const PRICING_CONFIG = definePricingConfig({
     // ========== PLANS (Services - Revenue recognized over time) ==========
     STARTER: {
-        key: 'STARTER',
         type: 'plan',
         name: 'Starter',
         description: 'Perfect for trying out Autlify',
@@ -93,16 +93,15 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 1,
         trialDays: 14,
-        stripePriceId: 'price_1SxAiXJglUPlULDQJDOmcB2C',
+        stripePriceId: 'price_1SxrtiJglUPlULDQ6Q47g9ua',
         featureOverrides: {
-            'core.subaccounts': 3,
-            'core.team_members': 2,
-            'core.storage_gb': 5,
+            'core.agency.subaccounts': 3,
+            'iam.authZ.members': 2,
+            'core.agency.storage': 5,
         },
     },
 
     BASIC: {
-        key: 'BASIC',
         type: 'plan',
         name: 'Basic',
         description: 'For serious agency owners',
@@ -135,16 +134,15 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 2,
         trialDays: 14,
-        stripePriceId: 'price_1SxAiYJglUPlULDQvHsvpsmi',
+        stripePriceId: 'price_1SxrtiJglUPlULDQNfTnrEaH',
         featureOverrides: {
-            'core.subaccounts': 10,
-            'core.team_members': 10,
-            'core.storage_gb': 25,
+            'core.agency.subaccounts': 10,
+            'iam.authZ.members': 10,
+            'core.agency.storage': 25,
         },
     },
 
     ADVANCED: {
-        key: 'ADVANCED',
         type: 'plan',
         name: 'Advanced',
         description: 'The ultimate agency kit',
@@ -177,18 +175,18 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 3,
         trialDays: 14,
-        stripePriceId: 'price_1SxAiYJglUPlULDQtxTI8UwM',
+        stripePriceId: 'price_1SxrtjJglUPlULDQgtNaxHa9',
         featureOverrides: {
-            'core.subaccounts': '∞',
-            'core.team_members': '∞',
-            'core.storage_gb': 100,
-            'billing.rebilling': true,
-            'billing.priority_support': true,
+            'core.agency.subaccounts': '∞',
+            'iam.authZ.members': '∞',
+            'core.agency.storage': 100,
+            'crm.customers.billing': true,
+            'core.support.diagnostics': true,
+            'core.support.tickets': true,
         },
     },
 
     ENTERPRISE: {
-        key: 'ENTERPRISE',
         type: 'plan',
         name: 'Enterprise',
         description: 'Custom pricing for large agencies',
@@ -221,7 +219,7 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'subaccount',     // Per sub-account pricing (headcount)
         tier: 4,
         trialDays: 0,
-        stripePriceId: 'price_1SxAiZJglUPlULDQge6pU88h',  // Tiered price
+        stripePriceId: 'price_1SxrtkJglUPlULDQt7hxe8OD',  // Tiered price
         // Graduated tiers from constants.ts: 14900/12900/10900 per unit
         tiers: [
             { upTo: 50, unitAmount: 14900 },        // 1-50: MYR 149/each
@@ -229,17 +227,16 @@ export const PRICING_CONFIG = definePricingConfig({
             { upTo: 'inf', unitAmount: 10900 },     // 101+: MYR 109/each
         ],
         featureOverrides: {
-            'core.subaccounts': '∞',
-            'core.team_members': '∞',
-            'core.storage_gb': '∞',
-            'billing.rebilling': true,
-            'billing.priority_support': true,
-            'fi.gl_access': true,
+            'core.agency.subaccounts': '∞',
+            'iam.authZ.members': '∞',
+            'core.agency.storage': '∞',
+            'crm.customers.billing': true,
+            'core.support.diagnostics': true,
+            'core.support.tickets': true,
         },
     },
     // ========== YEARLY PLANS (20% discount) ==========
     STARTER_YEARLY: {
-        key: 'STARTER_YEARLY',
         type: 'plan',
         name: 'Starter',
         description: 'Perfect for trying out Autlify',
@@ -265,16 +262,15 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 1,
         trialDays: 14,
-        stripePriceId: 'price_1SxAiaJglUPlULDQ9K3ngV94',
+        stripePriceId: 'price_1SxrtlJglUPlULDQgA5RR4VG',
         featureOverrides: {
-            'core.subaccounts': 3,
-            'core.team_members': 2,
-            'core.storage_gb': 5,
+            'core.agency.subaccounts': 3,
+            'iam.authZ.members': 2,
+            'core.agency.storage': 5,
         },
     },
 
     BASIC_YEARLY: {
-        key: 'BASIC_YEARLY',
         type: 'plan',
         name: 'Basic',
         description: 'For serious agency owners',
@@ -300,16 +296,15 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 2,
         trialDays: 14,
-        stripePriceId: 'price_1SxAibJglUPlULDQDZjEsjSk',
+        stripePriceId: 'price_1SxrtnJglUPlULDQhNpJz0OW',
         featureOverrides: {
-            'core.subaccounts': 10,
-            'core.team_members': 10,
-            'core.storage_gb': 25,
+            'core.agency.subaccounts': 10,
+            'iam.authZ.members': 10,
+            'core.agency.storage': 25,
         },
     },
 
     ADVANCED_YEARLY: {
-        key: 'ADVANCED_YEARLY',
         type: 'plan',
         name: 'Advanced',
         description: 'The ultimate agency kit',
@@ -335,18 +330,18 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 3,
         trialDays: 14,
-        stripePriceId: 'price_1SxAibJglUPlULDQOQAltSBS',
+        stripePriceId: 'price_1SxrtnJglUPlULDQ96ygSCfB',
         featureOverrides: {
-            'core.subaccounts': '∞',
-            'core.team_members': '∞',
-            'core.storage_gb': 100,
-            'billing.rebilling': true,
-            'billing.priority_support': true,
+            'core.agency.subaccounts': '∞',
+            'iam.authZ.members': '∞',
+            'core.agency.storage': 100,
+            'crm.customers.billing': true,
+            'core.support.diagnostics': true,
+            'core.support.tickets': true,
         },
     },
     // ========== ADD-ONS (Services - Revenue recognized over time) ==========
     PRIORITY_SUPPORT: {
-        key: 'PRIORITY_SUPPORT',
         type: 'addon',
         name: 'Priority Support',
         description: '24/7 priority support with dedicated SLA',
@@ -377,14 +372,13 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',         // Flat rate - no per-unit
         pricingUnit: 'none',
-        stripePriceId: 'price_1SxAicJglUPlULDQRy4FId25',
+        stripePriceId: 'price_1SxrtoJglUPlULDQO7a0Xj94',
         featureOverrides: {
-            'billing.priority_support': true,
+            'crm.customers.billing': true,
         },
     },
 
     FI_GL: {
-        key: 'FI_GL',
         type: 'addon',
         name: 'General Ledger',
         description: 'Full financial accounting module',
@@ -415,16 +409,31 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAidJglUPlULDQeQ6aNzAF',
+        stripePriceId: 'price_1SxrtpJglUPlULDQ1WDn3uH3',
         featureOverrides: {
-            'fi.gl_access': true,
-            'fi.gl_accounts': '∞',
-            'fi.gl_journals': '∞',
+            // GL Core resources
+            'fi.general_ledger.accounts': true,
+            'fi.general_ledger.subledgers': true,
+            'fi.general_ledger.balances': true,
+            'fi.general_ledger.settings': true,
+            'fi.general_ledger.journal_entries': 300,
+            'fi.general_ledger.reports': true,
+            'fi.general_ledger.consolidation': true,
+            'fi.general_ledger.year_end': true,
+            'fi.general_ledger.reconciliation': true,
+            // Shared configuration access
+            'fi.configuration.fiscal_years': true,
+            'fi.configuration.currencies': true,
+            'fi.configuration.tax_settings': true,
+            'fi.configuration.tolerances': true,
+            'fi.configuration.number_ranges': true,
+            'fi.configuration.posting_rules': true,
+            // Master data access
+            'fi.master_data.accounts': true,
         },
     },
 
     FI_AR: {
-        key: 'FI_AR',
         type: 'addon',
         name: 'Accounts Receivable',
         description: 'Customer invoicing and AR management',
@@ -455,14 +464,16 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAieJglUPlULDQ1tzfiQqh',
+        stripePriceId: 'price_1SxrtqJglUPlULDQG1yMAabo',
         featureOverrides: {
-            'fi.ar_access': true,
+            // AR Core resources
+            'fi.accounts_receivable.subledgers': true,
+            // Customer master data
+            'fi.master_data.customers': true,
         },
     },
 
     FI_AP: {
-        key: 'FI_AP',
         type: 'addon',
         name: 'Accounts Payable',
         description: 'Vendor management and AP processing',
@@ -493,14 +504,16 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAifJglUPlULDQR0r8hQ0J',
+        stripePriceId: 'price_1SxrtrJglUPlULDQmmhfPz8g',
         featureOverrides: {
-            'fi.ap_access': true,
+            // AP Core resources
+            'fi.accounts_payable.subledgers': true,
+            // Vendor master data
+            'fi.master_data.vendors': true,
         },
     },
 
     FI_BL: {
-        key: 'FI_BL',
         type: 'addon',
         name: 'Bank Ledgers',
         description: 'Bank account management and reconciliation',
@@ -531,13 +544,16 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAifJglUPlULDQXgIbxzf7',
+        stripePriceId: 'price_1SxrtrJglUPlULDQLBDLait1',
         featureOverrides: {
-            'fi.bl_access': true,
+            // Bank Ledger Core resources
+            'fi.bank_ledger.bank_accounts': true,
+            'fi.bank_ledger.subledgers': true,
+            // Bank master data
+            'fi.master_data.banks': true,
         },
     },
     FI_FS: {
-        key: 'FI_FS',
         type: 'addon',
         name: 'Financial Statements',
         description: 'Advanced financial reporting and statements',
@@ -568,13 +584,14 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAigJglUPlULDQleXpx8Ac',
+        stripePriceId: 'price_1SxrtsJglUPlULDQHbAx581V',
         featureOverrides: {
-            'fi.fs_access': true,
+            // Financial Statements Core resources
+            'fi.advanced_reporting.financial_statements': true,
+            'fi.advanced_reporting.custom_reports': true,
         },
     },
     CO_CCA: {
-        key: 'CO_CCA',
         type: 'addon',
         name: 'Cost Accounting',
         description: 'Cost center and profit center management',
@@ -605,13 +622,16 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAihJglUPlULDQftoxdK6t',
+        stripePriceId: 'price_1SxrttJglUPlULDQldofXwDF',
         featureOverrides: {
-            'co.cca_access': true,
+            // Cost Center Accounting resources
+            'co.cost_centers.master_data': true,
+            'co.cost_centers.hierarchy': true,
+            'co.cost_centers.allocations': true,
+            'co.cost_centers.reports': true,
         },
     },
     CO_PCA: {
-        key: 'CO_PCA',
         type: 'addon',
         name: 'Profit Center Accounting',
         description: 'Profit center tracking and analysis',
@@ -642,13 +662,15 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAihJglUPlULDQiijyjkbo',
+        stripePriceId: 'price_1SxrttJglUPlULDQTwR7z21m',
         featureOverrides: {
-            'co.pca_access': true,
+            // Profit Center Accounting resources
+            'co.profit_centers.master_data': true,
+            'co.profit_centers.hierarchy': true,
+            'co.profit_centers.reports': true,
         },
     },
     CO_PA: {
-        key: 'CO_PA',
         type: 'addon',
         name: 'Profitability Analysis',
         description: 'Detailed profitability reporting and insights',
@@ -679,13 +701,17 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAiiJglUPlULDQMTKUghdO',
+        stripePriceId: 'price_1SxrtuJglUPlULDQMsPuWeKT',
         featureOverrides: {
-            'co.pa_access': true,
+            // Profitability Analysis resources
+            'co.profitability.segments': true,
+            'co.profitability.reports': true,
+            // Also includes internal orders for project costing
+            'co.internal_orders.master_data': true,
+            'co.internal_orders.settlement': true,
         },
     },
     CO_BUDGET: {
-        key: 'CO_BUDGET',
         type: 'addon',
         name: 'Budgeting & Planning',
         description: 'Comprehensive budgeting and financial planning tools',
@@ -716,13 +742,14 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAijJglUPlULDQQsNguflG',
+        stripePriceId: 'price_1SxrtvJglUPlULDQLu9Xsur3',
         featureOverrides: {
-            'co.budget_access': true,
+            // Budgeting & Planning resources
+            'co.budgets.planning': true,
+            'co.budgets.monitoring': true,
         },
     },
     WHITE_LABEL: {
-        key: 'WHITE_LABEL',
         type: 'addon',
         name: 'White Label',
         description: 'Custom branding and subdomain',
@@ -753,19 +780,19 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAikJglUPlULDQLO5jRqaL',
+        stripePriceId: 'price_1SxrtwJglUPlULDQM8OndPsu',
         overage: {
             includedUnits: 3,            // 3 branded SubAccounts included
             unitAmount: 2500,            // MYR 25.00 per additional
         },
         featureOverrides: {
-            'branding.white_label': true,
+            // White label uses organization profile/branding
+            'core.organization.profile': true,
         },
     },
 
     // ========== GOODS (One-time - Revenue recognized immediately) ==========
     SETUP_FEE: {
-        key: 'SETUP_FEE',
         type: 'addon',
         name: 'Setup & Onboarding',
         description: 'One-time setup and configuration assistance',
@@ -792,12 +819,11 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'one_time',
         billingScheme: 'flat',
         pricingUnit: 'none',
-        stripePriceId: 'price_1SxAikJglUPlULDQh9eZmiVC',
+        stripePriceId: 'price_1SxrtwJglUPlULDQIVoRhx4X',
         featureOverrides: {},
     },
 
     API_CREDITS: {
-        key: 'API_CREDITS',
         type: 'addon',
         name: 'API Credits Pack',
         description: 'Pre-purchased API call credits',
@@ -828,12 +854,11 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'one_time',
         billingScheme: 'per_unit',
         pricingUnit: 'api_call',
-        stripePriceId: 'price_1SxAilJglUPlULDQiNEHFYdB',
+        stripePriceId: 'price_1SxrtxJglUPlULDQrniBeqNZ',
         featureOverrides: {},
     },
 
     DATA_MIGRATION: {
-        key: 'DATA_MIGRATION',
         type: 'addon',
         name: 'Data Migration Service',
         description: 'Professional data migration from other platforms',
@@ -864,7 +889,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'one_time',
         billingScheme: 'flat',         // Changed from tiered_volume - Stripe doesn't support tiered one_time
         pricingUnit: 'none',
-        stripePriceId: 'price_1SxAimJglUPlULDQkn6cXTqS',
+        stripePriceId: 'price_1SxrtyJglUPlULDQDBYJlCbu',
         // Note: Volume tiers handled via custom quotes, not Stripe pricing
         // Tiers for reference (used in custom quote generation):
         // - Up to 1K contacts: MYR 999
@@ -1469,6 +1494,172 @@ export function getPricingCardByPriceId(priceId: string): PricingCardData | unde
     // Check monthly first, then yearly
     return monthlyCards.find(card => card.priceId === priceId)
         ?? yearlyCards.find(card => card.priceId === priceId)
+}
+
+
+// ============================================================================
+// ADDON FEATURES - SSoT for addon feature lists
+// ============================================================================
+
+/** Addon-specific features for display on pricing UI */
+const ADDON_FEATURES: Record<string, string[]> = {
+    PRIORITY_SUPPORT: [
+        '24/7 priority support',
+        'Dedicated account manager',
+        '1-hour response SLA',
+        'Private Slack channel',
+    ],
+    FI_GL: [
+        'Full chart of accounts',
+        'Journal entries & posting',
+        'Multi-currency support',
+        'Financial reports',
+        'Audit trail',
+    ],
+    FI_AR: [
+        'Customer invoicing',
+        'Payment tracking',
+        'Aging reports',
+        'Credit management',
+    ],
+    FI_AP: [
+        'Vendor management',
+        'Bill processing',
+        'Payment scheduling',
+        'Expense tracking',
+    ],
+    FI_BL: [
+        'Bank account management',
+        'Bank reconciliation',
+        'Cash flow tracking',
+        'Bank feeds integration',
+    ],
+    FI_FS: [
+        'Statement generation',
+        'Custom report builder',
+        'Comparative analysis',
+        'Export to Excel/PDF',
+    ],
+    WHITE_LABEL: [
+        'Custom domain',
+        'Custom branding',
+        'Remove Autlify branding',
+        'White-label emails',
+    ],
+    SETUP_FEE: [
+        'Dedicated onboarding',
+        'Data migration support',
+        'Custom configuration',
+        'Training sessions',
+    ],
+    API_CREDITS: [
+        '10,000 API calls',
+        'Rate limit increase',
+        'Priority API access',
+    ],
+    DATA_MIGRATION: [
+        'Full data import',
+        'Data validation',
+        'Mapping assistance',
+        'Migration support',
+    ],
+}
+
+/**
+ * Get addon cards for UI display
+ * This is the SINGLE SOURCE OF TRUTH for addon pricing UI
+ * @param category - Optional category filter (e.g., 'fi', 'core')
+ */
+export function getAddonCards(category?: AddonCardData['category']): AddonCardData[] {
+    const addons = Object.values(PRICING_CONFIG).filter((config) => {
+        if (config.type !== 'addon') return false
+        // Filter by category if provided
+        if (category) {
+            // Determine category from key prefix
+            const addonCategory = getAddonCategory(config.key)
+            return addonCategory === category
+        }
+        return true
+    }).sort((a, b) => (a.baseAmount ?? 0) - (b.baseAmount ?? 0))
+
+    return addons.map((config: PricingConfig): AddonCardData => {
+        const addonCategory = getAddonCategory(config.key)
+        const addonType = getAddonType(config.key)
+        const isOneTime = config.interval === 'one_time'
+
+        return {
+            key: config.key,
+            title: config.name,
+            description: config.description ?? '',
+            price: formatAmount(config.baseAmount, config.currency),
+            priceAmount: config.baseAmount,
+            currency: config.currency,
+            priceId: config.stripePriceId ?? '',
+            interval: isOneTime ? 'one_time' : 'month',
+            features: ADDON_FEATURES[config.key] ?? [],
+            category: addonCategory,
+            addonType: addonType,
+            recommended: config.key === 'FI_GL', // FI_GL is recommended addon
+            module: getModuleFromKey(config.key),
+            requires: getAddonRequirement(config.key),
+        }
+    })
+}
+
+/**
+ * Get addon card by Stripe price ID
+ */
+export function getAddonCardByPriceId(priceId: string): AddonCardData | undefined {
+    return getAddonCards().find(card => card.priceId === priceId)
+}
+
+/**
+ * Get combined pricing item (plan or addon) by price ID
+ */
+export function getPricingItemByPriceId(priceId: string): (PricingCardData | AddonCardData) | undefined {
+    // Check plans first
+    const plan = getPricingCardByPriceId(priceId)
+    if (plan) return plan
+    
+    // Then check addons
+    return getAddonCardByPriceId(priceId)
+}
+
+/** Determine addon category from config key */
+function getAddonCategory(key: string): AddonCardData['category'] {
+    if (key.startsWith('FI_')) return 'fi'
+    if (key === 'PRIORITY_SUPPORT') return 'core'
+    if (key === 'WHITE_LABEL') return 'core'
+    if (key === 'SETUP_FEE' || key === 'DATA_MIGRATION' || key === 'API_CREDITS') return 'core'
+    return 'core'
+}
+
+/** Determine addon type from config key */
+function getAddonType(key: string): AddonCardData['addonType'] {
+    if (key === 'PRIORITY_SUPPORT') return 'support'
+    if (key === 'WHITE_LABEL') return 'branding'
+    if (key.startsWith('FI_')) return 'finance'
+    if (key === 'API_CREDITS') return 'integration'
+    return 'feature'
+}
+
+/** Get module name from addon key */
+function getModuleFromKey(key: string): string | undefined {
+    if (key === 'FI_GL') return 'fi-gl'
+    if (key === 'FI_AR') return 'fi-ar'
+    if (key === 'FI_AP') return 'fi-ap'
+    if (key === 'FI_BL') return 'fi-bl'
+    if (key === 'FI_FS') return 'fi-fs'
+    return undefined
+}
+
+/** Get addon requirement/dependency */
+function getAddonRequirement(key: string): string | undefined {
+    // FI modules depend on FI_GL
+    if (key === 'FI_AR' || key === 'FI_AP' || key === 'FI_BL' || key === 'FI_FS') {
+        return 'FI_GL'
+    }
+    return undefined
 }
 
 

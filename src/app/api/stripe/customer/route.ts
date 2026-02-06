@@ -7,39 +7,152 @@ import { auth } from '@/auth'
 
 /**
  * GET /api/stripe/customer
- * Search for existing customer by email
+ * 
+ * Retrieve customer data and payment methods.
+ * Supports two lookup modes:
+ * 
+ * 1. By email: GET /api/stripe/customer?email=user@example.com
+ *    - Searches Stripe for customer by email
+ *    - Returns basic customer data
+ * 
+ * 2. By agencyId: GET /api/stripe/customer?agencyId=agency_xxx
+ *    - Looks up agency's customerId from database
+ *    - Returns full customer data + payment methods
+ *    - Used for checkout forms that need existing billing info
  */
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url)
         const email = searchParams.get('email')
+        const agencyId = searchParams.get('agencyId')
 
-        if (!email) {
-            return NextResponse.json(
-                { error: 'Email parameter is required' },
-                { status: 400 }
-            )
-        }
+        // Mode 1: Search by email
+        if (email) {
+            const existingCustomer = await stripe.customers.search({
+                query: `email:'${email}'`,
+                limit: 1,
+            })
 
-        // Search for existing customer
-        const existingCustomer = await stripe.customers.search({
-            query: `email:'${email}'`,
-            limit: 1,
-        })
+            if (existingCustomer.data.length > 0) {
+                console.log('✅ Found existing Stripe customer:', existingCustomer.data[0].id)
+                return NextResponse.json({
+                    customer: existingCustomer.data[0],
+                    exists: true,
+                })
+            }
 
-        if (existingCustomer.data.length > 0) {
-            console.log('✅ Found existing Stripe customer:', existingCustomer.data[0].id)
+            console.log('ℹ️ No customer found for email:', email)
             return NextResponse.json({
-                customer: existingCustomer.data[0],
-                exists: true,
+                customer: null,
+                exists: false,
             })
         }
 
-        console.log('ℹ️ No customer found for email:', email)
-        return NextResponse.json({
-            customer: null,
-            exists: false,
-        })
+        // Mode 2: Lookup by agencyId - returns full billing data
+        if (agencyId) {
+            // Get agency with customerId
+            const agency = await db.agency.findUnique({
+                where: { id: agencyId },
+                select: { customerId: true, name: true },
+            })
+
+            if (!agency) {
+                return NextResponse.json(
+                    { error: 'Agency not found' },
+                    { status: 404 }
+                )
+            }
+
+            if (!agency.customerId) {
+                // No customer yet - return empty data
+                return NextResponse.json({
+                    exists: false,
+                    customerId: null,
+                    customer: null,
+                    paymentMethods: [],
+                })
+            }
+
+            try {
+                // Fetch customer from Stripe
+                const customer = await stripe.customers.retrieve(agency.customerId) as Stripe.Customer
+
+                if (customer.deleted) {
+                    return NextResponse.json({
+                        exists: false,
+                        customerId: agency.customerId,
+                        customer: null,
+                        paymentMethods: [],
+                        error: 'Customer has been deleted in Stripe',
+                    })
+                }
+
+                // Fetch payment methods
+                const paymentMethodsResponse = await stripe.paymentMethods.list({
+                    customer: agency.customerId,
+                    type: 'card',
+                })
+
+                // Get default payment method
+                const defaultPaymentMethod = typeof customer.invoice_settings?.default_payment_method === 'string'
+                    ? customer.invoice_settings.default_payment_method
+                    : customer.invoice_settings?.default_payment_method?.id || null
+
+                // Format customer data
+                const customerData = {
+                    id: customer.id,
+                    email: customer.email ?? null,
+                    name: customer.name ?? null,
+                    phone: customer.phone ?? null,
+                    address: customer.address ? {
+                        line1: customer.address.line1 ?? null,
+                        line2: customer.address.line2 ?? null,
+                        city: customer.address.city ?? null,
+                        state: customer.address.state ?? null,
+                        postal_code: customer.address.postal_code ?? null,
+                        country: customer.address.country ?? null,
+                    } : null,
+                    metadata: customer.metadata as Record<string, string>,
+                }
+
+                // Format payment methods
+                const paymentMethods = paymentMethodsResponse.data.map(pm => ({
+                    id: pm.id,
+                    card: pm.card ? {
+                        cardholder_name: pm.billing_details?.name || null,
+                        brand: pm.card.brand,
+                        last4: pm.card.last4,
+                        exp_month: pm.card.exp_month,
+                        exp_year: pm.card.exp_year,
+                        isDefault: pm.id === defaultPaymentMethod,
+                    } : null,
+                }))
+
+                console.log('✅ Fetched billing data for agency:', agencyId, '- Customer:', customer.id, '- Payment methods:', paymentMethods.length)
+
+                return NextResponse.json({
+                    exists: true,
+                    customerId: agency.customerId,
+                    customer: customerData,
+                    paymentMethods,
+                })
+            } catch (stripeError) {
+                console.error('🔴 Error fetching Stripe customer:', stripeError)
+                return NextResponse.json({
+                    exists: false,
+                    customerId: agency.customerId,
+                    customer: null,
+                    paymentMethods: [],
+                    error: 'Failed to fetch customer from Stripe',
+                })
+            }
+        }
+
+        // No valid lookup parameter
+        return NextResponse.json(
+            { error: 'Either email or agencyId parameter is required' },
+            { status: 400 }
+        )
     } catch (error) {
         console.error('🔴 Error searching customer:', error)
         return NextResponse.json(

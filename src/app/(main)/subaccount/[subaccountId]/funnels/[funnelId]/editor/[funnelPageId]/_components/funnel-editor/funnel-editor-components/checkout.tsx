@@ -65,7 +65,7 @@ const Checkout = (props: Props) => {
           })
           // Use a relative URL to avoid NEXT_PUBLIC_URL misconfiguration (which can lead to
           // a stuck loading state when the request never reaches the API route).
-          const response = await fetch('/api/stripe/create-checkout-session', {
+          const response = await fetch('/api/features/crm/funnels/create-checkout-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body,

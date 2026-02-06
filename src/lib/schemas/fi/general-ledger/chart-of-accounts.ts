@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AccountCategory, AccountType, SubledgerType } from '@/generated/prisma/enums'
 
 // Account code validation regex (configurable format)
 const accountCodeRegex = /^[A-Z0-9]{1,4}(-[A-Z0-9]{1,4})*$/;
@@ -19,42 +20,15 @@ export const createAccountSchema = z.object({
   
   parentAccountId: z.string().uuid().optional().nullable(),
   
-  accountType: z.enum([
-    'ASSET',
-    'LIABILITY',
-    'EQUITY',
-    'REVENUE',
-    'EXPENSE',
-  ]),
+  accountType: z.enum(AccountType),
   
-  category: z.enum([
-    'CURRENT_ASSET',
-    'FIXED_ASSET',
-    'OTHER_ASSET',
-    'CURRENT_LIABILITY',
-    'LONG_TERM_LIABILITY',
-    'CAPITAL',
-    'RETAINED_EARNINGS_CAT',
-    'OPERATING_REVENUE',
-    'OTHER_REVENUE',
-    'COST_OF_GOODS_SOLD',
-    'OPERATING_EXPENSE',
-    'OTHER_EXPENSE',
-  ]).optional(),
+  category: z.enum(AccountCategory).optional(),
   
   subcategory: z.string().max(50).optional(),
   
   // Control account settings
   isControlAccount: z.boolean().default(false),
-  subledgerType: z.enum([
-    'NONE',
-    'ACCOUNTS_RECEIVABLE',
-    'ACCOUNTS_PAYABLE',
-    'INVENTORY',
-    'FIXED_ASSETS',
-    'PAYROLL',
-    'BANK',
-  ]).default('NONE'),
+  subledgerType: z.enum(SubledgerType).default('NONE'),
   controlAccountId: z.string().uuid().optional().nullable(),
   
   // Posting behavior
@@ -77,19 +51,19 @@ export const createAccountSchema = z.object({
 });
 
 export const updateAccountSchema = createAccountSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
 });
 
 export const accountHierarchyMoveSchema = z.object({
-  accountId: z.string().uuid(),
-  newParentId: z.string().uuid().optional().nullable(),
+  accountId: z.uuid(),
+  newParentId: z.uuid().optional().nullable(),
   newSortOrder: z.number().int().min(0),
 });
 
 export const consolidationMappingSchema = z.object({
-  subAccountId: z.string().uuid(),
+  subAccountId: z.uuid(),
   subAccountCOACode: z.string().min(1),
-  groupCOAId: z.string().uuid(),
+  groupCOAId: z.uuid(),
   mappingPercentage: z.number().min(0).max(100).default(100),
   isElimination: z.boolean().default(false),
   eliminationPairId: z.string().uuid().optional(),
