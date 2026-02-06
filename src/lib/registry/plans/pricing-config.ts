@@ -93,7 +93,7 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 1,
         trialDays: 14,
-        stripePriceId: 'price_1SxAiXJglUPlULDQJDOmcB2C',
+        stripePriceId: 'price_1SxrtiJglUPlULDQ6Q47g9ua',
         featureOverrides: {
             'core.agency.subaccounts': 3,
             'iam.authZ.members': 2,
@@ -134,7 +134,7 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 2,
         trialDays: 14,
-        stripePriceId: 'price_1SxAiYJglUPlULDQvHsvpsmi',
+        stripePriceId: 'price_1SxrtiJglUPlULDQNfTnrEaH',
         featureOverrides: {
             'core.agency.subaccounts': 10,
             'iam.authZ.members': 10,
@@ -175,7 +175,7 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 3,
         trialDays: 14,
-        stripePriceId: 'price_1SxAiYJglUPlULDQtxTI8UwM',
+        stripePriceId: 'price_1SxrtjJglUPlULDQgtNaxHa9',
         featureOverrides: {
             'core.agency.subaccounts': '∞',
             'iam.authZ.members': '∞',
@@ -219,7 +219,7 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'subaccount',     // Per sub-account pricing (headcount)
         tier: 4,
         trialDays: 0,
-        stripePriceId: 'price_1SxAiZJglUPlULDQge6pU88h',  // Tiered price
+        stripePriceId: 'price_1SxrtkJglUPlULDQt7hxe8OD',  // Tiered price
         // Graduated tiers from constants.ts: 14900/12900/10900 per unit
         tiers: [
             { upTo: 50, unitAmount: 14900 },        // 1-50: MYR 149/each
@@ -262,7 +262,7 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 1,
         trialDays: 14,
-        stripePriceId: 'price_1SxAiaJglUPlULDQ9K3ngV94',
+        stripePriceId: 'price_1SxrtlJglUPlULDQgA5RR4VG',
         featureOverrides: {
             'core.agency.subaccounts': 3,
             'iam.authZ.members': 2,
@@ -296,7 +296,7 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 2,
         trialDays: 14,
-        stripePriceId: 'price_1SxAibJglUPlULDQDZjEsjSk',
+        stripePriceId: 'price_1SxrtnJglUPlULDQhNpJz0OW',
         featureOverrides: {
             'core.agency.subaccounts': 10,
             'iam.authZ.members': 10,
@@ -330,7 +330,7 @@ export const PRICING_CONFIG = definePricingConfig({
         pricingUnit: 'none',
         tier: 3,
         trialDays: 14,
-        stripePriceId: 'price_1SxAibJglUPlULDQOQAltSBS',
+        stripePriceId: 'price_1SxrtnJglUPlULDQ96ygSCfB',
         featureOverrides: {
             'core.agency.subaccounts': '∞',
             'iam.authZ.members': '∞',
@@ -372,7 +372,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',         // Flat rate - no per-unit
         pricingUnit: 'none',
-        stripePriceId: 'price_1SxAicJglUPlULDQRy4FId25',
+        stripePriceId: 'price_1SxrtoJglUPlULDQO7a0Xj94',
         featureOverrides: {
             'crm.customers.billing': true,
         },
@@ -409,7 +409,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAidJglUPlULDQeQ6aNzAF',
+        stripePriceId: 'price_1SxrtpJglUPlULDQ1WDn3uH3',
         featureOverrides: {
             // GL Core resources
             'fi.general_ledger.accounts': true,
@@ -464,7 +464,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAieJglUPlULDQ1tzfiQqh',
+        stripePriceId: 'price_1SxrtqJglUPlULDQG1yMAabo',
         featureOverrides: {
             // AR Core resources
             'fi.accounts_receivable.subledgers': true,
@@ -504,7 +504,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAifJglUPlULDQR0r8hQ0J',
+        stripePriceId: 'price_1SxrtrJglUPlULDQmmhfPz8g',
         featureOverrides: {
             // AP Core resources
             'fi.accounts_payable.subledgers': true,
@@ -544,7 +544,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAifJglUPlULDQXgIbxzf7',
+        stripePriceId: 'price_1SxrtrJglUPlULDQLBDLait1',
         featureOverrides: {
             // Bank Ledger Core resources
             'fi.bank_ledger.bank_accounts': true,
@@ -584,7 +584,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAigJglUPlULDQleXpx8Ac',
+        stripePriceId: 'price_1SxrtsJglUPlULDQHbAx581V',
         featureOverrides: {
             // Financial Statements Core resources
             'fi.advanced_reporting.financial_statements': true,
@@ -622,7 +622,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAihJglUPlULDQftoxdK6t',
+        stripePriceId: 'price_1SxrttJglUPlULDQldofXwDF',
         featureOverrides: {
             // Cost Center Accounting resources
             'co.cost_centers.master_data': true,
@@ -662,7 +662,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAihJglUPlULDQiijyjkbo',
+        stripePriceId: 'price_1SxrttJglUPlULDQTwR7z21m',
         featureOverrides: {
             // Profit Center Accounting resources
             'co.profit_centers.master_data': true,
@@ -701,7 +701,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAiiJglUPlULDQMTKUghdO',
+        stripePriceId: 'price_1SxrtuJglUPlULDQMsPuWeKT',
         featureOverrides: {
             // Profitability Analysis resources
             'co.profitability.segments': true,
@@ -742,7 +742,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAijJglUPlULDQQsNguflG',
+        stripePriceId: 'price_1SxrtvJglUPlULDQLu9Xsur3',
         featureOverrides: {
             // Budgeting & Planning resources
             'co.budgets.planning': true,
@@ -780,7 +780,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'month',
         billingScheme: 'flat',
         pricingUnit: 'subaccount',
-        stripePriceId: 'price_1SxAikJglUPlULDQLO5jRqaL',
+        stripePriceId: 'price_1SxrtwJglUPlULDQM8OndPsu',
         overage: {
             includedUnits: 3,            // 3 branded SubAccounts included
             unitAmount: 2500,            // MYR 25.00 per additional
@@ -819,7 +819,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'one_time',
         billingScheme: 'flat',
         pricingUnit: 'none',
-        stripePriceId: 'price_1SxAikJglUPlULDQh9eZmiVC',
+        stripePriceId: 'price_1SxrtwJglUPlULDQIVoRhx4X',
         featureOverrides: {},
     },
 
@@ -854,7 +854,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'one_time',
         billingScheme: 'per_unit',
         pricingUnit: 'api_call',
-        stripePriceId: 'price_1SxAilJglUPlULDQiNEHFYdB',
+        stripePriceId: 'price_1SxrtxJglUPlULDQrniBeqNZ',
         featureOverrides: {},
     },
 
@@ -889,7 +889,7 @@ export const PRICING_CONFIG = definePricingConfig({
         interval: 'one_time',
         billingScheme: 'flat',         // Changed from tiered_volume - Stripe doesn't support tiered one_time
         pricingUnit: 'none',
-        stripePriceId: 'price_1SxAimJglUPlULDQkn6cXTqS',
+        stripePriceId: 'price_1SxrtyJglUPlULDQDBYJlCbu',
         // Note: Volume tiers handled via custom quotes, not Stripe pricing
         // Tiers for reference (used in custom quote generation):
         // - Up to 1K contacts: MYR 999

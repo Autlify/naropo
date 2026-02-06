@@ -34,7 +34,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     let { customerId } = body
 
-    // If no customerId, create a new Stripe customer
+    // CRITICAL: Check if user has an agency with customerId first
+    // This fixes the issue where existing users have their Stripe customer on Agency table, not User table
+    if (!customerId) {
+      const agencyMembership = await db.agencyMembership.findFirst({
+        where: { userId: session.user.id },
+        include: { Agency: { select: { customerId: true } } },
+      })
+      
+      if (agencyMembership?.Agency?.customerId) {
+        customerId = agencyMembership.Agency.customerId
+        console.log('✅ Using agency customerId:', customerId)
+      }
+    }
+
+    // If still no customerId, create a new Stripe customer
     if (!customerId) {
       console.log('🔧 No customerId provided, creating new Stripe customer...')
       

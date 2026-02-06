@@ -1,37 +1,118 @@
 'use client'
 
-import {
-  CitySelector,
-  CountrySelector,
-  PhoneCodeSelector,
-  PostalCodeInput,
-  StateSelector,
-} from '@/components/global/location'
-import { SavedBankCardsGallery } from '@/components/ui/bank-card'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { MultiStepLoader } from '@/components/ui/multi-step-loader'
-import { Separator } from '@/components/ui/separator'
-import { useToast } from '@/components/ui/use-toast'
-import { cn } from '@/lib/utils'
-import type { AddonCardData, CheckoutFormProps } from '@/types/billing'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { Button } from '@/components/ui-2/button'
+import { Input } from '@/components/ui-2/input'
+import { Label } from '@/components/ui-2/label'
+import { useToast } from '@/components/ui-2/use-toast'
+import { Loader2, Check, ChevronLeft, Tag, MoreVertical, Trash2, CreditCard, X } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui-2/dropdown-menu'
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
-import { City, Country, State } from 'country-state-city'
-import { Check, ChevronLeft, CreditCard, Loader2, Plus, Tag, X } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { v4 as uuid } from 'uuid'
-import * as z from 'zod'
 import { StripePaymentElement } from './stripe-payment-element'
-import { checkoutFormSchema, type CheckoutFormData } from '@/lib/schemas/checkout'
+import { v4 as uuid } from 'uuid'
+import {
+  CountrySelector,
+  StateSelector,
+  CitySelector,
+  PostalCodeInput,
+  PhoneCodeSelector,
+} from '@/components/global/location'
+import { MultiStepLoader } from '@/components/ui/multi-step-loader'
+import { Country, State, City } from 'country-state-city'
+import { Separator } from '@/components/ui-2/separator'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui-2/card'
+import { cn } from '@/lib/utils'
+import { SavedBankCardsGallery, InteractiveBankCard } from '@/components/ui/bank-card'
+import { motion } from 'motion/react'
+import GlassContainer from '@/components/ui/glass-container'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
- 
+
+const checkoutFormSchema = z.object({
+  // User Details
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  userEmail: z.string().email('Invalid email address'),
+
+  // Agency Details
+  agencyName: z.string().min(2, 'D.B.A. is required for your agency'),
+  agencyEmail: z.string().email('Invalid email address'),
+  companyPhone: z.string().min(1, 'Phone number is required'),
+  phoneCode: z.string().optional(),
+
+
+  // Billing Address 
+  companyName: z.string().optional(),
+  tinNumber: z.string().optional(),
+  line1: z.string().min(1, 'Address line 1 is required'),
+  line2: z.string().optional(),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().min(1, 'State is required'),
+  postalCode: z.string().min(1, 'Postal code is required'),
+  country: z.string().min(2, 'Country is required'),
+  countryCode: z.string().optional(),
+  stateCode: z.string().optional(),
+})
+
+type CheckoutFormData = z.infer<typeof checkoutFormSchema>
+
+type Props = {
+  priceId: string
+  planConfig: {
+    title: string
+    price: string
+    duration: string
+    features: string[]
+    trialEnabled: boolean
+    trialPeriodDays: number
+  }
+  user: {
+    id: string
+    email: string
+    name: string
+    firstName: string
+    lastName: string
+    trialEligible: boolean
+  }
+  agencyEmail: string
+  existingCustomer: {
+    id: string
+    email: string | null
+    name: string | null
+    phone: string | null
+    address: {
+      line1: string | null
+      line2: string | null
+      city: string | null
+      state: string | null
+      postal_code: string | null
+      country: string | null
+    } | null
+    metadata: Record<string, string>
+  } | null
+  existingPaymentMethods: {
+    id: string
+    card: {
+      cardholder_name: string | null
+      brand: string
+      last4: string
+      exp_month: number
+      exp_year: number
+      isDefault: boolean
+    } | null
+  }[]
+}
+
 type Step = 'billing' | 'payment' | 'review'
 
 const steps: { id: Step; label: string; description: string }[] = [
@@ -40,7 +121,7 @@ const steps: { id: Step; label: string; description: string }[] = [
   { id: 'review', label: 'Review', description: 'Review & Confirm' },
 ]
 
-export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingCustomer, existingPaymentMethods, availableAddons = [] }: CheckoutFormProps) {
+export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingCustomer, existingPaymentMethods }: Props) {
   const router = useRouter()
   const { toast } = useToast()
   const [isTrialAccepted, setIsTrialAccepted] = useState<boolean>(false)
@@ -48,9 +129,6 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
   const [customerId, setCustomerId] = useState<string | null>(existingCustomer?.id || null)
   const [currentStep, setCurrentStep] = useState<Step>('billing')
   const [completedSteps, setCompletedSteps] = useState<Set<Step>>(new Set())
-  
-  // Selected addons state
-  const [selectedAddonKeys, setSelectedAddonKeys] = useState<string[]>([])
 
   // Stateful data storage for navigation
   const [savedBillingData, setSavedBillingData] = useState<CheckoutFormData | null>(null)
@@ -70,7 +148,6 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
     isFlipped: false,
   })
   const [cardToReplace, setCardToReplace] = useState<string | null>(null)
-  const [isCreatingSetupIntent, setIsCreatingSetupIntent] = useState(false)
 
   // Multi-step loader state
   const [showLoader, setShowLoader] = useState(false)
@@ -206,7 +283,6 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
       setIsTrialAccepted(false)
     }
   }, [planConfig, user])
-
 
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep)
 
@@ -463,39 +539,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
       const subscriptionData = await subscriptionRes.json()
       console.log('✅ Subscription created:', subscriptionData.subscriptionId)
 
-      // Step 4: Add selected addons to subscription
-      if (selectedAddonKeys.length > 0) {
-        console.log('➕ Adding addons:', selectedAddonKeys)
-        for (const addonKey of selectedAddonKeys) {
-          const addon = availableAddons.find(a => a.key === addonKey)
-          if (!addon) continue
-          
-          try {
-            const addonRes = await fetch('/api/stripe/addon', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'add',
-                customerId: finalCustomerId,
-                agencyId: agencyId,
-                addonKey: addon.key,
-                priceId: addon.priceId,
-              }),
-            })
-            
-            if (addonRes.ok) {
-              console.log('✅ Addon added:', addon.key)
-            } else {
-              console.warn('⚠️ Failed to add addon:', addon.key)
-            }
-          } catch (addonError) {
-            console.error('Failed to add addon:', addonKey, addonError)
-            // Continue with other addons even if one fails
-          }
-        }
-      }
-
-      // Step 5: Redirect to agency
+      // Step 4: Redirect to agency
       toast({
         title: 'Success!',
         description: 'Your agency has been created successfully.',
@@ -511,8 +555,6 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
       })
     }
   }
-
-
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return
@@ -562,26 +604,17 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
   const total = basePrice - discount
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-bg-primary text-fg-primary">
+    <div className="bg-bg-primary">
       {/* Background (premium: blobs + subtle grid mask) */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-gradient-to-br from-blue-300/25 to-purple-300/25 blur-3xl" />
-        <div className="absolute bottom-[-180px] right-[-180px] h-[520px] w-[520px] rounded-full bg-gradient-to-br from-cyan-300/20 to-pink-300/20 blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:72px_72px] opacity-[0.15] [mask-image:radial-gradient(ellipse_55%_45%_at_50%_0%,#000_55%,transparent_78%)]" />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/40 via-background to-purple-50/30" />
-      </div>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12 relative z-10">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-brand-gradient pb-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-brand-gradient pb-1">
               Complete Your Subscription
             </h1>
-            <p className="text-sm text-fg-tertiary mt-3 font-medium">
-              Home / Pricing / <span className="text-fg-primary font-semibold">Checkout</span>
-            </p>
           </div>
           <Button
             variant="ghost"
@@ -593,7 +626,109 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
             Back to Pricing
           </Button>
         </div>
-        <Separator className="my-8 bg-gradient-to-r from-transparent via-border to-transparent" />
+
+        {/* Stepper */}
+        <motion.div
+          className="my-8 h-0.5 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ scaleX: 1, opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.8, ease: 'easeOut' }}
+        />
+
+
+        <div className="flex items-center justify-between w-full mb-6 px-10">
+          {steps.map((step, index) => {
+            const isCompleted = completedSteps.has(step.id)
+            const isCurrent = currentStep === step.id
+            const isAccessible = index <= currentStepIndex || isCompleted
+            const isLast = index === steps.length - 1
+
+            return (
+              <React.Fragment key={step.id}>
+                {/* Step Item */}
+                <Button
+                  variant={'ghost'} 
+                  onClick={() => isAccessible && goToStep(step.id)}
+                  disabled={!isAccessible}
+                  className={cn(
+                    'h-full group flex flex-col items-center gap-1.5 transition-all duration-300',
+                    isAccessible && 'cursor-pointer hover:scale-105',
+                    !isAccessible && 'cursor-not-allowed opacity-50'
+                  )}
+                >
+                  {/* Step Indicator */}
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      scale: isCurrent ? 1.1 : 1,
+                      backgroundColor: isCompleted
+                        ? 'hsl(var(--primary))'
+                        : isCurrent
+                          ? 'hsl(var(--primary))'
+                          : 'hsl(var(--muted))',
+                    }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    className={cn(
+                      'relative flex items-center justify-center w-9 h-9 rounded-full font-medium text-sm',
+                      (isCompleted || isCurrent) ? 'text-primary-foreground' : 'text-muted-foreground'
+                    )}
+                  >
+                    {isCompleted ? (
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                      >
+                        <Check className="h-4 w-4" strokeWidth={3} />
+                      </motion.div>
+                    ) : (
+                      <span>{index + 1}</span>
+                    )}
+
+                    {/* Active ring animation */}
+                    {isCurrent && (
+                      <motion.div
+                        className="absolute inset-0 rounded-full border-2 border-primary"
+                        initial={{ scale: 1, opacity: 0.8 }}
+                        animate={{ scale: 1.4, opacity: 0 }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut' }}
+                      />
+                    )}
+                  </motion.div>
+
+                  {/* Step Label - Below Circle */}
+                  <motion.span
+                    initial={false}
+                    animate={{
+                      color: isCurrent
+                        ? 'hsl(var(--primary))'
+                        : isCompleted
+                          ? 'hsl(var(--primary))'
+                          : 'hsl(var(--muted-foreground))',
+                      fontWeight: isCurrent ? 600 : 500,
+                    }}
+                    className="text-xs whitespace-nowrap"
+                  >
+                    {step.label}
+                  </motion.span>
+                </Button>
+
+                {/* Connector Line with Gradient */}
+                {!isLast && (
+                  <div className="relative -top-2 w-full flex-1 h-0.5 mx-2 rounded-full overflow-hidden min-w-[80px] bg-gradient-to-r from-transparent via-border to-transparent">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-primary via-blue-500 to-primary/80 rounded-full"
+                      initial={{ width: '0%' }}
+                      animate={{ width: isCompleted ? '100%' : '0%' }}
+                      transition={{ duration: 0.4, ease: 'easeOut' }}
+                    />
+                  </div>
+                )}
+              </React.Fragment>
+            )
+          })}
+        </div>
+
 
         {/* Main Content */}
         <div className="grid lg:grid-cols-3 gap-6">
@@ -602,72 +737,10 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
           <div className="lg:col-span-2 space-y-4 w-full">
 
 
-            {/* Step Indicator */}
-            <div className="relative bg-card backdrop-blur-sm rounded-2xl p-2 sm:p-4 shadow-[0_8px_30px_hsl(var(--shadow-lg))] border border-border">
-              {/* Progress Lines Background */}
-              <div className="absolute top-[calc(1.5rem+16px)] left-[8%] right-[8%] flex items-center z-0">
-                {steps.slice(0, -1).map((step, index) => (
-                  <div key={`line-${index}`} className={`h-1 bg-border rounded-full ${index === 0 ? 'flex-1' : 'flex-1'}`}>
-                    <div
-                      className={`h-1 rounded-full transition-all duration-500 ${completedSteps.has(step.id) ? 'bg-gradient-to-r from-blue-500 to-blue-600 w-full' : 'w-0'
-                        }`}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {/* Step Circles */}
-              <div className="flex justify-between relative z-10">
-                {steps.map((step, index) => {
-                  const isCompleted = completedSteps.has(step.id)
-                  const isCurrent = currentStep === step.id
-                  const isAccessible = index <= currentStepIndex || isCompleted
-
-                  return (
-                    <div key={step.id} className="flex flex-col items-center">
-                      <button
-                        onClick={() => isAccessible && goToStep(step.id)}
-                        disabled={!isAccessible}
-                        className="flex flex-col items-center group cursor-pointer disabled:cursor-not-allowed transition-all duration-300 hover:scale-105"
-                      >
-                        <div
-                          className={`
-                         w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-1 transition-all duration-500 bg-card
-                        ${isCompleted
-                              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-[0_8px_20px_rgba(59,130,246,0.3)]'
-                              : isCurrent
-                                ? 'bg-gradient-to-br from-primary via-blue-500 to-cyan-500 text-white shadow-[0_10px_30px_rgba(59,130,246,0.4)] scale-110'
-                                : 'bg-gradient-to-br from-muted to-muted-foreground/10 text-muted-foreground shadow-sm'
-                            }
-                      `}
-                        >
-                          {isCompleted ? (
-                            <Check className="h-5 w-5" />
-                          ) : (
-                            <span className="text-base font-semibold">{index + 1}</span>
-                          )}
-                        </div>
-                        <div className="text-center">
-                          <div className={cn(
-                            'text-sm font-medium transition-colors',
-                            isCurrent ? 'text-blue-600' : isCompleted ? 'text-blue-500' : 'text-muted-foreground'
-                          )}>
-                            {step.label}
-                          </div>
-                          <div className="text-xs text-muted-foreground hidden sm:block mt-0.5">
-                            {step.description}
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
             {/* Main Form */}
-            <div className="group relative rounded-2xl p-[1.5px] bg-gradient-to-br from-border/70 via-border/50 to-border/70 transition-all duration-500 shadow-sm">
-              <Card className="border-0  card rounded-2xl">
+          <div className="module__WDhx3G__outer p-[8px] border rounded-2xl">
+            <div className='module__WDhx3G__inner rounded-full'>
+              <div className="w-full p-[8px] pb-0 border-0 rounded-2xl">
                 <CardContent className="pt-6 pb-7 px-6 sm:px-7">
                   <form>
                     {/* Billing Information */}
@@ -975,36 +1048,9 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                 setUseExistingPayment(true)
                                 setSelectedPaymentMethodId(cardId)
                               }}
-                              onAddCard={async () => {
-                                if (isCreatingSetupIntent) return
-                                setIsCreatingSetupIntent(true)
-                                try {
-                                  const response = await fetch('/api/stripe/create-setup-intent', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ customerId: customerId }),
-                                  })
-                                  if (!response.ok) {
-                                    const errorData = await response.json()
-                                    throw new Error(errorData.error || 'Failed to create setup intent')
-                                  }
-                                  const { clientSecret: secret, customerId: newCustomerId } = await response.json()
-                                  setClientSecret(secret)
-                                  if (newCustomerId && newCustomerId !== customerId) {
-                                    setCustomerId(newCustomerId)
-                                  }
-                                  setCardModalMode('add')
-                                  setCardModalOpen(true)
-                                } catch (error: any) {
-                                  console.error('Error creating setup intent:', error)
-                                  toast({
-                                    title: 'Error',
-                                    description: error.message || 'Failed to initialize card setup. Please try again.',
-                                    variant: 'destructive',
-                                  })
-                                } finally {
-                                  setIsCreatingSetupIntent(false)
-                                }
+                              onAddCard={() => {
+                                setCardModalMode('add')
+                                setCardModalOpen(true)
                               }}
                               onSetDefault={(cardId) => {
                                 // TODO: Implement set as default via Stripe API
@@ -1013,37 +1059,10 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                   description: 'This feature will be available soon.',
                                 })
                               }}
-                              onReplaceCard={async (cardId) => {
-                                if (isCreatingSetupIntent) return
-                                setIsCreatingSetupIntent(true)
+                              onReplaceCard={(cardId) => {
                                 setCardToReplace(cardId)
-                                try {
-                                  const response = await fetch('/api/stripe/create-setup-intent', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ customerId: customerId }),
-                                  })
-                                  if (!response.ok) {
-                                    const errorData = await response.json()
-                                    throw new Error(errorData.error || 'Failed to create setup intent')
-                                  }
-                                  const { clientSecret: secret, customerId: newCustomerId } = await response.json()
-                                  setClientSecret(secret)
-                                  if (newCustomerId && newCustomerId !== customerId) {
-                                    setCustomerId(newCustomerId)
-                                  }
-                                  setCardModalMode('replace')
-                                  setCardModalOpen(true)
-                                } catch (error: any) {
-                                  console.error('Error creating setup intent:', error)
-                                  toast({
-                                    title: 'Error',
-                                    description: error.message || 'Failed to initialize card setup. Please try again.',
-                                    variant: 'destructive',
-                                  })
-                                } finally {
-                                  setIsCreatingSetupIntent(false)
-                                }
+                                setCardModalMode('replace')
+                                setCardModalOpen(true)
                               }}
                               onRemoveCard={async (cardId) => {
                                 // TODO: Implement remove card via Stripe API
@@ -1073,54 +1092,18 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                         {!useExistingPayment && !savedPaymentMethodId && (
                           <div className="mt-4">
                             <div
-                              onClick={async () => {
-                                if (isCreatingSetupIntent) return
-                                setIsCreatingSetupIntent(true)
-                                try {
-                                  // Create SetupIntent first (like the working billing flow)
-                                  // API will create a Stripe customer if one doesn't exist
-                                  const response = await fetch('/api/stripe/create-setup-intent', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ customerId: customerId }),
-                                  })
-                                  if (!response.ok) {
-                                    const errorData = await response.json()
-                                    throw new Error(errorData.error || 'Failed to create setup intent')
-                                  }
-                                  const { clientSecret: secret, customerId: newCustomerId } = await response.json()
-                                  setClientSecret(secret)
-                                  // Update customerId if a new one was created
-                                  if (newCustomerId && newCustomerId !== customerId) {
-                                    setCustomerId(newCustomerId)
-                                  }
-                                  setCardModalMode('add')
-                                  setCardModalOpen(true)
-                                } catch (error: any) {
-                                  console.error('Error creating setup intent:', error)
-                                  toast({
-                                    title: 'Error',
-                                    description: error.message || 'Failed to initialize card setup. Please try again.',
-                                    variant: 'destructive',
-                                  })
-                                } finally {
-                                  setIsCreatingSetupIntent(false)
-                                }
+                              onClick={() => {
+                                setCardModalMode('add')
+                                setCardModalOpen(true)
                               }}
                               className="p-6 border-2 border-dashed border-primary/30 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all"
                             >
                               <div className="flex flex-col items-center gap-3 text-center">
                                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                  {isCreatingSetupIntent ? (
-                                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                                  ) : (
-                                    <CreditCard className="h-6 w-6 text-primary" />
-                                  )}
+                                  <CreditCard className="h-6 w-6 text-primary" />
                                 </div>
                                 <div>
-                                  <p className="font-semibold text-fg-primary">
-                                    {isCreatingSetupIntent ? 'Preparing...' : 'Add New Payment Method'}
-                                  </p>
+                                  <p className="font-semibold text-fg-primary">Add New Payment Method</p>
                                   <p className="text-sm text-fg-tertiary mt-1">Click to securely add your card details</p>
                                 </div>
                               </div>
@@ -1130,7 +1113,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
 
                         {/* Card Addition/Update Modal */}
                         {cardModalOpen && (
-                          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => { setCardModalOpen(false); setClientSecret(null) }}>
+                          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setCardModalOpen(false)}>
                             <div
                               className="relative bg-card rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
@@ -1147,7 +1130,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() => { setCardModalOpen(false); setClientSecret(null) }}
+                                  onClick={() => setCardModalOpen(false)}
                                   className="text-muted-foreground hover:text-foreground transition-colors"
                                 >
                                   <X className="h-6 w-6" />
@@ -1188,7 +1171,6 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                               </div> */}
 
                               {/* Stripe Elements */}
-                              {clientSecret ? (
                               <div className="relative rounded-2xl p-[1.5px] bg-gradient-to-br from-border/60 via-border/40 to-border/60 overflow-hidden shadow-md">
                                 <div className="relative overflow-hidden rounded-2xl bg-card p-6">
                                   <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
@@ -1198,17 +1180,21 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                     <Elements
                                       stripe={stripePromise}
                                       options={{
-                                        clientSecret,
+                                        mode: 'setup',
+                                        currency: 'myr',
+                                        paymentMethodCreation: 'manual',
                                         appearance: {
-                                          theme: 'stripe',
                                           variables: {
-                                            colorPrimary: '#2563eb',
-                                            colorBackground: '#ffffff',
-                                            colorText: '#1f2937',
-                                            colorDanger: '#dc2626',
-                                            fontFamily: 'system-ui, -apple-system, sans-serif',
-                                            borderRadius: '8px',
+                                            colorSuccess: 'var(--success-text)',
+                                            colorPrimary: 'var(--primary)',
+                                            colorBackground: 'linear-gradient(to_br, var(--bg-muted/30), var(--bg-muted/20), var(--bg-muted/10))',
+                                            colorText: 'var(--fg-primary)',
+                                            colorDanger: 'var(--warning-text)',
+                                            fontFamily: 'system-ui, sans-serif',
+                                            borderRadius: '0.75rem',
+                                            spacingUnit: '4px',
                                           },
+
                                         },
                                       }}
                                     >
@@ -1217,8 +1203,8 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                         onPaymentMethodCollected={(paymentMethodId) => {
                                           setSavedPaymentMethodId(paymentMethodId)
                                           setCardModalOpen(false)
-                                          setClientSecret(null)
                                           if (cardModalMode === 'replace' && cardToReplace) {
+                                            // TODO: Implement replace logic - detach old, attach new
                                             toast({
                                               title: 'Card Replaced',
                                               description: 'Your payment method has been updated.',
@@ -1244,18 +1230,13 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                   </div>
                                 </div>
                               </div>
-                              ) : (
-                                <div className="flex items-center justify-center p-8">
-                                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                </div>
-                              )}
 
                               {/* Modal Footer */}
                               <div className="mt-6 flex gap-3">
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  onClick={() => { setCardModalOpen(false); setClientSecret(null) }}
+                                  onClick={() => setCardModalOpen(false)}
                                   className="flex-1"
                                 >
                                   Cancel
@@ -1404,70 +1385,6 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                             </div>
                           </div>
 
-                          {/* Add-ons Upsell Section */}
-                          {availableAddons.length > 0 && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                <Plus className="h-5 w-5 text-brand-bg" />
-                                Enhance Your Plan (Optional)
-                              </h3>
-                              <div className="space-y-2">
-                                {availableAddons.slice(0, 4).map(addon => {
-                                  const isSelected = selectedAddonKeys.includes(addon.key)
-                                  const hasRequirement = addon.requires && !selectedAddonKeys.includes(addon.requires)
-                                  
-                                  return (
-                                    <div
-                                      key={addon.key}
-                                      className={cn(
-                                        "flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer",
-                                        isSelected 
-                                          ? "border-brand-bg bg-brand-bg/5" 
-                                          : "border-border hover:border-brand-bg/50 bg-muted/30",
-                                        hasRequirement && "opacity-50 cursor-not-allowed"
-                                      )}
-                                      onClick={() => {
-                                        if (hasRequirement) return
-                                        setSelectedAddonKeys(prev => 
-                                          isSelected 
-                                            ? prev.filter(k => k !== addon.key)
-                                            : [...prev, addon.key]
-                                        )
-                                      }}
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <div className={cn(
-                                          "w-5 h-5 rounded border-2 flex items-center justify-center transition-colors",
-                                          isSelected 
-                                            ? "border-brand-bg bg-brand-bg" 
-                                            : "border-muted-foreground"
-                                        )}>
-                                          {isSelected && <Check className="h-3 w-3 text-white" />}
-                                        </div>
-                                        <div>
-                                          <p className="font-medium text-sm">{addon.title}</p>
-                                          <p className="text-xs text-muted-foreground">{addon.description}</p>
-                                          {hasRequirement && (
-                                            <p className="text-xs text-amber-600">Requires {addon.requires}</p>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="font-semibold text-sm">{addon.price}</p>
-                                        <p className="text-xs text-muted-foreground">/month</p>
-                                      </div>
-                                    </div>
-                                  )
-                                })}
-                                {availableAddons.length > 4 && (
-                                  <p className="text-xs text-muted-foreground text-center py-2">
-                                    +{availableAddons.length - 4} more add-ons available in your dashboard
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
                           {/* Subscription Summary */}
                           <div>
                             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -1490,37 +1407,10 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
 
                               <Separator />
 
-                              {/* Selected Addons Summary */}
-                              {selectedAddonKeys.length > 0 && (
-                                <>
-                                  <div className="space-y-2">
-                                    <p className="text-sm font-medium text-muted-foreground">Add-ons included:</p>
-                                    {selectedAddonKeys.map(key => {
-                                      const addon = availableAddons.find(a => a.key === key)
-                                      if (!addon) return null
-                                      return (
-                                        <div key={key} className="flex justify-between items-center text-sm">
-                                          <span>{addon.title}</span>
-                                          <span className="font-medium">{addon.price}/mo</span>
-                                        </div>
-                                      )
-                                    })}
-                                  </div>
-                                  <Separator />
-                                </>
-                              )}
-
                               <div className="flex justify-between items-center">
                                 <p className="font-semibold">Total Due Today</p>
                                 <p className="font-bold text-xl text-blue-600">
-                                  {isTrialAccepted ? 'RM 0.00' : (() => {
-                                    const planAmount = parseInt(planConfig.price.replace(/[^0-9]/g, '')) || 0
-                                    const addonTotal = selectedAddonKeys.reduce((sum, key) => {
-                                      const addon = availableAddons.find(a => a.key === key)
-                                      return sum + (addon ? addon.priceAmount / 100 : 0)
-                                    }, 0)
-                                    return `RM ${(planAmount + addonTotal).toLocaleString('en-MY')}`
-                                  })()}
+                                  {isTrialAccepted ? 'RM 0.00' : `$${planConfig.price}`}
                                 </p>
                               </div>
 
@@ -1592,8 +1482,9 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                     )}
                   </form>
                 </CardContent>
-              </Card>
-            </div>
+              </div>
+              </div>
+              </div>
           </div>
 
           {/* Right Column - Order Summary Sidebar */}
