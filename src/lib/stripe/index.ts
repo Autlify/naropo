@@ -1,10 +1,28 @@
 import Stripe from 'stripe'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
-  apiVersion: '2026-01-28.clover',
-  appInfo: {
-    name: 'Autlify App',
-    version: '0.1.0',
+// Lazy initialization to prevent build-time errors when STRIPE_SECRET_KEY is not available
+let _stripe: Stripe | null = null
+
+function createStripeClient(): Stripe {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is not set')
+  }
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2026-01-28.clover',
+    appInfo: {
+      name: 'Autlify App',
+      version: '0.1.0',
+    },
+  })
+}
+
+// Use proxy to defer Stripe client creation until first use (runtime only)
+export const stripe: Stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    if (!_stripe) {
+      _stripe = createStripeClient()
+    }
+    return Reflect.get(_stripe, prop)
   },
 })
 
