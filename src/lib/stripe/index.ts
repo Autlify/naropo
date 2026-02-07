@@ -1,12 +1,31 @@
 import Stripe from 'stripe'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
-  apiVersion: '2026-01-28.clover',
-  appInfo: {
-    name: 'Autlify App',
-    version: '0.1.0',
-  },
-})
+// Create Stripe client only when API key is available (not during build)
+function createStripeClient(): Stripe {
+  const apiKey = process.env.STRIPE_SECRET_KEY
+  
+  if (!apiKey) {
+    console.warn('[stripe] STRIPE_SECRET_KEY not set, returning proxy (build mode)')
+    return new Proxy({} as Stripe, {
+      get(target, prop) {
+        if (prop === 'then') return undefined
+        return () => {
+          throw new Error('Stripe not available: STRIPE_SECRET_KEY is not configured')
+        }
+      }
+    }) as Stripe
+  }
+  
+  return new Stripe(apiKey, {
+    apiVersion: '2026-01-28.clover',
+    appInfo: {
+      name: 'Autlify App',
+      version: '0.1.0',
+    },
+  })
+}
+
+export const stripe = createStripeClient()
 
 /**
  * NOTE: The resolvePriceId/getStripePriceId helpers have been removed.
