@@ -64,3 +64,4 @@ scripts/
 public/sample/
 # OpenNext build output
 .open-next/
+.env*
