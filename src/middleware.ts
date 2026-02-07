@@ -10,6 +10,8 @@
  * 6. Context tracking → set last-visited context cookie
  */
 
+export const runtime = 'experimental-edge'
+
 import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
@@ -95,7 +97,7 @@ const isAuthPage = (pathname: string) =>
 // Main Middleware
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default async function proxy(req: NextRequest) {
+export default async function middleware(req: NextRequest) {
   const url = req.nextUrl
   const pathname = url.pathname
   const host = getHostWithoutPort(req.headers.get('host'))
