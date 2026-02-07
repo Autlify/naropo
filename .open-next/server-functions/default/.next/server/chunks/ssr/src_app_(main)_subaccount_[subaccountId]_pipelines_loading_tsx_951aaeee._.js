@@ -1,0 +1,3 @@
+module.exports=[476536,a=>{"use strict";var b=a.i(907997),c=a.i(503875);let d=()=>(0,b.jsx)("div",{className:"h-full w-full flex justify-center items-center",children:(0,b.jsx)(c.default,{})});a.s(["default",0,()=>(0,b.jsx)("div",{className:"-mt-8 h-screen",children:(0,b.jsx)(d,{})})],476536)}];
+
+//# sourceMappingURL=src_app_%28main%29_subaccount_%5BsubaccountId%5D_pipelines_loading_tsx_951aaeee._.js.map

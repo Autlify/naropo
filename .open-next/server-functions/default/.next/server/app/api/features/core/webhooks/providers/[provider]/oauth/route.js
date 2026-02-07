@@ -1,0 +1,13 @@
+var R=require("../../../../../../../../chunks/[turbopack]_runtime.js")("server/app/api/features/core/webhooks/providers/[provider]/oauth/route.js")
+R.c("server/chunks/[root-of-the-server]__c8181d8d._.js")
+R.c("server/chunks/node_modules_next_dist_compiled_@opentelemetry_api_index_b15ce7cb.js")
+R.c("server/chunks/[root-of-the-server]__4d83fc21._.js")
+R.c("server/chunks/src_7de46404._.js")
+R.c("server/chunks/src_lib_db_ts_86d9618b._.js")
+R.c("server/chunks/_155c193b._.js")
+R.c("server/chunks/node_modules_next_1402a1da._.js")
+R.c("server/chunks/[root-of-the-server]__ae5d6a65._.js")
+R.c("server/chunks/node_modules_next_f5199d09._.js")
+R.c("server/chunks/3e585_api_features_core_webhooks_providers_[provider]_oauth_route_actions_70d5faad.js")
+R.m(490591)
+module.exports=R.m(490591).exports

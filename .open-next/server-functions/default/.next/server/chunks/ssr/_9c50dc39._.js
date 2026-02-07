@@ -1,0 +1,3 @@
+module.exports=[130656,a=>{"use strict";function b(a,[b,c]){return Math.min(c,Math.max(b,a))}a.s(["clamp",()=>b])},429246,a=>{"use strict";var b=a.i(187924),c=a.i(572131),d=a.i(368114);let e=c.forwardRef(({className:a,...c},e)=>(0,b.jsx)("textarea",{className:(0,d.cn)("flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",a),ref:e,...c}));e.displayName="Textarea",a.s(["Textarea",()=>e])}];
+
+//# sourceMappingURL=_9c50dc39._.js.map

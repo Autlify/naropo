@@ -1,0 +1,10 @@
+var R=require("../../../../../../chunks/[turbopack]_runtime.js")("server/app/api/stripe/v2/core/accounts/route.js")
+R.c("server/chunks/[root-of-the-server]__852d7503._.js")
+R.c("server/chunks/node_modules_next_dist_esm_build_templates_app-route_ff78cd1c.js")
+R.c("server/chunks/node_modules_next_dist_compiled_@opentelemetry_api_index_b15ce7cb.js")
+R.c("server/chunks/src_lib_stripe_index_ts_9d3bdd04._.js")
+R.c("server/chunks/[root-of-the-server]__ae5d6a65._.js")
+R.c("server/chunks/node_modules_next_1402a1da._.js")
+R.c("server/chunks/_next-internal_server_app_api_stripe_v2_core_accounts_route_actions_522f6f63.js")
+R.m(444375)
+module.exports=R.m(444375).exports
