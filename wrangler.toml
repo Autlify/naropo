@@ -12,6 +12,12 @@ pages_build_output_dir = ".vercel/output/static"
 # Non-sensitive environment variables can go here
 # Secrets should be added via Cloudflare dashboard or wrangler secret
 
+[build]
+command = "bun install && npx @cloudflare/next-on-pages"
+
+[build.environment]
+NODE_VERSION = "22"
+
 # Build configuration handled by Cloudflare Pages UI or via:
 # Framework preset: Next.js
 # Build command: npx @cloudflare/next-on-pages
