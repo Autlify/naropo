@@ -8,7 +8,7 @@ import * as z from 'zod'
 import { Button } from '@/components/ui-2/button'
 import { Input } from '@/components/ui-2/input'
 import { Label } from '@/components/ui-2/label'
-import { useToast } from '@/components/ui-2/use-toast'
+import { useToast } from '@/components/ui/use-toast'
 import { Loader2, Check, ChevronLeft, Tag, MoreVertical, Trash2, CreditCard, X } from 'lucide-react'
 import {
   DropdownMenu,
@@ -386,8 +386,8 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
         throw new Error('Failed to create payment setup')
       }
 
-      const { clientSecret: secret } = await setupIntentRes.json()
-      setClientSecret(secret)
+      const { clientSecret }: { clientSecret: string } = await setupIntentRes.json()
+      setClientSecret(clientSecret)
       console.log('\u2705 SetupIntent created successfully')
     } catch (error) {
       console.error('Setup payment error:', error)
@@ -1232,7 +1232,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                               </div>
 
                               {/* Modal Footer */}
-                              <div className="mt-6 flex gap-3">
+                              {/* <div className="mt-6 flex gap-3">
                                 <Button
                                   type="button"
                                   variant="outline"
@@ -1241,7 +1241,7 @@ export function CheckoutForm({ priceId, planConfig, user, agencyEmail, existingC
                                 >
                                   Cancel
                                 </Button>
-                              </div>
+                              </div> */}
                             </div>
                           </div>
                         )}

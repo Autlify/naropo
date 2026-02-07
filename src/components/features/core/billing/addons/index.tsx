@@ -328,46 +328,54 @@ export function AddonManagement({
         {/* Unified Checkout Modal */}
         {CheckoutModal}
 
-        <div className="space-y-8">
-            {/* Header */}
-            <div>
-                <h2 className="text-xl font-semibold text-content-primary">Add-ons</h2>
-                <p className="text-sm text-content-secondary mt-1">
-                    Extend your subscription with powerful add-on modules
+        <div className="space-y-10">
+            {/* Header - Premium styling */}
+            <div className="flex flex-col gap-3">
+                <h1 className="text-4xl font-bold">Add-ons</h1>
+                <p className="text-muted-foreground text-base">
+Extension premium features to enhance your platform capabilities
                 </p>
             </div>
 
-            {/* Active Addons Summary */}
+            {/* Active Addons Summary - Elegant card */}
             {activeAddons.length > 0 && (
-                <div className="bg-muted/50 rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-content-primary mb-2">Active Add-ons</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {activeAddons.filter(a => a.active).map(addon => (
-                            <Badge key={addon.id} variant="secondary" className="bg-brand-bg/10 text-brand-bg">
-                                {addon.name}
-                            </Badge>
-                        ))}
-                    </div>
-                </div>
+                <Card className="bg-gradient-to-br from-muted/30 to-transparent border-border/50 shadow-sm">
+                    <CardHeader className="pb-4">
+                        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                            <ShoppingCart className="h-5 w-5 text-primary" />
+                            Active Add-ons
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                            {activeAddons.filter(a => a.active).map(addon => (
+                                <Badge key={addon.id} variant="secondary" className="bg-primary/10 text-primary border-primary/20 px-3 py-1">
+                                    <Check className="h-3 w-3 mr-1" />
+                                    {addon.name}
+                                </Badge>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
             )}
 
             {/* Addon Categories */}
             {Object.entries(groupedAddons).map(([category, categoryAddons]) => (
-                <div key={category} className="space-y-4">
-                    {/* Category Header */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-brand-bg/10 border border-brand-bg/30">
+                <div key={category} className="space-y-6">
+                    {/* Category Header - Premium styling */}
+                    <div className="flex items-center gap-4 pb-2 border-b border-border/50">
+                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
                             {getCategoryIcon(category as AddonCardData['category'])}
                         </div>
                         <div>
-                            <h3 className="text-base font-semibold text-content-primary">
+                            <h2 className="text-2xl font-semibold">
                                 {categoryLabels[category] || 'Add-ons'}
-                            </h3>
+                            </h2>
                         </div>
                     </div>
 
-                    {/* Addon Cards Grid */}
-                    <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                    {/* Addon Cards Grid - More breathing room */}
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {categoryAddons.map((addon) => {
                             const amount = Math.round(addon.priceAmount / 100)
                             const isActive = isAddonActive(addon.key)
@@ -378,93 +386,94 @@ export function AddonManagement({
                                 <Card
                                     key={addon.key}
                                     className={clsx(
-                                        "group relative overflow-hidden rounded-xl flex flex-col transition-all duration-300",
+                                        "group relative overflow-hidden rounded-xl flex flex-col transition-all duration-300 hover:shadow-lg",
                                         isActive
-                                            ? "border-2 border-brand-bg bg-brand-bg/5"
-                                            : "border border-line-primary bg-surface-secondary/95",
-                                        hasRequirement && "opacity-50"
+                                            ? "border-2 border-primary bg-gradient-to-br from-primary/5 to-transparent shadow-md"
+                                            : "border border-border/50 bg-gradient-to-br from-muted/20 to-transparent hover:border-primary/30",
+                                        hasRequirement && "opacity-60 cursor-not-allowed"
                                     )}
                                 >
-                                    {/* Active/Recommended badge */}
-                                    <div className="absolute top-3 right-3 flex gap-1">
+                                    {/* Active/Recommended badge - Refined */}
+                                    <div className="absolute top-4 right-4 flex gap-2 z-10">
                                         {isActive && (
-                                            <Badge variant="default" className="bg-brand-bg text-white text-[10px]">
+                                            <Badge variant="default" className="bg-primary text-primary-foreground text-xs font-medium px-2 py-0.5 shadow-sm">
+                                                <Check className="h-3 w-3 mr-1" />
                                                 Active
                                             </Badge>
                                         )}
                                         {addon.recommended && !isActive && (
-                                            <Badge variant="secondary" className="bg-brand-bg/10 text-brand-bg border-brand-bg/30 text-[10px]">
+                                            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/30 text-xs font-medium px-2 py-0.5">
                                                 Recommended
                                             </Badge>
                                         )}
                                     </div>
 
-                                    <CardHeader className="pb-3">
-                                        <div className="flex items-start gap-3">
+                                    <CardHeader className="pb-4 pt-6">
+                                        <div className="flex items-start gap-4">
                                             <div className={clsx(
-                                                "flex items-center justify-center h-10 w-10 rounded-lg transition-colors",
+                                                "flex items-center justify-center h-12 w-12 rounded-xl transition-all duration-300",
                                                 isActive
-                                                    ? "bg-brand-bg text-white"
-                                                    : "bg-surface-tertiary border border-line-secondary"
+                                                    ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-md"
+                                                    : "bg-gradient-to-br from-muted to-muted/50 border border-border/50 group-hover:border-primary/30"
                                             )}>
                                                 {getAddonTypeIcon(addon.addonType)}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <CardTitle className="text-base font-semibold text-content-primary truncate">
+                                                <CardTitle className="text-lg font-semibold mb-2">
                                                     {addon.title}
                                                 </CardTitle>
-                                                <CardDescription className="text-xs text-content-secondary line-clamp-2 mt-1">
+                                                <CardDescription className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                                                     {addon.description}
                                                 </CardDescription>
                                             </div>
                                         </div>
                                     </CardHeader>
 
-                                    <CardContent className="flex-1 space-y-4 pb-3">
-                                        {/* Price */}
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-2xl font-bold bg-gradient-to-b from-neutral-header to-neutral-fg-tertiary bg-clip-text text-transparent">
+                                    <CardContent className="flex-1 space-y-5 pb-4">
+                                        {/* Price - Premium typography */}
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="text-3xl font-bold">
                                                 {formatCurrency(amount, addon.currency)}
                                             </span>
-                                            <span className="text-sm text-content-tertiary">
-                                                /{addon.interval === 'one_time' ? 'one-time' : 'month'}
+                                            <span className="text-sm text-muted-foreground font-medium">
+                                                /{addon.interval === 'one_time' ? 'one-time' : 'mo'}
                                             </span>
                                         </div>
 
                                         {/* Requirement Notice */}
                                         {hasRequirement && (
-                                            <div className="text-xs text-warning-fg bg-warning-bg/10 border border-warning-border/30 rounded-md px-2 py-1.5">
+                                            <div className="text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30 rounded-lg px-3 py-2">
                                                 Requires {addon.requires} addon
                                             </div>
                                         )}
 
-                                        {/* Features */}
-                                        <ul className="space-y-1.5">
+                                        {/* Features - Better spacing */}
+                                        <ul className="space-y-2.5">
                                             {addon.features.slice(0, 3).map((feature) => (
-                                                <li key={feature} className="flex items-start gap-2">
-                                                    <div className="flex-shrink-0 inline-flex h-4 w-4 items-center justify-center rounded-full bg-brand-bg/10 border border-brand-bg/30 mt-0.5">
-                                                        <Check className="h-2.5 w-2.5 text-brand-bg" strokeWidth={2.5} />
+                                                <li key={feature} className="flex items-start gap-2.5">
+                                                    <div className="flex-shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 border border-primary/20 mt-0.5">
+                                                        <Check className="h-3 w-3 text-primary" strokeWidth={2.5} />
                                                     </div>
-                                                    <span className="text-xs text-content-primary leading-relaxed">
+                                                    <span className="text-sm text-foreground/90 leading-relaxed">
                                                         {feature}
                                                     </span>
                                                 </li>
                                             ))}
                                             {addon.features.length > 3 && (
-                                                <li className="text-xs text-content-tertiary pl-6">
+                                                <li className="text-sm text-muted-foreground pl-7 font-medium">
                                                     +{addon.features.length - 3} more features
                                                 </li>
                                             )}
                                         </ul>
                                     </CardContent>
 
-                                    <CardFooter className="pt-0 pb-4">
+                                    <CardFooter className="pt-2 pb-6">
                                         <Button
                                             variant={isActive ? "outline" : "default"}
-                                            size="sm"
+                                            size="default"
                                             className={clsx(
-                                                "w-full transition-all",
-                                                !isActive && "bg-brand-gradient hover:bg-brand-gradient-hover"
+                                                "w-full transition-all font-medium",
+                                                !isActive && "shadow-sm hover:shadow-md"
                                             )}
                                             onClick={() => handleToggleAddon(addon)}
                                             disabled={hasRequirement || isLoading}
@@ -475,7 +484,7 @@ export function AddonManagement({
                                                 'Remove Add-on'
                                             ) : (
                                                 <>
-                                                    <Plus className="h-4 w-4 mr-1.5" />
+                                                    <Plus className="h-4 w-4 mr-2" />
                                                     Add to Subscription
                                                 </>
                                             )}

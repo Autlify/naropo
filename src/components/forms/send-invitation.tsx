@@ -74,10 +74,10 @@ const SendInvitation: React.FC<SendInvitationProps> = ({ agencyId }) => {
   }
 
   return (
-    <Card>
+    <Card className="bg-gradient-to-br from-muted/20 to-transparent border-border/50">
       <CardHeader>
-        <CardTitle>Invitation</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-xl font-semibold">Invitation</CardTitle>
+        <CardDescription className="text-sm">
           An invitation will be sent to the user. Users who already have an
           invitation sent out to their email, will not receive another
           invitation.

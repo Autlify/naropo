@@ -93,7 +93,7 @@ const CreditBalanceCard = ({
               </Button>
             )}
           </div>
-          <CardDescription className="text-sm sm:text-base">
+          <CardDescription className="text-sm">
             Track your credit usage and balance
           </CardDescription>
         </CardHeader>

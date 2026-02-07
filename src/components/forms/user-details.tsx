@@ -219,10 +219,10 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-gradient-to-br from-muted/20 to-transparent border-border/50">
       <CardHeader>
-        <CardTitle>User Details</CardTitle>
-        <CardDescription>Add or update your information</CardDescription>
+        <CardTitle className="text-xl font-semibold">User Details</CardTitle>
+        <CardDescription className="text-sm">Add or update your information</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>

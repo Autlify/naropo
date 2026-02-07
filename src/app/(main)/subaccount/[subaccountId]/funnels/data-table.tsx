@@ -79,7 +79,7 @@ export default function FunnelsDataTable<TData, TValue>({
           {actionButtonText}
         </Button>
       </div>
-      <div className=" border bg-background rounded-lg">
+      <div className="border border-border/50 bg-gradient-to-br from-muted/20 to-transparent rounded-lg">
         <Table className="">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

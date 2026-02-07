@@ -107,10 +107,10 @@ const UsageDetailedTable = ({
   };
 
   return (
-    <Card className={cn("w-full", className)}>
+    <Card className={cn("w-full bg-gradient-to-br from-muted/20 to-transparent border-border/50", className)}>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
+        <CardTitle className="text-xl font-semibold">{title}</CardTitle>
+        {description && <CardDescription className="text-sm">{description}</CardDescription>}
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto rounded-md border">

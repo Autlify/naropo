@@ -164,13 +164,13 @@ const TrialExpiryCard = ({
   }
 
   return (
-    <Card className={cn('w-full max-w-md', className)}>
+    <Card className={cn('w-full max-w-md bg-gradient-to-br from-muted/20 to-transparent border-border/50', className)}>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-medium">{title}</CardTitle>
+          <CardTitle className="text-xl font-semibold">{title}</CardTitle>
           {getStatusBadge()}
         </div>
-        {description && <CardDescription>{description}</CardDescription>}
+        {description && <CardDescription className="text-sm">{description}</CardDescription>}
       </CardHeader>
       <CardContent className="space-y-6">
         {trialEndDate && daysRemaining > 0 && (
@@ -642,15 +642,15 @@ const CancelSubscriptionDialog = ({
 const SubscriptionManagement = ({ className, currentPlan, cancelSubscription, updatePlan }: SubscriptionManagementProps) => {
   return (
     <div className={cn('w-full text-left', className)}>
-      <Card className="shadow-lg">
+      <Card className="shadow-lg bg-gradient-to-br from-muted/20 to-transparent border-border/50">
         <CardHeader className="px-4 pb-4 sm:px-6 sm:pb-6">
-          <CardTitle className="flex items-center gap-2 text-lg sm:gap-3 sm:text-xl">
+          <CardTitle className="flex items-center gap-2 text-xl font-semibold sm:gap-3">
             <div className="bg-primary/10 ring-primary/20 rounded-lg p-1.5 ring-1 sm:p-2">
               <CreditCard className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             Current Subscription
           </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
+          <CardDescription className="text-sm">
             Manage your billing and subscription settings
           </CardDescription>
         </CardHeader>

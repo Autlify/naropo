@@ -275,9 +275,10 @@ const MenuOptions = ({
                                                 key={link.id}
                                                 href={`${basePath}${link.link}`}
                                                 className={cn(
-                                                    'flex items-center rounded-md px-2 py-1.5 text-sm',
-                                                    'hover:bg-muted/50 transition-colors',
-                                                    linkIsActive && 'bg-primary/10 text-primary font-medium'
+                                                    'flex items-center rounded-md px-2 py-1.5 text-sm transition-colors',
+                                                    linkIsActive 
+                                                        ? 'bg-muted/50 text-foreground font-medium' 
+                                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
                                                 )}
                                             >
                                                 {link.name}
@@ -301,8 +302,10 @@ const MenuOptions = ({
                         <button
                             type="button"
                             className={cn(
-                                'flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm',
-                                'hover:bg-muted/50 transition-colors',
+                                'flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                                isSelected 
+                                    ? 'bg-muted text-foreground'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
                                 isLocked && 'opacity-50 cursor-not-allowed'
                             )}
                             onClick={(e) => {
@@ -313,21 +316,20 @@ const MenuOptions = ({
                                 }
                             }}
                         >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3 flex-1">
                                 {IconComponent && (
                                     <span className={cn(
-                                        'flex h-4 w-4 items-center justify-center [&_svg]:h-4 [&_svg]:w-4',
-                                        isSelected ? 'text-primary' : 'text-muted-foreground'
+                                        'flex h-4 w-4 items-center justify-center [&_svg]:h-4 [&_svg]:w-4'
                                     )}>
                                         <IconComponent />
                                     </span>
                                 )}
-                                <span className={cn(isSelected && 'text-primary font-medium')}>{option.name}</span>
-                                {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                                <span className="flex-1 text-left">{option.name}</span>
+                                {isLocked && <Lock className="h-3 w-3" />}
                             </div>
                             {!isLocked && (
                                 <ChevronRight className={cn(
-                                    'h-4 w-4 text-muted-foreground transition-transform duration-200',
+                                    'h-4 w-4 transition-transform duration-200',
                                     isExpanded && 'rotate-90'
                                 )} />
                             )}
@@ -365,14 +367,15 @@ const MenuOptions = ({
                                             <Link
                                                 href={`${basePath}${link.link}`}
                                                 className={cn(
-                                                    'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm',
-                                                    linkIsActive ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted/50 transition-colors',
+                                                    'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+                                                    linkIsActive 
+                                                        ? 'bg-muted text-foreground font-medium' 
+                                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                                 )}
                                             >
                                                 {LinkIconComponent && (
                                                     <span className={cn(
-                                                        'flex h-4 w-4 items-center justify-center [&_svg]:h-4 [&_svg]:w-4',
-                                                        linkIsActive ? 'text-primary' : 'text-muted-foreground'
+                                                        'flex h-4 w-4 items-center justify-center [&_svg]:h-4 [&_svg]:w-4'
                                                     )}>
                                                         <LinkIconComponent />
                                                     </span>
@@ -384,15 +387,15 @@ const MenuOptions = ({
                                                 <Link
                                                     href={`${basePath}${link.link}`}
                                                     className={cn(
-                                                        'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm',
-                                                        'hover:bg-muted/50 transition-colors',
-                                                        linkIsActive && 'bg-primary/10 text-primary font-medium'
+                                                        'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+                                                        linkIsActive 
+                                                            ? 'bg-muted/50 text-foreground font-medium' 
+                                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
                                                     )}
                                                 >
                                                     {LinkIconComponent && (
                                                         <span className={cn(
-                                                            'flex h-4 w-4 items-center justify-center [&_svg]:h-4 [&_svg]:w-4',
-                                                            linkIsActive ? 'text-primary' : 'text-muted-foreground'
+                                                            'flex h-4 w-4 items-center justify-center [&_svg]:h-4 [&_svg]:w-4'
                                                         )}>
                                                             <LinkIconComponent />
                                                         </span>
@@ -443,43 +446,43 @@ const MenuOptions = ({
                 key={option.id}
                 href={`${basePath}${option.link}`}
                 className={cn(
-                    'flex items-center rounded-md text-sm',
-                    'hover:bg-muted/50 transition-colors',
-                    isActive && 'bg-primary text-primary-foreground font-medium',
-                    isCollapsed ? 'justify-center p-2' : 'gap-2 px-2 py-1.5'
+                    'flex items-center rounded-lg text-sm font-medium transition-colors',
+                    isActive 
+                        ? 'bg-muted text-foreground' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                    isCollapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'
                 )}
                 title={isCollapsed ? option.name : undefined}
             >
                 {IconComponent && (
                     <span className={cn(
                         'flex items-center justify-center [&_svg]:h-4 [&_svg]:w-4',
-                        isActive ? 'text-primary-foreground' : 'text-muted-foreground',
                         isCollapsed ? 'h-5 w-5 [&_svg]:h-5 [&_svg]:w-5' : 'h-4 w-4'
                     )}>
                         <IconComponent />
                     </span>
                 )}
-                {!isCollapsed && <span>{option.name}</span>}
+                {!isCollapsed && <span className="flex-1 text-left">{option.name}</span>}
             </Link>
         ) : (
             <SheetClose asChild key={option.id}>
                 <Link
                     href={`${basePath}${option.link}`}
                     className={cn(
-                        'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm',
-                        'hover:bg-muted/50 transition-colors',
-                        isActive && 'bg-primary text-primary-foreground font-medium'
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                        isActive 
+                            ? 'bg-muted text-foreground' 
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     )}
                 >
                     {IconComponent && (
                         <span className={cn(
-                            'flex h-4 w-4 items-center justify-center [&_svg]:h-4 [&_svg]:w-4',
-                            isActive ? 'text-primary' : 'text-muted-foreground'
+                            'flex h-4 w-4 items-center justify-center [&_svg]:h-4 [&_svg]:w-4'
                         )}>
                             <IconComponent />
                         </span>
                     )}
-                    <span>{option.name}</span>
+                    <span className="flex-1 text-left">{option.name}</span>
                 </Link>
             </SheetClose>
         )
@@ -507,7 +510,7 @@ const MenuOptions = ({
                 showX={!defaultOpen}
                 side="left"
                 className={clsx(
-                    'bg-background/80 backdrop-blur-xl fixed top-0 border-r-[1px] p-6 transition-all duration-300',
+                    'bg-gradient-to-b from-muted/20 to-transparent backdrop-blur-xl fixed top-0 border-r border-border p-6 transition-all duration-300',
                     {
                         'hidden md:inline-block z-0': defaultOpen,
                         'inline-block md:hidden z-[100] w-full': !defaultOpen,

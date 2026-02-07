@@ -95,9 +95,9 @@ const CreatePipelineForm: React.FC<CreatePipelineFormProps> = ({
     setClose()
   }
   return (
-    <Card className="w-full ">
+    <Card className="w-full bg-gradient-to-br from-muted/20 to-transparent border-border/50">
       <CardHeader>
-        <CardTitle>Pipeline Details</CardTitle>
+        <CardTitle className="text-xl font-semibold">Pipeline Details</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>

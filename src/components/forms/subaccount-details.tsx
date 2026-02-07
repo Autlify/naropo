@@ -188,10 +188,10 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
 
   //CHALLENGE Create this form.
   return (
-    <Card className="w-full min-w-[400px] h-screen md:h-fit">
+    <Card className="w-full min-w-[400px] h-screen md:h-fit bg-gradient-to-br from-muted/20 to-transparent border-border/50">
       <CardHeader>
-        <CardTitle>Sub-Account Information</CardTitle>
-        <CardDescription>Please enter business details</CardDescription>
+        <CardTitle className="text-xl font-semibold">Sub-Account Information</CardTitle>
+        <CardDescription className="text-sm">Please enter business details</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>

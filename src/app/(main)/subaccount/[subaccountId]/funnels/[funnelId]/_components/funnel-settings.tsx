@@ -39,11 +39,11 @@ const FunnelSettings: React.FC<FunnelSettingsProps> = async ({
   )
 
   return (
-    <div className="flex gap-4 flex-col xl:!flex-row">
-      <Card className="flex-1 flex-shrink">
+    <div className="flex gap-6 flex-col xl:!flex-row">
+      <Card className="flex-1 flex-shrink bg-gradient-to-br from-muted/20 to-transparent border-border/50">
         <CardHeader>
-          <CardTitle>Funnel Products</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl font-semibold">Funnel Products</CardTitle>
+          <CardDescription className="text-sm">
             Select the products and services you wish to sell on this funnel.
             You can sell one time and recurring products too.
           </CardDescription>

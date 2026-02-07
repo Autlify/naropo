@@ -83,7 +83,7 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
   return (
     <div className="flex flex-col justify-center items-center">
       <div className="w-full h-full max-w-[800px]">
-        <Card className="border-none">
+        <Card className="border-border/50 bg-gradient-to-br from-muted/20 to-transparent">
           <CardHeader>
             <CardTitle>Lets get started!</CardTitle>
             <CardDescription>
@@ -91,7 +91,7 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="flex justify-between items-center w-full border p-4 rounded-lg gap-2">
+            <div className="flex justify-between items-center w-full border border-border/50 p-4 rounded-lg gap-2 bg-gradient-to-br from-muted/30 to-transparent hover:border-foreground/20 transition-all">
               <div className="flex md:items-center gap-4 flex-col md:!flex-row">
                 <Image
                   src="/appstore.png"
@@ -104,7 +104,7 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
               </div>
               <Button>Start</Button>
             </div>
-            <div className="flex justify-between items-center w-full border p-4 rounded-lg gap-2">
+            <div className="flex justify-between items-center w-full border border-border/50 p-4 rounded-lg gap-2 bg-gradient-to-br from-muted/30 to-transparent hover:border-foreground/20 transition-all">
               <div className="flex md:items-center gap-4 flex-col md:!flex-row">
                 <Image
                   src={'/logos/stripe.svg'}
@@ -132,7 +132,7 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
                 </Link>
               )}
             </div>
-            <div className="flex justify-between items-center w-full border p-4 rounded-lg gap-2">
+            <div className="flex justify-between items-center w-full border border-border/50 p-4 rounded-lg gap-2 bg-gradient-to-br from-muted/30 to-transparent hover:border-foreground/20 transition-all">
               <div className="flex md:items-center gap-4 flex-col md:!flex-row">
                 <Image
                   src={agencyDetails.agencyLogo || "/assets/glassmorphism/organization.svg"}

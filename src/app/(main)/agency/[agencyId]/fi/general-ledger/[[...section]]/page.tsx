@@ -58,21 +58,21 @@ async function OverviewSection({ agencyId }: { agencyId: string }) {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-lg border p-4">
+        <div className="rounded-lg border border-border/50 p-4 bg-gradient-to-br from-muted/50 to-muted/20">
           <div className="text-sm text-muted-foreground">Accounts</div>
           <div className="text-2xl font-bold">{accounts.length}</div>
         </div>
-        <div className="rounded-lg border p-4">
+        <div className="rounded-lg border border-border/50 p-4 bg-gradient-to-br from-muted/50 to-muted/20">
           <div className="text-sm text-muted-foreground">Journal Entries</div>
           <div className="text-2xl font-bold">{entries.length}</div>
         </div>
-        <div className="rounded-lg border p-4">
+        <div className="rounded-lg border border-border/50 p-4 bg-gradient-to-br from-muted/50 to-muted/20">
           <div className="text-sm text-muted-foreground">Periods</div>
           <div className="text-2xl font-bold">{periods.length}</div>
         </div>
       </div>
 
-      <div className="rounded-lg border p-4">
+      <div className="rounded-lg border border-border/50 p-4 bg-gradient-to-br from-muted/20 to-transparent">
         <h2 className="text-lg font-semibold mb-4">Recent Journal Entries</h2>
         <JournalEntriesTable entries={entries.slice(0, 5)} agencyId={agencyId} />
       </div>
@@ -158,7 +158,7 @@ async function PeriodsSection({ agencyId }: { agencyId: string }) {
         <h1 className="text-2xl font-bold">Fiscal Periods</h1>
         <p className="text-sm text-muted-foreground">Manage accounting periods</p>
       </div>
-      <div className="rounded-lg border">
+      <div className="rounded-lg border border-border/50 bg-gradient-to-br from-muted/20 to-transparent">
         <table className="w-full">
           <thead className="border-b bg-muted/50">
             <tr>

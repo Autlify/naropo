@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils"
 
 function Drawer({
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive>) {
-  return <DrawerPrimitive data-slot="drawer" {...props} />
+}: React.ComponentProps<typeof DrawerPrimitive.Root>) {
+  return <DrawerPrimitive.Root data-slot="drawer" {...props} />
 }
 
 function DrawerTrigger({

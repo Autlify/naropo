@@ -124,11 +124,11 @@ const Page = async ({
           </Card>
         </div>
       )}
-      <h1 className="text-4xl">Dashboard</h1>
+      <h1 className="text-4xl font-bold">Dashboard</h1>
       <Separator className=" my-6" />
       <div className="flex flex-col gap-4 pb-6">
         <div className="flex gap-4 flex-col xl:!flex-row">
-          <Card className="flex-1 relative">
+          <Card className="flex-1 relative bg-gradient-to-br from-muted/50 to-muted/20 border-border/50">
             <CardHeader>
               <CardDescription>Income</CardDescription>
               <CardTitle className="text-4xl">
@@ -143,7 +143,7 @@ const Page = async ({
             </CardContent>
             <DollarSign className="absolute right-4 top-4 text-muted-foreground" />
           </Card>
-          <Card className="flex-1 relative">
+          <Card className="flex-1 relative bg-gradient-to-br from-muted/50 to-muted/20 border-border/50">
             <CardHeader>
               <CardDescription>Potential Income</CardDescription>
               <CardTitle className="text-4xl">
@@ -160,7 +160,7 @@ const Page = async ({
             </CardContent>
             <DollarSign className="absolute right-4 top-4 text-muted-foreground" />
           </Card>
-          <Card className="flex-1 relative">
+          <Card className="flex-1 relative bg-gradient-to-br from-muted/50 to-muted/20 border-border/50">
             <CardHeader>
               <CardDescription>Active Clients</CardDescription>
               <CardTitle className="text-4xl">{subaccounts.length}</CardTitle>
@@ -170,7 +170,7 @@ const Page = async ({
             </CardContent>
             <Contact2 className="absolute right-4 top-4 text-muted-foreground" />
           </Card>
-          <Card className="flex-1 relative">
+          <Card className="flex-1 relative bg-gradient-to-br from-muted/50 to-muted/20 border-border/50">
             <CardHeader>
               <CardTitle>Agency Goal</CardTitle>
               <CardDescription className="mt-2">
@@ -197,7 +197,7 @@ const Page = async ({
           </Card>
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 flex-grow">
-          <Card className="col-span-3">
+          <Card className="col-span-3 bg-gradient-to-br from-muted/20 to-transparent border-border/50">
             <CardHeader>
               <CardTitle>Transaction History</CardTitle>
             </CardHeader>
@@ -214,7 +214,7 @@ const Page = async ({
               showAnimation={true}
             /> 
           </Card>
-          <Card className="col-span-1 flex flex-col">
+          <Card className="col-span-1 flex flex-col bg-gradient-to-br from-muted/30 to-transparent border-border/50">
             <CardHeader>
               <CardTitle>Conversions</CardTitle>
             </CardHeader>

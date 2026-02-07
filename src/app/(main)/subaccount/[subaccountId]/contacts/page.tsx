@@ -65,45 +65,54 @@ const ContactPage = async ({ params }: Props) => {
   }
   return (
     <BlurPage>
-      <h1 className="text-4xl mb-2">Contacts</h1>
-      <CraeteContactButton subaccountId={subaccountId} />
-      <Table className="mt-6">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[200px]">Name</TableHead>
-            <TableHead className="w-[300px]">Email</TableHead>
-            <TableHead className="w-[200px]">Active</TableHead>
-            <TableHead>Created Date</TableHead>
-            <TableHead className="text-right">Total Value</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="font-medium truncate">
-          {allContacts.map((contact) => (
-            <TableRow key={contact.id}>
-              <TableCell>
-                <Avatar>
-                  <AvatarImage alt="@shadcn" />
-                  <AvatarFallback className="bg-primary text-white">
-                    {contact.name.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </TableCell>
-              <TableCell>{contact.email}</TableCell>
-              <TableCell>
-                {formatTotal(contact.Ticket) === '$0.00' ? (
-                  <Badge variant={'destructive'}>Inactive</Badge>
-                ) : (
-                  <Badge className="bg-emerald-700">Active</Badge>
-                )}
-              </TableCell>
-              <TableCell>{format(contact.createdAt, 'MM/dd/yyyy')}</TableCell>
-              <TableCell className="text-right">
-                {formatTotal(contact.Ticket)}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-4xl font-bold">Contacts</h1>
+          <p className="text-muted-foreground">Manage your client contacts and customer information</p>
+        </div>
+        
+        <CraeteContactButton subaccountId={subaccountId} />
+        
+        <div className="border border-border/50 bg-gradient-to-br from-muted/20 to-transparent rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px]">Name</TableHead>
+                <TableHead className="w-[300px]">Email</TableHead>
+                <TableHead className="w-[200px]">Active</TableHead>
+                <TableHead>Created Date</TableHead>
+                <TableHead className="text-right">Total Value</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="font-medium truncate">
+              {allContacts.map((contact) => (
+                <TableRow key={contact.id}>
+                  <TableCell>
+                    <Avatar>
+                      <AvatarImage alt="@shadcn" />
+                      <AvatarFallback className="bg-primary text-white">
+                        {contact.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TableCell>
+                  <TableCell>{contact.email}</TableCell>
+                  <TableCell>
+                    {formatTotal(contact.Ticket) === '$0.00' ? (
+                      <Badge variant={'destructive'}>Inactive</Badge>
+                    ) : (
+                      <Badge className="bg-emerald-700">Active</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>{format(contact.createdAt, 'MM/dd/yyyy')}</TableCell>
+                  <TableCell className="text-right">
+                    {formatTotal(contact.Ticket)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     </BlurPage>
   )
 }

@@ -65,6 +65,8 @@
     "**/packages/database/src/generated/**",
     "packages/sdk/**",
     "packages/autlify-mcp/**",
+    "packages/autlify-ui/**",
+    "patches/**",
     "patches/ai-agent-builder",
     "**/ai-agent-builder/**",
     "**/docs/backup/**"

@@ -60,10 +60,14 @@ const SettingsPage = async ({ params }: Props) => {
   const isAgencyPlan = planTitle === 'Agency'
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-4xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">Manage your agency configuration and user preferences</p>
+      </div>
       
       {/* Existing Settings Forms */}
-      <div className="flex lg:!flex-row flex-col gap-8">
+      <div className="flex lg:!flex-row flex-col gap-6">
         <AgencyDetails data={agencyDetails} />
         <UserDetails
           type="agency"

@@ -508,22 +508,22 @@ const PaymentMethodsCard = ({
         : null;
 
     return (
-        <div className={cn("space-y-4", className)}>
-            <Card className="shadow-lg">
+        <div className={cn("space-y-6", className)}>
+            <Card className="shadow-lg bg-gradient-to-br from-muted/20 to-transparent border-border/50">
                 <CardHeader className="px-4 pb-4 sm:px-6 sm:pb-6">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2 text-lg sm:gap-3 sm:text-xl">
-                            <div className="rounded-lg bg-primary/10 p-1.5 ring-1 ring-primary/20 sm:p-2">
-                                <CreditCard className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
+                        <CardTitle className="flex items-center gap-2 text-xl font-semibold sm:gap-3">
+                            <div className="rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 p-2 ring-1 ring-primary/20 shadow-sm">
+                                <CreditCard className="h-5 w-5 text-primary" />
                             </div>
                             Payment Methods
                         </CardTitle>
-                        <Button variant="outline" size="sm" onClick={handleAddCard} className="gap-1.5">
+                        <Button variant="default" size="default" onClick={handleAddCard} className="gap-2 shadow-sm">
                             <Plus className="h-4 w-4" />
                             Add New Card
                         </Button>
                     </div>
-                    <CardDescription className="text-sm sm:text-base">
+                    <CardDescription className="text-sm">
                         Manage your saved payment methods for billing
                     </CardDescription>
                 </CardHeader>
@@ -677,11 +677,11 @@ const InvoiceListCard = ({
     };
 
     return (
-        <Card className={cn("shadow-lg", className)}>
-            <CardHeader className="px-4 pb-3 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <div className="rounded-lg bg-primary/10 p-1.5 ring-1 ring-primary/20">
-                        <FileText className="h-4 w-4 text-primary" />
+        <Card className={cn("shadow-lg bg-gradient-to-br from-muted/20 to-transparent border-border/50", className)}>
+            <CardHeader className="px-4 pb-4 sm:px-6">
+                <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+                    <div className="rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 p-2 ring-1 ring-primary/20 shadow-sm">
+                        <FileText className="h-5 w-5 text-primary" />
                     </div>
                     Invoice History
                 </CardTitle>
@@ -690,14 +690,15 @@ const InvoiceListCard = ({
                 </CardDescription>
             </CardHeader>
             <CardContent className="px-4 pt-0 sm:px-6">
+                <div className="rounded-lg border border-border/50 overflow-hidden bg-gradient-to-br from-muted/10 to-transparent">
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="font-semibold">Date</TableHead>
+                            <TableHead className="font-semibold">Description</TableHead>
+                            <TableHead className="font-semibold">Status</TableHead>
+                            <TableHead className="text-right font-semibold">Amount</TableHead>
+                            <TableHead className="text-right font-semibold">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -773,6 +774,7 @@ const InvoiceListCard = ({
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </CardContent>
         </Card>
     );
@@ -793,11 +795,11 @@ const DunningCard = ({
     const uncollectibleCount = dunningInvoices.filter((inv) => inv.status === "uncollectible").length;
 
     return (
-        <Card className={cn("shadow-lg", className)}>
-            <CardHeader className="px-4 pb-3 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <div className="rounded-lg bg-orange-500/10 p-1.5 ring-1 ring-orange-500/20">
-                        <AlertTriangle className="h-4 w-4 text-orange-500" />
+        <Card className={cn("shadow-lg bg-gradient-to-br from-orange-500/5 to-transparent border-orange-500/20", className)}>
+            <CardHeader className="px-4 pb-4 sm:px-6">
+                <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+                    <div className="rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 p-2 ring-1 ring-orange-500/20 shadow-sm">
+                        <AlertTriangle className="h-5 w-5 text-orange-500" />
                     </div>
                     Dunning
                 </CardTitle>
@@ -806,31 +808,32 @@ const DunningCard = ({
                 </CardDescription>
             </CardHeader>
             <CardContent className="px-4 pt-0 sm:px-6">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3 mb-4">
-                    <div className="rounded-lg border bg-card/50 p-3">
-                        <div className="text-xs text-muted-foreground">Open invoices</div>
-                        <div className="mt-1 text-2xl font-semibold">{openCount}</div>
+                {/* Stats Grid - Premium cards */}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-6">
+                    <div className="rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-transparent p-4 shadow-sm">
+                        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Open invoices</div>
+                        <div className="mt-2 text-3xl font-bold">{openCount}</div>
                     </div>
-                    <div className="rounded-lg border bg-card/50 p-3">
-                        <div className="text-xs text-muted-foreground">Uncollectible</div>
-                        <div className="mt-1 text-2xl font-semibold">{uncollectibleCount}</div>
+                    <div className="rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-transparent p-4 shadow-sm">
+                        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Uncollectible</div>
+                        <div className="mt-2 text-3xl font-bold">{uncollectibleCount}</div>
                     </div>
-                    <div className="rounded-lg border bg-card/50 p-3">
-                        <div className="text-xs text-muted-foreground">Total flagged</div>
-                        <div className="mt-1 text-2xl font-semibold">{dunningInvoices.length}</div>
+                    <div className="rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-transparent p-4 shadow-sm">
+                        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total flagged</div>
+                        <div className="mt-2 text-3xl font-bold">{dunningInvoices.length}</div>
                     </div>
                 </div>
 
+                <div className="rounded-lg border border-border/50 overflow-hidden bg-gradient-to-br from-muted/10 to-transparent">
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Invoice</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Due</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="font-semibold">Date</TableHead>
+                            <TableHead className="font-semibold">Invoice</TableHead>
+                            <TableHead className="font-semibold">Status</TableHead>
+                            <TableHead className="font-semibold">Due</TableHead>
+                            <TableHead className="text-right font-semibold">Amount</TableHead>
+                            <TableHead className="text-right font-semibold">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -883,6 +886,7 @@ const DunningCard = ({
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </CardContent>
         </Card>
     );

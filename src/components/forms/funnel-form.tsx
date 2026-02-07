@@ -91,9 +91,9 @@ const FunnelForm: React.FC<CreateFunnelProps> = ({
     router.refresh()
   }
   return (
-    <Card className="flex-1">
+    <Card className="flex-1 bg-gradient-to-br from-muted/20 to-transparent border-border/50">
       <CardHeader>
-        <CardTitle>Funnel Details</CardTitle>
+        <CardTitle className="text-xl font-semibold">Funnel Details</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>

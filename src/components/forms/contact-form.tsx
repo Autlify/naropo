@@ -42,10 +42,10 @@ const ContactForm = ({ apiCall, subTitle, title }: Props) => {
   //CHALLENGE: We want to create tags for each leads that comes from the form
   
   return (
-    <Card className="max-w-[500px] w-[500px]">
+    <Card className="max-w-[500px] w-[500px] bg-gradient-to-br from-muted/20 to-transparent border-border/50">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{subTitle}</CardDescription>
+        <CardTitle className="text-xl font-semibold">{title}</CardTitle>
+        <CardDescription className="text-sm">{subTitle}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>

@@ -77,14 +77,14 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
   }
   return (
     <>
-      <Table className="bg-card border-[1px] border rounded-md">
-        <TableHeader className="rounded-md">
+      <Table className="bg-gradient-to-br from-muted/20 to-transparent border border-border/50 rounded-lg overflow-hidden">
+        <TableHeader className="bg-muted/30">
           <TableRow>
-            <TableHead>Live</TableHead>
-            <TableHead>Image</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Interval</TableHead>
-            <TableHead className="text-right">Price</TableHead>
+            <TableHead className="font-semibold">Live</TableHead>
+            <TableHead className="font-semibold">Image</TableHead>
+            <TableHead className="font-semibold">Name</TableHead>
+            <TableHead className="font-semibold">Interval</TableHead>
+            <TableHead className="text-right font-semibold">Price</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="font-medium truncate">
@@ -110,10 +110,10 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
                     height={60}
                     width={60}
                     src={product.images[0]}
-                    className="rounded-md border bg-muted/20 object-cover"
+                    className="rounded-lg border border-border/50 bg-muted/20 object-cover shadow-sm"
                   />
                 ) : (
-                  <div className="flex h-[60px] w-[60px] items-center justify-center rounded-md border bg-muted/20">
+                  <div className="flex h-[60px] w-[60px] items-center justify-center rounded-lg border border-border/50 bg-gradient-to-br from-muted/30 to-transparent">
                     <ImageIcon className="h-5 w-5 text-muted-foreground" />
                   </div>
                 )}

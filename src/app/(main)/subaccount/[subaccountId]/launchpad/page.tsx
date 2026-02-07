@@ -89,7 +89,7 @@ const LaunchPad = async ({ params, searchParams }: Props) => {
     <BlurPage>
       <div className="flex flex-col justify-center items-center">
         <div className="w-full h-full max-w-[800px]">
-          <Card className="border-none ">
+          <Card className="border-border/50 bg-gradient-to-br from-muted/20 to-transparent">
             <CardHeader>
               <CardTitle>Lets get started!</CardTitle>
               <CardDescription>
@@ -97,7 +97,7 @@ const LaunchPad = async ({ params, searchParams }: Props) => {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <div className="flex justify-between items-center w-full h-20 border p-4 rounded-lg ">
+              <div className="flex justify-between items-center w-full h-20 border border-border/50 p-4 rounded-lg bg-gradient-to-br from-muted/30 to-transparent hover:border-foreground/20 transition-all">
                 <div className="flex items-center gap-4">
                   <Image
                     src="/appstore.png"
@@ -110,7 +110,7 @@ const LaunchPad = async ({ params, searchParams }: Props) => {
                 </div>
                 <Button>Start</Button>
               </div>
-              <div className="flex justify-between items-center w-full h-20 border p-4 rounded-lg">
+              <div className="flex justify-between items-center w-full h-20 border border-border/50 p-4 rounded-lg bg-gradient-to-br from-muted/30 to-transparent hover:border-foreground/20 transition-all">
                 <div className="flex items-center gap-4">
                   <Image
                     src="/stripelogo.png"
@@ -138,7 +138,7 @@ const LaunchPad = async ({ params, searchParams }: Props) => {
                   </Link>
                 )}
               </div>
-              <div className="flex justify-between items-center w-full h-20 border p-4 rounded-lg">
+              <div className="flex justify-between items-center w-full h-20 border border-border/50 p-4 rounded-lg bg-gradient-to-br from-muted/30 to-transparent hover:border-foreground/20 transition-all">
                 <div className="flex items-center gap-4">
                   <Image
                     src={subaccountDetails.subAccountLogo}

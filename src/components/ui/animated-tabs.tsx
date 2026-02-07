@@ -38,7 +38,7 @@ export const AnimatedTabs = ({
     setTabs(newTabs);
     setActive(newTabs[0]);
   };
-
+  
   const [hovering, setHovering] = useState(false);
 
   return (

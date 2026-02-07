@@ -1,14 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { Popover as PopoverPrimitive } from "@radix-ui/react-popover"
+import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 import { cn } from "@/lib/utils"
 
 function Popover({
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive>) {
-  return <PopoverPrimitive data-slot="popover" {...props} />
+}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
+  return <PopoverPrimitive.Root data-slot="popover" {...props} />
 }
 
 function PopoverTrigger({

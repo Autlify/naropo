@@ -293,10 +293,10 @@ const AgencyDetails = ({ data, selectedPlan }: Props) => {
 
   return (
     <AlertDialog>
-      <Card className="w-full">
+      <Card className="w-full bg-gradient-to-br from-muted/20 to-transparent border-border/50">
         <CardHeader>
-          <CardTitle>Agency Information</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl font-semibold">Agency Information</CardTitle>
+          <CardDescription className="text-sm">
             Lets create an agency for you business. You can edit agency settings
             later from the agency settings tab.
           </CardDescription>

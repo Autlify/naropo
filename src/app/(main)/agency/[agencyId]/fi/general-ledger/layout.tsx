@@ -49,7 +49,7 @@ export default async function GeneralLedgerLayout({
   return (
     <div className="flex flex-col">
       <PageTitle title="General Ledger" description="" />
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="border-b border-border bg-gradient-to-r from-muted/10 to-transparent backdrop-blur-md">
         <div className="container flex h-14 items-center px-6">
           <Tabs defaultValue="overview" className="w-full">
             <TabsList className="h-10">

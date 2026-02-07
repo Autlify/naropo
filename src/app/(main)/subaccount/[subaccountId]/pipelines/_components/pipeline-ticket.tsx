@@ -142,15 +142,15 @@ const PipelineTicket = ({
           >
             <AlertDialog>
               <DropdownMenu>
-                <Card className="my-4 bg-card shadow-none transition-all">
-                  <CardHeader className="p-[12px]">
+                <Card className="my-4 bg-gradient-to-br from-muted/20 to-transparent border-border/50 shadow-sm hover:shadow-md transition-all hover:border-primary/30">
+                  <CardHeader className="p-4">
                     <CardTitle className="flex items-center justify-between">
-                      <span className="text-lg w-full">{ticket.name}</span>
+                      <span className="text-lg w-full font-semibold">{ticket.name}</span>
                       <DropdownMenuTrigger>
-                        <MoreHorizontalIcon className="text-muted-foreground" />
+                        <MoreHorizontalIcon className="text-muted-foreground hover:text-foreground transition-colors" />
                       </DropdownMenuTrigger>
                     </CardTitle>
-                    <span className="text-muted-foreground text-xs">
+                    <span className="text-muted-foreground text-xs font-medium">
                       {new Date().toLocaleDateString()}
                     </span>
                     <div className="flex items-center flex-wrap gap-2">
@@ -162,14 +162,14 @@ const PipelineTicket = ({
                         />
                       ))}
                     </div>
-                    <CardDescription className="w-full ">
+                    <CardDescription className="w-full text-sm">
                       {ticket.description}
                     </CardDescription>
                     <HoverCard>
                       <HoverCardTrigger asChild>
-                        <div className="p-2 text-muted-foreground flex gap-2 hover:bg-muted transition-all rounded-lg cursor-pointer items-center">
+                        <div className="p-2 text-muted-foreground flex gap-2 hover:bg-muted/50 transition-all rounded-lg cursor-pointer items-center">
                           <LinkIcon />
-                          <span className="text-xs font-bold">CONTACT</span>
+                          <span className="text-xs font-semibold">CONTACT</span>
                         </div>
                       </HoverCardTrigger>
                       <HoverCardContent
@@ -202,7 +202,7 @@ const PipelineTicket = ({
                       </HoverCardContent>
                     </HoverCard>
                   </CardHeader>
-                  <CardFooter className="m-0 p-2 border-t-[1px] border-muted-foreground/20 flex items-center justify-between">
+                  <CardFooter className="m-0 p-3 border-t border-border/50 flex items-center justify-between bg-muted/20">
                     <div className="flex item-center gap-2">
                       <Avatar className="w-8 h-8">
                         <AvatarImage

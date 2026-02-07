@@ -154,7 +154,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
         <div className="flex flex-col gap-4 pb-6">
           {/* Row 1: 4 evenly-sized cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch auto-rows-fr">
-            <Card className="relative h-full">
+            <Card className="relative h-full bg-gradient-to-br from-muted/50 to-muted/20 border-border/50">
               <CardHeader>
                 <CardDescription>Income</CardDescription>
                 <CardTitle className="text-4xl">
@@ -169,7 +169,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
               </CardContent>
               <DollarSign className="absolute right-4 top-4 text-muted-foreground" />
             </Card>
-            <Card className="relative h-full">
+            <Card className="relative h-full bg-gradient-to-br from-muted/50 to-muted/20 border-border/50">
               <CardHeader>
                 <CardDescription>Potential Income</CardDescription>
                 <CardTitle className="text-4xl">
@@ -188,7 +188,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
             </Card>
             <PipelineValue subaccountId={subaccountId} className="h-full" />
 
-            <Card className="h-full">
+            <Card className="h-full bg-gradient-to-br from-muted/50 to-muted/20 border-border/50">
               <CardHeader>
                 <CardDescription>Conversions</CardDescription>
                 <CircleProgress
@@ -222,7 +222,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
 
           {/* Row 2: 1/3 split */}
           <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 flex-grow items-stretch">
-            <Card className="col-span-1 flex flex-col h-full">
+            <Card className="col-span-1 flex flex-col h-full bg-gradient-to-br from-muted/30 to-transparent border-border/50">
               <CardHeader>
                 <CardDescription>Funnel Performance</CardDescription>
               </CardHeader>
@@ -237,7 +237,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
             </Card>
 
             
-            <Card className="col-span-3 h-full">
+            <Card className="col-span-3 h-full bg-gradient-to-br from-muted/20 to-transparent border-border/50">
               <CardHeader>
                 <CardTitle>Checkout Activity</CardTitle>
               </CardHeader>
@@ -254,7 +254,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
           </div>
           
           <div className="grid grid-cols-1 gap-4 flex-grow">
-            <Card className="p-4 flex-1 h-[450px] overflow-scroll relative">
+            <Card className="p-4 flex-1 h-[450px] overflow-scroll relative bg-gradient-to-br from-muted/20 to-transparent border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   Transition History

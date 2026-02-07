@@ -50,7 +50,7 @@ const AppsHubMenu = ({ subaccountId, agencyId, apps }: {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="bg-gradient-to-br from-muted/30 to-transparent border-border/50 hover:border-foreground/20 transition-all">
           <CardHeader>
             <div className="flex items-center justify-between gap-2">
               <CardTitle>Support Center</CardTitle>
@@ -68,7 +68,7 @@ const AppsHubMenu = ({ subaccountId, agencyId, apps }: {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-muted/30 to-transparent border-border/50 hover:border-foreground/20 transition-all">
           <CardHeader>
             <div className="flex items-center justify-between gap-2">
               <CardTitle>Webhooks</CardTitle>
@@ -100,7 +100,7 @@ const AppsHubMenu = ({ subaccountId, agencyId, apps }: {
           {addons.map((a) => {
             const meta = describeInstallState(a.state)
             return (
-              <Card key={a.key}>
+              <Card key={a.key} className="bg-gradient-to-br from-muted/30 to-transparent border-border/50 hover:border-foreground/20 transition-all">
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle>{a.label}</CardTitle>

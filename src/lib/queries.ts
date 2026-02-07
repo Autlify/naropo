@@ -804,6 +804,30 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
 
 
 export const updateUser = async (user: Partial<User>) => {
+  const session = await auth()
+  if (!session?.user?.email) {
+    throw new Error('Unauthorized')
+  }
+
+  if (user.email && user.email !== session.user.email) {
+    const existingUser = await db.user.findUnique({
+      where: { email: user.email },
+    })
+
+    if (existingUser) {
+      throw new Error('Email already in use')
+    }
+
+    const response = await db.user.update({
+      where: { email: session.user.email },
+      data: { ...user, emailVerified: null },
+    })
+    
+    const token = await createVerificationToken(response.email,'verify', 60 * 24)
+    return redirect(`/agency/verify?email=${encodeURIComponent(response.email)}`)
+    
+  }
+
   const response = await db.user.update({
     where: { email: user.email },
     data: { ...user },
