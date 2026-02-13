@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
         lastUsedAt: true,
       },
       orderBy: { createdAt: 'desc' },
+      take: 100, // Limit to 100 passkeys per user
     })
 
     return NextResponse.json({ passkeys })

@@ -47,6 +47,12 @@ export async function GET(req: NextRequest) {
 
     const rows = await db.featureCreditBalance.findMany({
       where,
+      select: {
+        id: true,
+        featureKey: true,
+        balance: true,
+        expiresAt: true,
+      },
       orderBy: { featureKey: 'asc' },
     })
 

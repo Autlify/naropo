@@ -21,15 +21,29 @@ export async function GET(req: NextRequest) {
   const periodsBack = Math.max(0, Math.floor(Number(url.searchParams.get('periodsBack') || 0)))
 
   if (!agencyId) return NextResponse.json({ ok: false, error: 'agencyId is required' }, { status: 400 })
+  if (scope === 'SUBACCOUNT' && !subAccountId) {
+    return NextResponse.json({ ok: false, error: 'subAccountId is required' }, { status: 400 })
+  }
 
-  // Membership guard
-  if (scope === 'SUBACCOUNT') {
-    if (!subAccountId) return NextResponse.json({ ok: false, error: 'subAccountId is required' }, { status: 400 })
-    const m = await db.subAccountMembership.findFirst({ where: { userId, subAccountId, isActive: true }, select: { id: true } })
-    if (!m) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
-  } else {
-    const m = await db.agencyMembership.findFirst({ where: { userId, agencyId, isActive: true }, select: { id: true } })
-    if (!m) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
+  // Membership guard - check both in parallel, then validate based on scope
+  const [agencyMembership, subAccountMembership] = await Promise.all([
+    db.agencyMembership.findFirst({ 
+      where: { userId, agencyId, isActive: true }, 
+      select: { id: true } 
+    }),
+    scope === 'SUBACCOUNT' && subAccountId
+      ? db.subAccountMembership.findFirst({ 
+          where: { userId, subAccountId, isActive: true }, 
+          select: { id: true } 
+        })
+      : Promise.resolve(null),
+  ])
+
+  if (scope === 'SUBACCOUNT' && !subAccountMembership) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
+  }
+  if (scope === 'AGENCY' && !agencyMembership) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 
   const window = getUsageWindowWithOffset(period, periodsBack)

@@ -183,7 +183,12 @@ export async function POST(req: NextRequest) {
           // Find agency by customerId and track dunning status
           const agency = await db.agency.findFirst({
             where: { customerId },
-            include: { Subscription: true },
+            select: {
+              id: true,
+              Subscription: {
+                select: { id: true, subscritiptionId: true, status: true },
+              },
+            },
           })
 
           if (agency?.Subscription) {
