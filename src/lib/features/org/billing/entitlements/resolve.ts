@@ -105,18 +105,19 @@ export async function resolveEffectiveEntitlementsFromPlanIds(params: {
     include: { EntitlementFeature: true },
   })
 
-  const byKey = new Map<string, PlanFeatureWithMeta[]>()
-  for (const pf of planFeaturesRaw) {
-    const arr = byKey.get(pf.featureKey) ?? []
+  // Use reduce to consolidate grouping and merging in a single pass
+  const byKey = planFeaturesRaw.reduce((acc, pf) => {
+    const arr = acc.get(pf.featureKey) ?? []
     arr.push(pf)
-    byKey.set(pf.featureKey, arr)
-  }
-
-  const merged: PlanFeatureWithMeta[] = []
-  for (const list of byKey.values()) merged.push(list.length === 1 ? list[0] : mergePlanFeatures(list))
+    acc.set(pf.featureKey, arr)
+    return acc
+  }, new Map<string, PlanFeatureWithMeta[]>())
 
   const out: Record<string, EffectiveEntitlement> = {}
-  for (const pf of merged) out[pf.featureKey] = normalizeEntitlement(pf, null)
+  for (const [featureKey, list] of byKey.entries()) {
+    const merged = list.length === 1 ? list[0] : mergePlanFeatures(list)
+    out[featureKey] = normalizeEntitlement(merged, null)
+  }
   return out
 }
 
@@ -153,27 +154,29 @@ export async function resolveEffectiveEntitlements(args: ResolveEntitlementsArgs
 
   const inheritAgency = await resolveInheritAgencyEntitlements(args)
 
-  const overridesAgency = inheritAgency
-    ? await db.entitlementOverride.findMany({
-        where: {
-          scope: 'AGENCY' as any,
-          agencyId: args.agencyId,
-          subAccountId: null,
-          startsAt: { lte: now },
-          OR: [{ endsAt: null }, { endsAt: { gte: now } }],
-        },
-      })
-    : []
-
-  const overridesSub = await db.entitlementOverride.findMany({
-    where: {
-      scope: args.scope,
-      agencyId: args.agencyId,
-      subAccountId: args.subAccountId || null,
-      startsAt: { lte: now },
-      OR: [{ endsAt: null }, { endsAt: { gte: now } }],
-    },
-  })
+  // Batch both override queries in parallel to reduce database round trips
+  const [overridesAgency, overridesSub] = await Promise.all([
+    inheritAgency
+      ? db.entitlementOverride.findMany({
+          where: {
+            scope: 'AGENCY' as any,
+            agencyId: args.agencyId,
+            subAccountId: null,
+            startsAt: { lte: now },
+            OR: [{ endsAt: null }, { endsAt: { gte: now } }],
+          },
+        })
+      : Promise.resolve([]),
+    db.entitlementOverride.findMany({
+      where: {
+        scope: args.scope,
+        agencyId: args.agencyId,
+        subAccountId: args.subAccountId || null,
+        startsAt: { lte: now },
+        OR: [{ endsAt: null }, { endsAt: { gte: now } }],
+      },
+    }),
+  ])
 
   const overrideMap = new Map<string, typeof overridesSub[number]>()
   for (const o of overridesAgency) overrideMap.set(o.featureKey, o)

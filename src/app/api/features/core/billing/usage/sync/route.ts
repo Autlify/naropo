@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Build usage lookup map
+    // Build usage lookup map and sync to SQLite in a single pass
     const usageByFeature = new Map<string, { currentUsage: number; period: UsagePeriod }>()
     for (const record of usageRecords) {
       usageByFeature.set(record.featureKey, {
@@ -67,8 +67,9 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // 3. Sync to SQLite
+    // 3. Sync to SQLite - process entitlements and usage together
     const syncedFeatures: string[] = []
+    const processedFeatures = new Set<string>()
     
     for (const [featureKey, entitlement] of Object.entries(entitlements)) {
       const usage = usageByFeature.get(featureKey)
@@ -91,11 +92,12 @@ export async function POST(req: NextRequest) {
       )
 
       syncedFeatures.push(featureKey)
+      processedFeatures.add(featureKey)
     }
 
     // Also sync any usage records that don't have entitlements (edge case)
     for (const [featureKey, usage] of usageByFeature) {
-      if (!entitlements[featureKey]) {
+      if (!processedFeatures.has(featureKey)) {
         // Feature has usage but no entitlement - sync with 0 limit
         trackingBuffer.syncFromPg(
           meteringScope,

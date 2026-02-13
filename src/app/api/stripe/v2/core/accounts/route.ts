@@ -775,8 +775,9 @@ export async function POST(req: Request) {
         // Create persons if provided (for company entities)
         const createdPersons: Array<{ id: string; relationship: V2PersonRelationship }> = []
         if (persons && persons.length > 0 && resolvedEntityType === 'company') {
-            for (const person of persons) {
-                try {
+            // Create all persons in parallel for better performance
+            const personResults = await Promise.allSettled(
+                persons.map(async (person) => {
                     const personParams = {
                         ...(person.firstName && person.lastName && {
                             given_name: person.firstName,
@@ -804,13 +805,21 @@ export async function POST(req: Request) {
                         createPerson(accountId: string, params: unknown): Promise<{ id: string }>
                     }).createPerson(account.id, personParams)
                     
-                    createdPersons.push({
+                    return {
                         id: createdPerson.id,
                         relationship: person.relationship || {},
-                    })
-                    console.log('✅ Created person:', createdPerson.id, 'for account:', account.id)
-                } catch (personError) {
-                    console.error('⚠️ Error creating person:', personError)
+                    }
+                })
+            )
+
+            // Process results and log errors
+            for (let i = 0; i < personResults.length; i++) {
+                const result = personResults[i]
+                if (result.status === 'fulfilled') {
+                    createdPersons.push(result.value)
+                    console.log('✅ Created person:', result.value.id, 'for account:', account.id)
+                } else {
+                    console.error('⚠️ Error creating person:', result.reason)
                     // Continue with other persons
                 }
             }

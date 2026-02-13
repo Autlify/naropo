@@ -120,13 +120,20 @@ export async function DELETE(req: NextRequest) {
     })
 
     // Step 3: Cancel Stripe subscriptions where user is last member
+    // Batch query all member counts to avoid N+1
+    const agencyIds = memberships.map((m) => m.Agency.id)
+    const memberCounts = await db.agencyMembership.groupBy({
+      by: ['agencyId'],
+      where: { agencyId: { in: agencyIds }, isActive: true },
+      _count: { id: true },
+    })
+    const memberCountMap = new Map(memberCounts.map((mc) => [mc.agencyId, mc._count.id]))
+
     for (const membership of memberships) {
       const agency = membership.Agency
       if (agency.Subscription?.subscritiptionId && agency.customerId) {
         try {
-          const memberCount = await db.agencyMembership.count({
-            where: { agencyId: agency.id, isActive: true },
-          })
+          const memberCount = memberCountMap.get(agency.id) ?? 0
 
           // Only cancel if user is the last member
           if (memberCount === 1) {

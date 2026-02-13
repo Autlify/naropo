@@ -27,13 +27,21 @@ export async function POST(req: NextRequest) {
     select: { agencyId: true, priceId: true },
   })
 
-  let processed = 0
-  for (const s of subs) {
-    await grantRecurringCreditsForAgency({ agencyId: s.agencyId || '', planId: s.priceId, now })
-    processed += 1
+  // Process all subscriptions in parallel for better performance
+  const results = await Promise.allSettled(
+    subs.map((s) =>
+      grantRecurringCreditsForAgency({ agencyId: s.agencyId || '', planId: s.priceId, now })
+    )
+  )
+
+  const processed = results.filter((r) => r.status === 'fulfilled').length
+  const failed = results.filter((r) => r.status === 'rejected').length
+
+  if (failed > 0) {
+    console.error(`Grant credits job completed with ${failed} failures out of ${subs.length} subscriptions`)
   }
 
-  return NextResponse.json({ ok: true, processed, actor })
+  return NextResponse.json({ ok: true, processed, failed, total: subs.length, actor })
 }
 
 // Allow GET for quick manual runs.
