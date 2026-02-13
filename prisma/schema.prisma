@@ -483,6 +483,7 @@ model Agency {
   JournalUploadBatches      JournalUploadBatch[]
 
   @@index([taxIdentityId])
+  @@index([connectAccountId])
   @@schema("public")
 }
 
@@ -580,6 +581,7 @@ model SubAccount {
 
   @@index([agencyId])
   @@index([taxIdentityId])
+  @@index([connectAccountId])
   @@schema("public")
 }
 
