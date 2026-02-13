@@ -73,7 +73,7 @@ const FormSchema = z.object({
 
 interface SubAccountDetailsProps {
   //To add the sub account to the agency
-  agencyDetails: Agency
+  agencyDetails: Pick<Agency, 'id'>
   details?: Partial<SubAccount>
   userId: string
   userName: string

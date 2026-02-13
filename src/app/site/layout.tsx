@@ -15,7 +15,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
 
   return ( 
-      <main className={'min-w-screen min-h-screen flex flex-col'}>
+      <main className={'flex flex-col'}>
         {/* {!hideNavigation && <Navigation />} */}
         {!hideNavigation && <Navbar />}
         {children}

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireIntegrationAuth } from '@/lib/features/core/integrations/guards'
-import { createApiKey, listApiKeys } from '@/lib/features/core/integrations/store'
+import { requireIntegrationAuth } from '@/lib/features/org/integrations/guards'
+import { createApiKey, listApiKeys } from '@/lib/features/org/integrations/store'
 import { KEYS } from '@/lib/registry/keys/permissions'
 
 const CreateSchema = z.object({
@@ -10,7 +10,7 @@ const CreateSchema = z.object({
 
 export async function GET(req: Request) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.core.apps.webhooks.view] })
+    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.org.apps.webhooks.view] })
     const keys = await listApiKeys(scope)
     return NextResponse.json({ apiKeys: keys })
   } catch (e: any) {
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const auth = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+    const auth = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
     const body = await req.json()
     const parsed = CreateSchema.safeParse(body)
     if (!parsed.success) {

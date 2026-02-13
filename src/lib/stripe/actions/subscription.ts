@@ -112,6 +112,9 @@ export const syncSubscriptionStatus = async (
     subscriptionId: string
 ): Promise<ActionResult> => {
     try {
+        if (!subscriptionId) {
+            return { success: false, error: 'Stripe subscription ID is required' }
+        }
         // Fetch subscription from Stripe
         const stripeSub = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription
         if (!stripeSub) {

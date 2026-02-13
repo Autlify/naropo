@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Role, Permission } from '@/generated/prisma/client'
+import { Role } from '@/generated/prisma/client'
+import type { PermissionInfo, RoleWithPermissions } from '@/lib/features/iam/authz/role-permissions'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -43,12 +44,6 @@ const FormSchema = z.object({
 
 type FormValues = z.infer<typeof FormSchema>
 
-interface RoleWithPermissions extends Role {
-  Permissions: Array<{
-    Permission: Permission
-  }>
-}
-
 interface RoleAssignmentFormProps {
   userId: string
   agencyId: string
@@ -67,7 +62,7 @@ export default function RoleAssignmentForm({
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedRolePermissions, setSelectedRolePermissions] = useState<Permission[]>([])
+  const [selectedRolePermissions, setSelectedRolePermissions] = useState<PermissionInfo[]>([])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),

@@ -132,7 +132,7 @@ export async function sendVerificationEmail({
   const text = `
     Hello ${name},
 
-    Thank you for signing up for Naropo! Please verify your email address by clicking the link below:
+    Thank you for signing up for Autlify! Please verify your email address by clicking the link below:
 
     ${verificationUrl}
 
@@ -141,7 +141,7 @@ export async function sendVerificationEmail({
     The verification link will expire in 24 hours.
 
     Regards,
-    The Naropo Team
+    The Autlify Team
   `
 
   const html = `
@@ -272,7 +272,7 @@ export async function sendPasswordResetEmail({
     This link will expire in 1 hour.
 
     Regards,
-    The Naropo Team
+    The Autlify Team
   `
 
   const html = `
@@ -410,23 +410,23 @@ export async function sendInvitationEmail({
   const baseUrl = process.env.NEXT_PUBLIC_URL
   const invitationUrl = `${baseUrl}agency/sign-up?invitation=${invitationId}`
 
-  const subject = "You're invited to join Naropo!"
+  const subject = "You're invited to join Autlify!"
 
   const text = `
     Hello ${name},
 
-    You have been invited to join ${tenantName} on Naropo as ${role}.
+    You have been invited to join ${tenantName} on Autlify as ${role}.
 
     To accept the invitation and create your account, please click the link below:
 
     ${invitationUrl}
 
-    If you have any questions or need assistance, feel free to reach out to us at support@naropo.com.
+    If you have any questions or need assistance, feel free to reach out to us at support@autlify.com.
 
     This invitation link will remain valid until you create your account.
 
     Regards,
-    The Naropo Team
+    The Autlify Team
   `
 
   const html = `
@@ -434,7 +434,7 @@ export async function sendInvitationEmail({
     <html lang="en">
     <head>
       <meta charset="UTF-8" />
-      <title>You're invited to join Naropo!</title>
+      <title>You're invited to join Autlify!</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <style>
         :root {
@@ -533,16 +533,16 @@ export async function sendInvitationEmail({
     </head>
     <body>
       <div class="card">
-        <h2 style="font-size: 1.875rem; font-weight: bold;">🎉 You're invited to join Naropo!</h2>
+        <h2 style="font-size: 1.875rem; font-weight: bold;">🎉 You're invited to join Autlify!</h2>
         <p style="margin-top: 0.5rem;">Hello ${name},</p>
         <p style="margin-top: 0.5rem;">
-          You have been invited to join  ${tenantName} on Naropo as <span class="accent-invitation">${role}</span>.
+          You have been invited to join  ${tenantName} on Autlify as <span class="accent-invitation">${role}</span>.
         </p>
         <p style="margin-top: 1rem;">To accept the invitation and create your account, please click the button below:</p>
         <a href="${invitationUrl}" class="btn">Accept Invitation</a>
         <p style="margin-top: 2rem; font-size: 0.9rem; color: #aaa;">
           If you have any questions or need assistance, feel free to reach out to us at 
-          <a href="mailto:support@naropo.com" style="color: #06b6d4; text-decoration: none;">support@naropo.com</a>.
+          <a href="mailto:support@autlify.com" style="color: #06b6d4; text-decoration: none;">support@autlify.com</a>.
         </p>
       </div>
     </body>

@@ -6,12 +6,11 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
-import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions';
 import { calculateAccountBalance, formatCurrency, formatDate } from '../utils/helpers';
 import { BALANCE_SHEET_SECTIONS, INCOME_STATEMENT_SECTIONS } from '../constants';
 import type { AccountCategory } from '@/generated/prisma/client';
 import Decimal from 'decimal.js';
+import { getActionContext, hasContextPermission, type ActionContext } from '@/lib/features/iam/authz/action-context';
 
 type ActionResult<T> = {
   success: boolean;
@@ -19,27 +18,9 @@ type ActionResult<T> = {
   error?: string;
 };
 
-type Context = {
-  agencyId?: string;
-  subAccountId?: string;
-  userId: string;
-};
+type Context = ActionContext;
 
-const getContext = async (): Promise<Context | null> => {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const dbSession = await db.session.findFirst({
-    where: { userId: session.user.id },
-    select: { activeAgencyId: true, activeSubAccountId: true },
-  });
-
-  return {
-    userId: session.user.id,
-    agencyId: dbSession?.activeAgencyId ?? undefined,
-    subAccountId: dbSession?.activeSubAccountId ?? undefined,
-  };
-};
+const getContext = getActionContext;
 
 /**
  * Generate Trial Balance
@@ -57,9 +38,7 @@ export const generateTrialBalance = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reports.generate')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reports.generate');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reports.generate');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to generate reports' };
@@ -184,9 +163,7 @@ export const generateBalanceSheet = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reports.generate')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reports.generate');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reports.generate');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to generate reports' };
@@ -363,9 +340,7 @@ export const generateIncomeStatement = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reports.generate')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reports.generate');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reports.generate');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to generate reports' };
@@ -546,9 +521,7 @@ export const generateGeneralLedger = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reports.generate')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reports.generate');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reports.generate');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to generate reports' };

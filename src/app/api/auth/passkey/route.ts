@@ -10,15 +10,43 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateRegistrationOptions, generateAuthenticationOptions } from '@simplewebauthn/server'
 import { createVerificationToken } from '@/lib/queries'
-import type {
+import type { 
   PublicKeyCredentialCreationOptionsJSON,
-  PublicKeyCredentialRequestOptionsJSON
+  PublicKeyCredentialRequestOptionsJSON 
 } from '@simplewebauthn/types'
 
-const rpID = process.env.NEXT_PUBLIC_DOMAIN || 'localhost'
+import { getAppOrigin } from '@/lib/core/runtime/origins'
+
+/**
+ * WebAuthn RP ID must be a domain (no scheme, no port).
+ * Many developers set NEXT_PUBLIC_DOMAIN to "localhost:3000" which breaks passkeys.
+ */
+function resolveRpId(req: Request): string {
+  const raw = process.env.NEXT_PUBLIC_DOMAIN?.trim()
+
+  if (raw) {
+    try {
+      // allow "example.com", "example.com:3000", or full URLs
+      const url = raw.includes('://') ? new URL(raw) : new URL(`https://${raw}`)
+      return url.hostname
+    } catch {
+      // last resort: strip port
+      return raw.split(':')[0] || 'localhost'
+    }
+  }
+
+  // fallback: infer from current request origin
+  try {
+    const origin = getAppOrigin({ headers: req.headers as any })
+    return new URL(origin).hostname || 'localhost'
+  } catch {
+    return 'localhost'
+  }
+}
 
 export async function POST(req: Request) {
   try {
+    const rpID = resolveRpId(req)
     const { mode, email, userName, usernameless } = await req.json()
 
     if (!mode) {
@@ -63,7 +91,7 @@ export async function POST(req: Request) {
 
       const options: PublicKeyCredentialCreationOptionsJSON = await generateRegistrationOptions({
         rpID,
-        rpName: 'Naropo',
+        rpName: 'Autlify',
         userName: email,
         userID: user!.id,
         userDisplayName: userName,
@@ -107,12 +135,12 @@ export async function POST(req: Request) {
         rpID,
         // Empty array = discoverable credentials (any passkey for this RP)
         // Specific credentials = only allow specific user's passkeys
-        allowCredentials: usernameless || !user
-          ? []
+        allowCredentials: usernameless || !user 
+          ? [] 
           : user!.Passkeys.map((pk) => ({
-            id: Buffer.from(pk.credentialId, 'base64'),
-            type: 'public-key' as const,
-          })),
+              id: Buffer.from(pk.credentialId, 'base64'),
+              type: 'public-key' as const,
+            })),
         userVerification: 'preferred',
       })
 

@@ -3,9 +3,9 @@ import type { NextRequest } from 'next/server'
 
 import { Prisma } from '@/generated/prisma/client'
 import { db } from '@/lib/db'
-import { createCreditLedger } from '@/lib/features/core/billing/credits/ledger'
+import { createCreditLedger } from '@/lib/features/org/billing/credits/ledger'
 
-import { assertJobSecret, getSystemJobActor } from '@/lib/features/system/job-auth'
+import { assertJobSecret, getSystemJobActor } from '@/lib/core/system/job-auth'
 
 export async function POST(req: NextRequest) {
   try {

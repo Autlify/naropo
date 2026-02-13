@@ -6,6 +6,8 @@ import { SparklesCore } from '@/components/ui/sparkles'
 import { BorderTrail } from '@/components/ui/border-trail'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import GlassContainer from '@/components/ui/glass-container'
+import { BentoGrid } from '@/components/ui/bento-grid'
 
 /**
  * Linear-inspired Home Page
@@ -41,7 +43,7 @@ export default function Home() {
             {/* Hero Headline - Linear Typography */}
             <h1 className="max-w-6xl font-semibold leading-[1.1] tracking-[-0.022em]">
               <span className="block text-4xl md:text-5xl lg:text-6xl text-fg-primary">
-                Naropo is a{' '}
+                Autlify is a{' '}
                 <span className="relative inline-block">
                   <span className="bg-gradient-to-r from-accent-base via-accent-base to-accent-hover bg-clip-text text-transparent">
                     purpose-built tool
@@ -88,12 +90,14 @@ export default function Home() {
         </div>
 
         {/* Hero Image Section - Linear's refined presentation */}
-        <div className="relative mx-auto max-w-[1400px] px-6 lg:px-8">
-          <div className="relative aspect-[16/9] overflow-hidden rounded-2xl border bg-gradient-to-b from-bg-level-1 to-bg-level-2 shadow-[var(--color-shadow-xl)]">
-            {/* Premium: Blue rim glow */}
-            <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-accent-base/20" aria-hidden="true"></div>
 
-            {/* Actual app screenshot */}
+        {/* Hero Preview - Linear-style glass container with edge fading */}
+        <div className="relative mx-auto max-w-[1400px] px-6 lg:px-8">
+          <GlassContainer
+            maskFade="bottom-right"
+            outerRadius={18}
+            innerRadius={10}
+          >
             <Image
               src={'/assets/preview.png'}
               alt="banner image"
@@ -101,23 +105,8 @@ export default function Home() {
               width={1200}
               className="w-full h-full object-cover object-top"
             />
-
-            {/* 50% gradient overlay from bg to transparent */}
-            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-bg-primary to-transparent z-10"></div>
-
-            {/* Premium mask gradient for high-end look */}
-            <div
-              className="absolute inset-0 z-10 pointer-events-none"
-              style={{
-                maskImage: 'radial-gradient(ellipse 70% 60% at 50% 40%, black 40%, transparent 100%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 50% 40%, black 40%, transparent 100%)'
-              }}
-              aria-hidden="true"
-            >
-              <div className="absolute inset-0 bg-gradient-to-b from-bg-primary/40 via-transparent to-bg-primary"></div>
-            </div>
-          </div>
-        </div>
+          </GlassContainer>
+        </div> 
       </section>
       {/* Spacer */}
       <div className="h-32 md:h-40" aria-hidden="true" />
@@ -166,7 +155,7 @@ export default function Home() {
               </h2>
               <div className="h-6" aria-hidden="true" />
               <p className="text-lg leading-[1.6] text-fg-secondary">
-                Naropo is shaped by the practices and principles that distinguish world-class agency teams from the rest: relentless focus, fast execution, and a commitment to the quality of craft.
+                Autlify is shaped by the practices and principles that distinguish world-class agency teams from the rest: relentless focus, fast execution, and a commitment to the quality of craft.
               </p>
             </div>
 
@@ -224,7 +213,7 @@ export default function Home() {
 
       {/* Secondary Feature Section - Linear showcase */}
       <section className="relative items-center justify-center px-4 pt-16 sm:pt-28">
-
+ 
 
         <div className="mx-auto max-w-[1024px] px-6 lg:px-8">
           <div className="text-center">
@@ -247,28 +236,34 @@ export default function Home() {
 
           <div className="h-20 md:h-28" aria-hidden="true" />
 
-          <div className="grid gap-4 md:grid-cols-2">
+        
+          <BentoGrid className="md:grid-cols-2 md:auto-rows-[16rem] lg:auto-rows-[18rem] gap-4">
             {[
               'Manage projects end-to-end',
               'Project updates',
               'Ideate and specify',
               'AI-assisted development'
             ].map((label, i) => (
-              <div
+              <GlassContainer
                 key={i}
-                className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-line-secondary bg-bg-level-1 shadow-[var(--color-shadow-sm)] transition-all hover:border-accent-tint hover:shadow-[var(--color-shadow-md)]"
+                maskFade="bottom-right"
+                outerRadius={18}
+                innerRadius={10}
+                className={i === 0 ? 'md:col-span-2' : ''}
               >
-                {/* Premium: Blue accent gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-accent-base/[0.03] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true"></div>
+                <div className="group relative h-full overflow-hidden">
+                  {/* Premium: Blue accent gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-accent-base/[0.03] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
 
-                <div className="relative flex h-full items-end p-6 bg-[image:var(--color-bg-tertiary-gradient)]">
-                  <span className="text-sm font-medium text-fg-secondary group-hover:text-accent-hover transition-colors">
-                    {label}
-                  </span>
+                  <div className="relative flex h-full items-end p-6">
+                    <span className="text-sm font-medium text-fg-secondary group-hover:text-accent-hover transition-colors">
+                      {label}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </GlassContainer>
             ))}
-          </div>
+          </BentoGrid>
         </div>
 
       </section>
@@ -362,7 +357,7 @@ export default function Home() {
 
 //           <div className="bg-gradient-to-r from-primary to-secondary-foreground text-transparent bg-clip-text relative">
 //             <h1 className="text-9xl font-bold text-center md:text-[300px]">
-//               Naropo
+//               Autlify
 //             </h1>
 //           </div>
 //           <div className="flex justify-center items-center relative md:mt-[-70px] w-full mx-auto mt-4 md:mt-0">
@@ -384,7 +379,7 @@ export default function Home() {
 //       {/* <section className="relative flex items-center justify-center flex-col pt-32 md:pt-40 pb-16 md:pb-24 px-4">
 //         <div className="bg-gradient-to-r from-primary to-secondary-foreground text-transparent bg-clip-text relative mb-8 md:mb-12">
 //           <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[200px] xl:text-[280px] font-bold text-center leading-none">
-//             Naropo
+//             Autlify
 //           </h1>
 //         </div>
 

@@ -1,4 +1,4 @@
-import DocsLayout from '@/components/site/docs-layout'
+import DocsLayout from '@/components/site/docs/docs-layout'
 import Link from 'next/link'
 import { ArrowRight, Terminal, CheckCircle2 } from 'lucide-react'
 
@@ -26,7 +26,7 @@ export default function QuickStartPage() {
         {/* Page Header */}
         <div className="mb-8 not-prose">
           <div className="mb-4">
-            <Link
+            <Link 
               href="/site/docs"
               className="inline-flex items-center gap-1 text-sm text-fg-tertiary hover:text-fg-secondary transition-colors"
             >
@@ -39,7 +39,7 @@ export default function QuickStartPage() {
             Quick Start Guide
           </h1>
           <p className="text-lg text-fg-secondary">
-            Get up and running with Naropo in under 5 minutes.
+            Get up and running with Autlify in under 5 minutes.
           </p>
         </div>
 
@@ -61,7 +61,7 @@ export default function QuickStartPage() {
           Installation
         </h2>
         <p className="text-fg-secondary leading-relaxed mb-6">
-          Naropo is a web-based platform that requires no installation. Simply create an account
+          Autlify is a web-based platform that requires no installation. Simply create an account
           and start using it right away from your browser.
         </p>
 
@@ -79,7 +79,7 @@ export default function QuickStartPage() {
                 <div className="text-sm text-fg-tertiary">
                   Navigate to{' '}
                   <Link href="/site/pricing" className="text-accent-base hover:text-accent-hover">
-                    naropo.com/signup
+                    autlify.com/signup
                   </Link>
                 </div>
               </div>
@@ -137,7 +137,7 @@ export default function QuickStartPage() {
                 Tip: Use Templates
               </div>
               <div className="text-sm text-warning-foreground/90">
-                Naropo offers pre-built templates for common workflows like Software Development,
+                Autlify offers pre-built templates for common workflows like Software Development,
                 Marketing Campaigns, and Product Launches. Choose one to get started faster!
               </div>
             </div>
@@ -201,7 +201,7 @@ export default function QuickStartPage() {
           Invite Team Members
         </h2>
         <p className="text-fg-secondary leading-relaxed mb-4">
-          Collaboration is at the heart of Naropo. Invite your teammates to join your workspace:
+          Collaboration is at the heart of Autlify. Invite your teammates to join your workspace:
         </p>
         <ol className="space-y-3 mb-6">
           <li className="text-fg-secondary">
@@ -226,7 +226,7 @@ export default function QuickStartPage() {
           Next Steps
         </h2>
         <p className="text-fg-secondary leading-relaxed mb-6">
-          Congratulations! You've successfully set up Naropo. Here's what to explore next:
+          Congratulations! You've successfully set up Autlify. Here's what to explore next:
         </p>
 
         <div className="not-prose grid gap-4 sm:grid-cols-2 mb-12">
@@ -270,7 +270,7 @@ export default function QuickStartPage() {
               API Integration
             </div>
             <div className="text-sm text-fg-tertiary mb-3">
-              Connect Naropo with your existing tools and workflows
+              Connect Autlify with your existing tools and workflows
             </div>
             <div className="text-sm text-accent-base flex items-center gap-1">
               View API docs

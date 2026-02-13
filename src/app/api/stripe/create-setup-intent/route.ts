@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe'
 import Stripe from 'stripe'
 import { auth } from '@/auth'
 import {db} from '@/lib/db'
+import { makeStripeIdempotencyKey } from '@/lib/stripe/idempotency'
 
 /**
  * POST /api/stripe/create-setup-intent
@@ -31,19 +32,39 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const body = await req.json()
-    let { customerId } = body
+    const body = await req.json().catch(() => ({}))
+    let { customerId } = body as { customerId?: string }
+
+    // Do not trust client-provided customerId.
+    // Only allow using a customerId that belongs to the current user (user.customerId)
+    // or any agency the user is a member of (agency.customerId).
+    const userRecord = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { email: true, name: true, firstName: true, lastName: true, customerId: true },
+    })
+
+    const memberships = await db.agencyMembership.findMany({
+      where: { userId: session.user.id },
+      include: { Agency: { select: { customerId: true } } },
+    })
+
+    const allowedCustomerIds = new Set<string>([
+      ...(userRecord?.customerId ? [userRecord.customerId] : []),
+      ...memberships.map((m) => m.Agency?.customerId).filter(Boolean) as string[],
+    ])
+
+    if (customerId && !allowedCustomerIds.has(customerId)) {
+      console.warn('⚠️ Ignoring untrusted customerId from client')
+      customerId = undefined
+    }
 
     // CRITICAL: Check if user has an agency with customerId first
     // This fixes the issue where existing users have their Stripe customer on Agency table, not User table
     if (!customerId) {
-      const agencyMembership = await db.agencyMembership.findFirst({
-        where: { userId: session.user.id },
-        include: { Agency: { select: { customerId: true } } },
-      })
-      
-      if (agencyMembership?.Agency?.customerId) {
-        customerId = agencyMembership.Agency.customerId
+      // Prefer agency-level customerId (workspace billing identity) if present.
+      const agencyCustomerId = memberships.find((m) => m.Agency?.customerId)?.Agency?.customerId
+      if (agencyCustomerId) {
+        customerId = agencyCustomerId
         console.log('✅ Using agency customerId:', customerId)
       }
     }
@@ -53,12 +74,7 @@ export async function POST(req: NextRequest) {
       console.log('🔧 No customerId provided, creating new Stripe customer...')
       
       // Get user details for customer creation
-      const user = await db.user.findUnique({
-        where: { id: session.user.id },
-        select: { email: true, name: true, firstName: true, lastName: true },
-      })
-
-      if (!user?.email) {
+      if (!userRecord?.email) {
         return NextResponse.json(
           { error: 'User email not found' },
           { status: 400 }
@@ -66,13 +82,20 @@ export async function POST(req: NextRequest) {
       }
 
       // Create Stripe customer
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || undefined,
-        metadata: {
-          userId: session.user.id,
+      const idem = makeStripeIdempotencyKey('customer_create', ['user', session.user.id])
+      const customer = await stripe.customers.create(
+        {
+          email: userRecord.email,
+          name:
+            userRecord.name ||
+            `${userRecord.firstName || ''} ${userRecord.lastName || ''}`.trim() ||
+            undefined,
+          metadata: {
+            userId: session.user.id,
+          },
         },
-      })
+        { idempotencyKey: idem }
+      )
 
       customerId = customer.id
       console.log('✅ Created Stripe customer:', customerId)

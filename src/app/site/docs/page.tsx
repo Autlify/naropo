@@ -1,4 +1,4 @@
-import DocsLayout from '@/components/site/docs-layout'
+import DocsLayout from '@/components/site/docs/docs-layout'
 import Link from 'next/link'
 import { Zap, Shield, Lock, Code2, ArrowRight } from 'lucide-react'
 
@@ -11,7 +11,7 @@ import { Zap, Shield, Lock, Code2, ArrowRight } from 'lucide-react'
 export default function DocsPage() {
   // Table of contents for right sidebar
   const tableOfContents = [
-    { title: "What is Naropo?", id: "what-is-naropo", level: 2 },
+    { title: "What is Autlify?", id: "what-is-autlify", level: 2 },
     { title: "Key Features", id: "key-features", level: 2 },
     { title: "Quick Start", id: "quick-start", level: 2 },
     { title: "Popular Guides", id: "popular-guides", level: 2 },
@@ -55,16 +55,16 @@ export default function DocsPage() {
           Introduction
         </h1>
         <p className="text-lg text-fg-secondary leading-relaxed mb-8">
-          Welcome to the Naropo documentation. Learn how to build better workflows,
+          Welcome to the Autlify documentation. Learn how to build better workflows,
           manage projects efficiently, and collaborate with your team.
         </p>
 
-        {/* What is Naropo */}
-        <h2 id="what-is-naropo" className="text-2xl font-semibold text-fg-primary mt-12 mb-4">
-          What is Naropo?
+        {/* What is Autlify */}
+        <h2 id="what-is-autlify" className="text-2xl font-semibold text-fg-primary mt-12 mb-4">
+          What is Autlify?
         </h2>
         <p className="text-fg-secondary leading-relaxed mb-6">
-          Naropo is a modern project management platform designed for high-performing teams.
+          Autlify is a modern project management platform designed for high-performing teams.
           Built with speed and simplicity in mind, it helps you track work, manage workflows,
           and collaborate seamlessly—all in one place.
         </p>
@@ -97,7 +97,7 @@ export default function DocsPage() {
           Quick Start
         </h2>
         <p className="text-fg-secondary leading-relaxed mb-6">
-          Get started with Naropo in just a few minutes. Follow our quick start guide
+          Get started with Autlify in just a few minutes. Follow our quick start guide
           to create your first project and invite your team.
         </p>
         <div className="not-prose rounded-lg border border-line-secondary bg-bg-secondary p-6 mb-12">
@@ -111,7 +111,7 @@ export default function DocsPage() {
                 <div className="text-sm text-fg-tertiary">
                   Sign up for free at{' '}
                   <Link href="/site/pricing" className="text-accent-base hover:text-accent-hover">
-                    naropo.com
+                    autlify.com
                   </Link>
                 </div>
               </div>
@@ -179,7 +179,7 @@ export default function DocsPage() {
               Contact Support
             </Link>
             <Link
-              href="https://github.com/naropo/naropo"
+              href="https://github.com/autlify/autlify"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line-tertiary bg-button-secondary-bg px-6 text-sm font-medium text-button-secondary-text transition-all hover:bg-button-secondary-bg-hover hover:border-accent-tint active:scale-[0.98]"

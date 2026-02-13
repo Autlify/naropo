@@ -51,19 +51,19 @@ export const createAccountSchema = z.object({
 });
 
 export const updateAccountSchema = createAccountSchema.partial().extend({
-  id: z.uuid(),
+  id: z.string().uuid(),
 });
 
 export const accountHierarchyMoveSchema = z.object({
-  accountId: z.uuid(),
-  newParentId: z.uuid().optional().nullable(),
+  accountId: z.string().uuid(),
+  newParentId: z.string().uuid().optional().nullable(),
   newSortOrder: z.number().int().min(0),
 });
 
 export const consolidationMappingSchema = z.object({
-  subAccountId: z.uuid(),
+  subAccountId: z.string().uuid(),
   subAccountCOACode: z.string().min(1),
-  groupCOAId: z.uuid(),
+  groupCOAId: z.string().uuid(),
   mappingPercentage: z.number().min(0).max(100).default(100),
   isElimination: z.boolean().default(false),
   eliminationPairId: z.string().uuid().optional(),

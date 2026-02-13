@@ -2139,13 +2139,13 @@ B (255 */
       background-color: hsl(var(--button-secondary-bg-hover));
       border-color: hsl(var(--button-secondary-border-hover));
       box-shadow: var(--shadow-md);
-      transform: translateY(-0.5px) scale(1.01);
+      transform: translateY(-0.5px);
     }
   }
 
   .btn-secondary:active {
     background-color: hsl(var(--button-secondary-bg-active));
-    transform: translateY(0) scale(0.99);
+    transform: translateY(0);
   }
 
   .btn-secondary:focus-visible {
@@ -2202,13 +2202,13 @@ B (255 */
       border-color: hsl(var(--brand-gradient-border-hover));
       box-shadow: var(--shadow-xl),
         0 0 20px hsl(var(--brand-gradient-bg) / 0.9);
-      transform: translateY(0px) scale(1.03);
+      transform: translateY(-1px);
     }
   }
 
   .btn-brand:active {
     background-color: hsl(var(--brand-bg-active));
-    transform: translateY(0) scale(0.98);
+    transform: translateY(0);
   }
 
   .btn-brand:focus-visible {
@@ -2255,13 +2255,13 @@ B (255 */
   @media (hover: hover) {
     .btn-ghost:hover {
       background-color: hsl(var(--bg-quinary));
-      transform: scale(1.02);
+      transform: translateY(-0.5px);
     }
   }
 
   .btn-ghost:active {
     background-color: hsl(var(--bg-quaternary));
-    transform: scale(0.98);
+    transform: translateY(0);
   }
 
   .btn-ghost:focus-visible {
@@ -2307,13 +2307,13 @@ B (255 */
       background-color: hsl(var(--bg-secondary));
       border-color: hsl(var(--accent));
       color: hsl(var(--accent));
-      transform: scale(1.02);
+      transform: translateY(-0.5px);
     }
   }
 
   .btn-outline:active {
     background-color: hsl(var(--bg-tertiary));
-    transform: scale(0.98);
+    transform: translateY(0);
   }
 
   .btn-outline:focus-visible {
@@ -3161,138 +3161,204 @@ h6,
   /* 80px - accounts for sticky header (56px) + padding */
 }
 
-/* Glass Container */
+/* ========================
+   Linear-Style Glass Container
+   ======================== */
+
+/* Mask visibility variables */
+:root {
+  --mask-visible: black;
+  --mask-invisible: transparent;
+}
+
+/* Gradient Border utility - creates border-only gradient using mask */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: "";
+  pointer-events: none;
+  user-select: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: var(--gradientBorder-size, 1px);
+  background: var(--gradientBorder-gradient);
+  /* Mask trick: show only the border area */
+  -webkit-mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
+  mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
+  -webkit-mask-clip: content-box, border-box;
+  mask-clip: content-box, border-box;
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Outer glass layer */
 .glass-outer {
-  --glass-border-size: 1px;
-  --glass-border-gradient: linear-gradient(to bottom right, rgba(255,255,255,0.07), transparent);
+  --gradientBorder-size: 1px;
+  --gradientBorder-gradient: linear-gradient(to bottom right, #ffffff12, transparent);
   border-radius: 18px;
   width: 100%;
   height: 100%;
   padding: 8px;
-  background:   var(--glass-border-gradient);
 }
 
+/* Inner glass layer with diagonal gradient fill */
 .glass-inner {
   isolation: isolate;
-  --glass-border-size: 1px;
-  --glass-border-gradient: linear-gradient(to bottom right, rgba(255,255,255,0.17), transparent);
-  background: var(--glass-border-gradient);
+  --gradientBorder-size: 1px;
+  --gradientBorder-gradient: linear-gradient(to bottom right, #ffffff2b, transparent);
+  background: linear-gradient(134deg, #ffffff14, #ffffff05, transparent 55%);
   border-radius: 10px;
   position: relative;
   overflow: hidden;
   height: 100%;
 }
 
+/* Noise overlay effect */
 .glass-inner::after {
   content: "";
   pointer-events: none;
-  filter: url(#noiseFilter);
-  mix-blend-mode: overlay;
-  opacity: 0.1;
   position: absolute;
   inset: 0;
+  filter: url(#noiseFilter);
+  mix-blend-mode: overlay;
+  opacity: 0.15;
+  background: white;
 }
 
-/* Hide noise when data-noise="false" */
+/* Hide noise when disabled */
 .glass-inner[data-noise="false"]::after {
   display: none;
 }
 
-/* Light theme glass adjustments */
+/* Light theme adjustments */
 .light .glass-outer {
-  background: linear-gradient(to bottom right, rgba(0,0,0,0.03), transparent);
+  --gradientBorder-gradient: linear-gradient(to bottom right, rgba(0, 0, 0, 0.06), transparent);
 }
 
 .light .glass-inner {
-  background: linear-gradient(134deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7), rgba(255,255,255,0.5) 55%);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  --gradientBorder-gradient: linear-gradient(to bottom right, rgba(0, 0, 0, 0.08), transparent);
+  background: linear-gradient(134deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.6) 55%);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
-/* Premium/Dark theme glass - more visible effect */
+/* Dark/Premium theme - more visible effect */
 .dark .glass-outer,
 .premium .glass-outer {
-  background: linear-gradient(to bottom right, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+  --gradientBorder-gradient: linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
 }
 
 .dark .glass-inner,
 .premium .glass-inner {
-  background: linear-gradient(134deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04), transparent 55%);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-.mask-fade-br {
-  mask-image: linear-gradient(to bottom, black 50%, transparent 100%),
-    linear-gradient(to right, black 20%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%),
-    linear-gradient(to right, black 20%, transparent 100%);
-  mask-composite: intersect;
-  -webkit-mask-composite: source-in;
-}
-.glass-card {
-    -webkit-user-select: none;
-    user-select: none;
-    aspect-ratio: 432/320;
-    --mask-bottom: linear-gradient(to bottom,var(--mask-visible)50%,var(--mask-invisible)100%);
-    --mask-right: linear-gradient(to right,var(--mask-visible)20%,var(--mask-invisible)100%);
-    width: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    -webkit-mask-image: var(--mask-bottom),var(--mask-right);
-    -webkit-mask-image: var(--mask-bottom),var(--mask-right);
-    mask-image: var(--mask-bottom),var(--mask-right);
-    -webkit-mask-composite: source-in;
-    overflow: hidden;
-    -webkit-mask-composite: source-in;
-    mask-composite: intersect;
+  --gradientBorder-gradient: linear-gradient(to bottom right, rgba(255, 255, 255, 0.18), transparent);
+  background: linear-gradient(134deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04), transparent 55%);
 }
 
-.glass-border-gradient {
-  --invisible: rgba(255,255,255,0);
-  --visible: rgba(255,255,255,0.2);
-  --mask-visible: var(--visible);
-  --mask-invisible: var(--invisible);
-    --glass-border-size: 1px;
-    --glass-border-gradient: linear-gradient(to bottom right, var(--visible), var(--invisible));
-    border-radius: 18px; 
-    width: 100%;
-    height: 100%;
-    padding: 8px;
-    border: 1px solid var(--glass-border-gradient);
-    background: var(--glass-border-gradient);
+/* Mask utility for fading edges */
+.mask-fade-br {
+  --mask-bottom: linear-gradient(to bottom, var(--mask-visible) 50%, var(--mask-invisible) 100%);
+  --mask-right: linear-gradient(to right, var(--mask-visible) 20%, var(--mask-invisible) 100%);
+  -webkit-mask-image: var(--mask-bottom), var(--mask-right);
+  mask-image: var(--mask-bottom), var(--mask-right);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+/* Glass card with aspect ratio and fading */
+.glass-card {
+  -webkit-user-select: none;
+  user-select: none;
+  aspect-ratio: 432/320;
+  --mask-bottom: linear-gradient(to bottom, var(--mask-visible) 50%, var(--mask-invisible) 100%);
+  --mask-right: linear-gradient(to right, var(--mask-visible) 20%, var(--mask-invisible) 100%);
+  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  -webkit-mask-image: var(--mask-bottom), var(--mask-right);
+  mask-image: var(--mask-bottom), var(--mask-right);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  overflow: hidden;
+}
+
+/* Glass container wrapper with edge fading (Linear-style) */
+.glass-container {
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Customizable fade masks */
+  --mask-bottom: linear-gradient(to bottom, var(--mask-visible) 30%, var(--mask-invisible) 80%);
+  --mask-right: linear-gradient(to right, var(--mask-visible) 40%, var(--mask-invisible) 90%);
+  -webkit-mask-image: var(--mask-bottom), var(--mask-right);
+  mask-image: var(--mask-bottom), var(--mask-right);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 .premium .module__C0ELRa__root {
-    -webkit-user-select: none;
-    user-select: none;
-    aspect-ratio: 432 / 320;
-    --mask-bottom: linear-gradient(to bottom, var(--mask-visible) 50%, var(--mask-invisible) 100%);
-    --mask-right: linear-gradient(to right, var(--mask-visible) 20%, var(--mask-invisible) 100%);
-    width: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    -webkit-mask-image: var(--mask-bottom), var(--mask-right);
-    -webkit-mask-image: var(--mask-bottom), var(--mask-right);
-    mask-image: var(--mask-bottom), var(--mask-right);
-    -webkit-mask-composite: source-in;
-    overflow: hidden;
-    -webkit-mask-composite: source-in;
-    mask-composite: intersect;
+  -webkit-user-select: none;
+  user-select: none;
+  aspect-ratio: 432 / 320;
+  --mask-bottom: linear-gradient(to bottom, var(--mask-visible) 50%, var(--mask-invisible) 100%);
+  --mask-right: linear-gradient(to right, var(--mask-visible) 20%, var(--mask-invisible) 100%);
+  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  -webkit-mask-image: var(--mask-bottom), var(--mask-right);
+  -webkit-mask-image: var(--mask-bottom), var(--mask-right);
+  mask-image: var(--mask-bottom), var(--mask-right);
+  -webkit-mask-composite: source-in;
+  overflow: hidden;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 .premium .module__WDhx3G__outer {
-    --gradientBorder-size: 1px;
-    --gradientBorder-gradient: linear-gradient(to bottom right, #ffffff12, transparent); 
-    border-radius: 18px;
-    width: 100%;
-    padding: 8px;
+  --gradientBorder-size: 1px;
+  --gradientBorder-gradient: linear-gradient(to bottom right, #ffffff12, transparent);
+  border-radius: 18px;
+  width: 100%;
+  padding: 8px;
 }
 
 .premium .module__WDhx3G__inner {
-    isolation: isolate;
-    --gradientBorder-size: 1px;
-    --gradientBorder-gradient: linear-gradient(to bottom right, #ffffff2b, transparent);
-    background: linear-gradient(134deg, #ffffff14, #ffffff05, #fff0 55%);
-    border-radius: 10px;
-    position: relative;
-    overflow: hidden;
-    height: 100%;
+  isolation: isolate;
+  --gradientBorder-size: 1px;
+  --gradientBorder-gradient: linear-gradient(to bottom right, #ffffff2b, transparent);
+  background: linear-gradient(134deg, #ffffff14, #ffffff05, #fff0 55%);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+h2 {
+  --title-2-size: 1.25rem;
+  --title-2-line-height: 1.75rem;
+  --title-2-letter-spacing: -0.01em;
+  font-size: var(--title-2-size);
+  line-height: var(--title-2-line-height);
+  letter-spacing: var(--title-2-letter-spacing);
+  font-weight: var(--font-weight-medium);
+}
+
+p2 {
+  --body-2-size: 1rem;
+  --body-2-line-height: 1.5rem;
+  --body-2-letter-spacing: 0em;
+  font-size: var(--body-2-size);
+  line-height: var(--body-2-line-height);
+  letter-spacing: var(--body-2-letter-spacing);
+  font-weight: var(--font-weight-regular);
+}
+
+/* Utilities */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }

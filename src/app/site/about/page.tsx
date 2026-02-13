@@ -48,7 +48,7 @@ export default function AboutPage() {
           <div className="h-6" aria-hidden="true" />
 
           <p className="text-lg md:text-xl text-fg-secondary max-w-2xl mx-auto leading-[1.6]">
-            Naropo was created to solve a simple problem: existing project management
+            Autlify was created to solve a simple problem: existing project management
             tools are bloated, slow, and get in the way of actual work.
           </p>
         </div>
@@ -66,7 +66,7 @@ export default function AboutPage() {
               One that's fast, beautiful, and gets out of your way.
             </p>
             <p>
-              Naropo is designed around three core principles: speed, simplicity, and quality.
+              Autlify is designed around three core principles: speed, simplicity, and quality.
               We believe software should feel effortless to use, not like another chore on your list.
             </p>
             <p>

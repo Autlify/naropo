@@ -35,26 +35,19 @@ const SubaccountSettingPage = async ({ params }: Props) => {
 
   return (
     <BlurPage>
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-4xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your subaccount configuration and user preferences</p>
-        </div>
-        
-        <div className="flex lg:!flex-row flex-col gap-6">
-          <SubAccountDetails
-            agencyDetails={agencyDetails}
-            details={subAccount}
-            userId={userDetails.id}
-            userName={userDetails.name}
-          />
-          <UserDetails
-            type="subaccount"
-            id={subaccountId}
-            subAccounts={subAccounts}
-            userData={userDetails}
-          />
-        </div>
+      <div className="flex lg:!flex-row flex-col gap-8">
+        <SubAccountDetails
+          agencyDetails={agencyDetails}
+          details={subAccount}
+          userId={userDetails.id}
+          userName={userDetails.name}
+        />
+        <UserDetails
+          type="subaccount"
+          id={subaccountId}
+          subAccounts={subAccounts}
+          userData={userDetails}
+        />
       </div>
     </BlurPage>
   )

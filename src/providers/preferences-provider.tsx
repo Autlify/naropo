@@ -26,7 +26,7 @@ import {
 // Storage Key
 // ============================================================================
 
-const STORAGE_KEY = 'naropo.preferences_token'
+const STORAGE_KEY = 'autlify.preferences_token'
 
 // ============================================================================
 // Context Type
@@ -105,20 +105,20 @@ function applyCSSVariables(preferences: Preferences, reducedMotion: boolean) {
   root.style.setProperty('--app-animation-duration', `${duration}ms`)
   root.style.setProperty('--app-animation-duration-fast', `${duration * 0.5}ms`)
   root.style.setProperty('--app-animation-duration-slow', `${duration * 2}ms`)
-  root.style.setProperty('--app-transition-timing', effectiveLevel === 'playful'
-    ? 'cubic-bezier(0.68, -0.55, 0.265, 1.55)'
+  root.style.setProperty('--app-transition-timing', effectiveLevel === 'playful' 
+    ? 'cubic-bezier(0.68, -0.55, 0.265, 1.55)' 
     : 'cubic-bezier(0.4, 0, 0.2, 1)')
 
   // Border radius
   root.style.setProperty('--app-radius', BORDER_RADIUS[preferences.theme.borderRadius])
-  root.style.setProperty('--app-radius-sm',
-    preferences.theme.borderRadius === 'none' ? '0px' :
-      preferences.theme.borderRadius === 'full' ? '9999px' :
-        `calc(${BORDER_RADIUS[preferences.theme.borderRadius]} * 0.5)`)
-  root.style.setProperty('--app-radius-lg',
-    preferences.theme.borderRadius === 'none' ? '0px' :
-      preferences.theme.borderRadius === 'full' ? '9999px' :
-        `calc(${BORDER_RADIUS[preferences.theme.borderRadius]} * 1.5)`)
+  root.style.setProperty('--app-radius-sm', 
+    preferences.theme.borderRadius === 'none' ? '0px' : 
+    preferences.theme.borderRadius === 'full' ? '9999px' :
+    `calc(${BORDER_RADIUS[preferences.theme.borderRadius]} * 0.5)`)
+  root.style.setProperty('--app-radius-lg', 
+    preferences.theme.borderRadius === 'none' ? '0px' : 
+    preferences.theme.borderRadius === 'full' ? '9999px' :
+    `calc(${BORDER_RADIUS[preferences.theme.borderRadius]} * 1.5)`)
 
   // Accent color (only if not default)
   if (preferences.theme.accentColor !== 'default') {
@@ -136,7 +136,7 @@ function applyCSSVariables(preferences: Preferences, reducedMotion: boolean) {
 
   // Accessibility
   root.style.setProperty('--app-min-touch-target', `${preferences.accessibility.minTouchTarget}px`)
-
+  
   // High contrast mode
   if (preferences.accessibility.highContrast) {
     root.setAttribute('data-high-contrast', 'true')
@@ -153,7 +153,7 @@ function applyCSSVariables(preferences: Preferences, reducedMotion: boolean) {
 
   // Density class for Tailwind utilities
   root.setAttribute('data-density', preferences.display.density)
-
+  
   // Animation level class
   root.setAttribute('data-animation', effectiveLevel)
 }
@@ -168,9 +168,9 @@ interface PreferencesProvider {
   initialPreferences?: Partial<Preferences>
 }
 
-export function PreferencesProvider({
-  children,
-  initialPreferences
+export function PreferencesProvider({ 
+  children, 
+  initialPreferences 
 }: PreferencesProvider) {
   // State
   const [preferences, setPreferences] = useState<Preferences>(() => ({
@@ -187,7 +187,7 @@ export function PreferencesProvider({
     // Check system reduced motion preference
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
     setSystemReducedMotion(motionQuery.matches)
-
+    
     const handleMotionChange = (e: MediaQueryListEvent) => {
       setSystemReducedMotion(e.matches)
     }
@@ -200,27 +200,27 @@ export function PreferencesProvider({
         const parsed = JSON.parse(stored) as DeepPartial<Preferences>
         setPreferences(prev => {
           const merged: Preferences = {
-            version: parsed.version ?? prev.version,
-            accessibility: parsed.accessibility
-              ? { ...prev.accessibility, ...parsed.accessibility }
-              : prev.accessibility,
+              version: parsed.version ?? prev.version,
+              accessibility: parsed.accessibility
+                  ? { ...prev.accessibility, ...parsed.accessibility }
+                  : prev.accessibility,
 
-            display: parsed.display
-              ? { ...prev.display, ...parsed.display }
-              : prev.display,
-            animation: parsed.animation
-              ? { ...prev.animation, ...parsed.animation }
-              : prev.animation,
-            theme: parsed.theme
-              ? { ...prev.theme, ...parsed.theme }
-              : prev.theme,
-            autoSave: parsed.autoSave ?? prev.autoSave,
-            notifications: parsed.notifications
-              ? { ...prev.notifications, ...parsed.notifications }
-              : prev.notifications,
-            privacy: parsed.privacy
-              ? { ...prev.privacy, ...parsed.privacy }
-              : prev.privacy,
+              display: parsed.display
+                  ? { ...prev.display, ...parsed.display }
+                  : prev.display,
+              animation: parsed.animation
+                  ? { ...prev.animation, ...parsed.animation }
+                  : prev.animation,
+              theme: parsed.theme
+                  ? { ...prev.theme, ...parsed.theme }
+                  : prev.theme,
+              autoSave: parsed.autoSave ?? prev.autoSave,
+              notifications: parsed.notifications
+                  ? { ...prev.notifications, ...parsed.notifications }
+                  : prev.notifications,
+              privacy: parsed.privacy
+                  ? { ...prev.privacy, ...parsed.privacy }
+                  : prev.privacy,
           }
           return merged
         })
@@ -262,7 +262,7 @@ export function PreferencesProvider({
     setPreferences(prev => {
       const merged: Preferences = {
         version: updates.version ?? prev.version,
-        accessibility: updates.accessibility
+        accessibility: updates.accessibility 
           ? { ...prev.accessibility, ...updates.accessibility }
           : prev.accessibility,
         display: updates.display
@@ -329,8 +329,8 @@ export function PreferencesProvider({
 
   // Computed values
   const densityMultiplier = DENSITY_MULTIPLIER[preferences.display.density]
-  const animationDuration = effectiveReducedMotion
-    ? 0
+  const animationDuration = effectiveReducedMotion 
+    ? 0 
     : ANIMATION_DURATION[preferences.animation.level] * preferences.animation.durationMultiplier
   const iconSizePx = ICON_SIZE_PX[preferences.display.iconSize]
 

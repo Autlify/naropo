@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { KEYS } from '@/lib/registry/keys/permissions'
 import { requireRequestAccess } from '@/lib/features/iam/authz/require'
-import { listAppsWithState } from '@/lib/features/core/apps/service'
+import { listAppsWithState } from '@/lib/features/org/apps/service'
 import type { MeteringScope } from '@/generated/prisma/client'
 
 function meteringScopeFromResolved(scope: { kind: 'agency' | 'subaccount' }): MeteringScope {
@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   try {
     const ctx = await requireRequestAccess({
       req,
-      requiredKeys: [KEYS.core.apps.app.view],
+      requiredKeys: [KEYS.org.apps.app.view],
       requireActiveSubscription: true,
     })
 

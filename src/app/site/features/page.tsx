@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import {
-  Zap,
-  Shield,
-  Users,
-  LineChart,
-  Workflow,
+import { 
+  Zap, 
+  Shield, 
+  Users, 
+  LineChart, 
+  Workflow, 
   Sparkles,
   ArrowRight,
   Check,
@@ -17,7 +17,7 @@ import {
 /**
  * Features Page - Linear-inspired Design
  * 
- * Showcases Naropo's key features with refined visual hierarchy,
+ * Showcases Autlify's key features with refined visual hierarchy,
  * semantic tokens, and premium interactions
  */
 
@@ -126,7 +126,7 @@ export default function FeaturesPage() {
           <div className="h-6" aria-hidden="true" />
 
           <p className="text-lg md:text-xl text-fg-secondary max-w-2xl mx-auto leading-[1.6]">
-            Naropo combines powerful project management with an intuitive interface.
+            Autlify combines powerful project management with an intuitive interface.
             Built for teams that move fast and ship quality.
           </p>
         </div>
@@ -195,7 +195,7 @@ export default function FeaturesPage() {
           <div className="h-6" aria-hidden="true" />
 
           <p className="text-lg leading-[1.6] text-fg-secondary">
-            Join thousands of teams building better products with Naropo.
+            Join thousands of teams building better products with Autlify.
           </p>
 
           <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">

@@ -213,7 +213,7 @@ export default function DesignSample01() {
                         A
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-semibold text-foreground">Naropo</p>
+                        <p className="text-sm font-semibold text-foreground">Autlify</p>
                         <p className="text-xs text-muted-foreground">Enterprise</p>
                     </div>
                 </div>
@@ -295,8 +295,8 @@ export default function DesignSample01() {
                             <CardHeader className="pb-0">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-base font-semibold">Recent Issues</CardTitle>
-                                    <SegmentedControl
-                                        size="sm"
+                                    <SegmentedControl 
+                                    size="sm"
                                         tabs={[
                                             { id: 'all', label: "All" },
                                             { id: 'assigned', label: 'Assigned' },

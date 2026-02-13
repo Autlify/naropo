@@ -1,14 +1,13 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
-import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
 import { initializeGLConfiguration } from './configuration'
 import { applyTemplate } from './coa-template'
 import { createFinancialPeriod } from './periods'
 import { logGLAudit } from './audit'
 import { PeriodType } from '../../../../../generated/prisma/enums'
+import { getActionContext, hasContextPermission } from '@/lib/features/iam/authz/action-context'
 
 // ========== Types ==========
 
@@ -52,21 +51,7 @@ type WizardState = {
 
 // ========== Helper Functions ==========
 
-const getContext = async () => {
-  const session = await auth()
-  if (!session?.user?.id) return null
-
-  const dbSession = await db.session.findFirst({
-    where: { userId: session.user.id },
-    select: { activeAgencyId: true, activeSubAccountId: true },
-  })
-
-  return {
-    userId: session.user.id,
-    agencyId: dbSession?.activeAgencyId ?? undefined,
-    subAccountId: dbSession?.activeSubAccountId ?? undefined,
-  }
-}
+const getContext = getActionContext
 
 // ========== Setup Wizard Actions ==========
 
@@ -204,9 +189,7 @@ export const completeSetup = async (
       return { success: false, error: 'Unauthorized: No session found' }
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.settings.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.settings.manage')
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.settings.manage')
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission' }

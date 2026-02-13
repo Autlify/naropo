@@ -3,7 +3,7 @@
  * Maps EventKey to posting rule trigger types
  * 
  * @description SSoT for event-to-trigger mapping used by fanout service
- * @namespace Naropo.Lib.Registry.Events.TriggerMappings
+ * @namespace Autlify.Lib.Registry.Events.TriggerMappings
  * @module REGISTRY
  */
 
@@ -247,6 +247,18 @@ export const EVENT_TRIGGER_MAPPING: Record<EventKey, string> = {
   [EVENT_KEYS.mm.inventory_management.inventory.adjusted]: 'INVENTORY_ADJUSTMENT',
 }
 
+const ALL_TRIGGER_TYPES = Array.from(new Set(Object.values(EVENT_TRIGGER_MAPPING)))
+
+const EVENT_KEYS_BY_TRIGGER = new Map<string, EventKey[]>()
+for (const [eventKey, triggerType] of Object.entries(EVENT_TRIGGER_MAPPING) as [EventKey, string][]) {
+  const list = EVENT_KEYS_BY_TRIGGER.get(triggerType)
+  if (list) {
+    list.push(eventKey)
+  } else {
+    EVENT_KEYS_BY_TRIGGER.set(triggerType, [eventKey])
+  }
+}
+
 // =====================================================
 // HELPER FUNCTIONS (Pure - no server action)
 // =====================================================
@@ -273,14 +285,13 @@ export function getTriggerType(eventKey: string): string {
  * Get all trigger types as array
  */
 export function getAllTriggerTypes(): string[] {
-  return [...new Set(Object.values(EVENT_TRIGGER_MAPPING))]
+  return [...ALL_TRIGGER_TYPES]
 }
 
 /**
  * Get event keys for a trigger type
  */
 export function getEventKeysForTrigger(triggerType: string): EventKey[] {
-  return (Object.entries(EVENT_TRIGGER_MAPPING) as [EventKey, string][])
-    .filter(([, trigger]) => trigger === triggerType)
-    .map(([key]) => key)
+  const eventKeys = EVENT_KEYS_BY_TRIGGER.get(triggerType)
+  return eventKeys ? [...eventKeys] : []
 }

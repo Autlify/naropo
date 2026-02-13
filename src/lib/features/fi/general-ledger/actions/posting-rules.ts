@@ -6,13 +6,11 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
-import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
 import { logGLAudit } from './audit'
 import { Prisma } from '@/generated/prisma/client'
 import { PostingRuleInput, postingRuleSchema, UpdatePostingRuleInput, updatePostingRuleSchema } from '@/lib/schemas/fi/general-ledger/posting-rules'
-import { ActionKey } from '@/lib/registry'
+import { getActionContext, hasContextPermission, type ActionContext } from '@/lib/features/iam/authz/action-context'
 
 
 // ========== Types ==========
@@ -23,43 +21,107 @@ type ActionResult<T> = {
   error?: string
 }
 
-type RulesContext = {
-  agencyId?: string
-  subAccountId?: string
-  userId: string
+type RulesContext = ActionContext
+
+type ScopedAccount = {
+  id: string
+  code: string
+  name: string
+  accountType: string
+  subledgerType: string
+  isPostingAccount: boolean
+  isControlAccount: boolean
+  isActive: boolean
 }
 
 // ========== Helper Functions ==========
 
-const getContext = async (): Promise<RulesContext | null> => {
-  const session = await auth()
-  if (!session?.user?.id) return null
+const getContext = getActionContext
+const checkPermission = hasContextPermission
 
-  const dbSession = await db.session.findFirst({
-    where: { userId: session.user.id },
-    select: { activeAgencyId: true, activeSubAccountId: true },
+const getScopedAccount = async (context: RulesContext, accountId: string): Promise<ScopedAccount | null> => {
+  const whereClause: any = context.subAccountId
+    ? { id: accountId, subAccountId: context.subAccountId }
+    : { id: accountId, agencyId: context.agencyId, subAccountId: null }
+
+  return db.chartOfAccount.findFirst({
+    where: whereClause,
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      accountType: true,
+      subledgerType: true,
+      isControlAccount: true,
+      isPostingAccount: true,
+      isActive: true,
+    },
   })
-
-  return {
-    userId: session.user.id,
-    agencyId: dbSession?.activeAgencyId ?? undefined,
-    subAccountId: dbSession?.activeSubAccountId ?? undefined,
-  }
 }
 
-const checkPermission = async (
+/**
+ * Server-side guard rails for posting rules.
+ * Especially important for INVOICE rules to prevent invalid account determination.
+ */
+const validatePostingRuleAccounts = async (
   context: RulesContext,
-  permissionKey: ActionKey
-): Promise<boolean> => {
-  if (context.subAccountId) {
-    return hasSubAccountPermission(context.subAccountId, permissionKey)
+  input: Pick<PostingRuleInput, 'sourceModule' | 'debitAccountId' | 'creditAccountId'>
+): Promise<string | null> => {
+  if (input.debitAccountId === input.creditAccountId) {
+    return 'Debit and credit accounts must be different'
   }
-  if (context.agencyId) {
-    return hasAgencyPermission(context.agencyId, permissionKey)
-  }
-  return false
-}
 
+  const [debit, credit] = await Promise.all([
+    getScopedAccount(context, input.debitAccountId),
+    getScopedAccount(context, input.creditAccountId),
+  ])
+
+  if (!debit || !credit) {
+    return 'Invalid account selection (account not found in current tenant scope)'
+  }
+
+  if (!debit.isActive || !credit.isActive) {
+    return 'Both debit and credit accounts must be active'
+  }
+
+  if (!debit.isPostingAccount || !credit.isPostingAccount) {
+    return 'Both debit and credit accounts must be posting accounts (leaf accounts)'
+  }
+
+  // Invoice-oriented invariants (baseline ERP behavior)
+  if (input.sourceModule === 'INVOICE') {
+    const debitIsARControl = debit.subledgerType === 'ACCOUNTS_RECEIVABLE' && debit.isControlAccount
+    const creditIsAPControl = credit.subledgerType === 'ACCOUNTS_PAYABLE' && credit.isControlAccount
+
+    // Must express direction with a control account on one side
+    if (!debitIsARControl && !creditIsAPControl) {
+      return 'Invoice posting rules must use an Accounts Receivable control account (debit) or Accounts Payable control account (credit)'
+    }
+
+    // Incoming invoice (vendor): Dr Expense/Asset, Cr AP
+    if (creditIsAPControl) {
+      if (credit.accountType !== 'LIABILITY') {
+        return 'Incoming invoice rules must credit a LIABILITY account (Accounts Payable control account)'
+      }
+      if (!['EXPENSE', 'ASSET'].includes(debit.accountType)) {
+        return 'Incoming invoice rules should debit an EXPENSE or ASSET account (e.g., expense, inventory, fixed asset)'
+      }
+    }
+
+    // Outgoing invoice (customer): Dr AR, Cr Revenue
+    if (debitIsARControl) {
+      if (debit.accountType !== 'ASSET') {
+        return 'Outgoing invoice rules must debit an ASSET account (Accounts Receivable control account)'
+      }
+      if (credit.accountType !== 'REVENUE') {
+        return 'Outgoing invoice rules should credit a REVENUE account (e.g., sales revenue)'
+      }
+    }
+  }
+
+  return null
+}
+ 
 // ========== CRUD Actions ==========
 
 /**
@@ -186,6 +248,16 @@ export const createPostingRule = async (
       return { success: false, error: parsed.error.issues[0]?.message ?? 'Validation failed' }
     }
 
+    // Server-side account validation + tenant isolation
+    const accountErr = await validatePostingRuleAccounts(context, {
+      sourceModule: parsed.data.sourceModule,
+      debitAccountId: parsed.data.debitAccountId,
+      creditAccountId: parsed.data.creditAccountId,
+    })
+    if (accountErr) {
+      return { success: false, error: accountErr }
+    }
+
     const { conditions, ...ruleData } = parsed.data
 
     const rule = await db.postingRule.create({
@@ -216,7 +288,7 @@ export const createPostingRule = async (
     return { success: true, data: rule }
   } catch (error) {
     console.error('Error creating posting rule:', error)
-    return { success: false, error: 'Failed to create posting rule' }
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to create posting rule' }
   }
 }
 
@@ -258,6 +330,20 @@ export const updatePostingRule = async (
       return { success: false, error: 'Unauthorized: Access denied' }
     }
 
+
+    // Validate updated account patterns (invoice safety rails + tenant isolation)
+    const nextSourceModule = (updateData as any).sourceModule ?? (existing as any).sourceModule
+    const nextDebitId = debitAccountId ?? (existing as any).debitAccountId
+    const nextCreditId = creditAccountId ?? (existing as any).creditAccountId
+    const updateAccountErr = await validatePostingRuleAccounts(context, {
+      sourceModule: nextSourceModule,
+      debitAccountId: nextDebitId,
+      creditAccountId: nextCreditId,
+    })
+    if (updateAccountErr) {
+      return { success: false, error: updateAccountErr }
+    }
+
     const rule = await db.postingRule.update({
       where: { id },
       data: {
@@ -289,7 +375,7 @@ export const updatePostingRule = async (
     return { success: true, data: rule }
   } catch (error) {
     console.error('Error updating posting rule:', error)
-    return { success: false, error: 'Failed to update posting rule' }
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to update posting rule' }
   }
 }
 
@@ -470,49 +556,70 @@ export const executePostingRules = async (
 // ========== Helper Functions ==========
 
 function evaluateConditions(
-  conditions: { field: string; operator: string; value: any }[] | null,
+  conditions: any,
   data: Record<string, any>
 ): boolean {
-  if (!conditions || conditions.length === 0) return true
+  if (!conditions) return true
 
-  return conditions.every((condition) => {
-    const fieldValue = data[condition.field]
+  // Legacy predicate-array format (older drafts)
+  if (Array.isArray(conditions)) {
+    if (conditions.length === 0) return true
+    return conditions.every((condition) => {
+      const fieldValue = data[condition.field]
 
-    switch (condition.operator) {
-      case 'EQUALS':
-        return fieldValue === condition.value
-      case 'NOT_EQUALS':
-        return fieldValue !== condition.value
-      case 'GREATER_THAN':
-        return Number(fieldValue) > Number(condition.value)
-      case 'LESS_THAN':
-        return Number(fieldValue) < Number(condition.value)
-      case 'CONTAINS':
-        return String(fieldValue).includes(String(condition.value))
-      case 'IN':
-        return Array.isArray(condition.value) && condition.value.includes(fieldValue)
-      default:
-        return false
+      switch (condition.operator) {
+        case 'EQUALS':
+          return fieldValue === condition.value
+        case 'NOT_EQUALS':
+          return fieldValue !== condition.value
+        case 'GREATER_THAN':
+          return Number(fieldValue) > Number(condition.value)
+        case 'LESS_THAN':
+          return Number(fieldValue) < Number(condition.value)
+        case 'CONTAINS':
+          return String(fieldValue).includes(String(condition.value))
+        case 'IN':
+          return Array.isArray(condition.value) && condition.value.includes(fieldValue)
+        default:
+          return false
+      }
+    })
+  }
+
+  // Current object format (SSoT in posting-rules schema)
+  if (typeof conditions === 'object') {
+    const okCurrency = !conditions.currencies || conditions.currencies.includes(data.currency)
+    const okDoc = !conditions.documentTypes || conditions.documentTypes.includes(data.documentType)
+    const okAccountType = !conditions.accountTypes || conditions.accountTypes.includes(data.accountType)
+
+    let okDimensions = true
+    if (conditions.dimensions && typeof conditions.dimensions === 'object') {
+      for (const [dimKey, allowed] of Object.entries<any>(conditions.dimensions)) {
+        const val = data?.dimensions?.[dimKey]
+        if (Array.isArray(allowed) && allowed.length > 0 && val !== undefined) {
+          okDimensions = okDimensions && allowed.includes(val)
+        }
+      }
     }
-  })
+
+    // Avoid unsafe eval; support customExpression later via safe expression engine.
+    const okCustom = !conditions.customExpression
+    return okCurrency && okDoc && okAccountType && okDimensions && okCustom
+  }
+
+  return true
 }
 
 function calculateAmount(rule: any, data: Record<string, any>): number {
+  const base = Number(data.amount ?? data.baseAmount ?? 0)
+
   switch (rule.amountType) {
-    case 'FIXED':
-      return Number(rule.amountValue) || 0
+    case 'FULL':
+      return base
     case 'PERCENTAGE':
-      const baseAmount = Number(data.amount) || 0
-      return baseAmount * (Number(rule.amountValue) / 100)
-    case 'FORMULA':
-      // Simple formula evaluation (for complex formulas, use a proper parser)
-      try {
-        const formula = rule.amountFormula
-          ?.replace(/\{(\w+)\}/g, (_: any, key: string) => String(data[key] || 0))
-        return eval(formula) || 0
-      } catch {
-        return 0
-      }
+      return base * (Number(rule.percentage ?? 0) / 100)
+    case 'FIXED':
+      return Number(rule.fixedAmount ?? 0)
     default:
       return 0
   }

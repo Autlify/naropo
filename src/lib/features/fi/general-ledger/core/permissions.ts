@@ -2,7 +2,7 @@
  * GL Permissions Helper
  * Uses registry as Single Source of Truth for permissions
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Core.Permissions
+ * @namespace Autlify.Lib.Features.FI.GL.Core.Permissions
  */
 
 'use server'
@@ -157,17 +157,17 @@ export const canManageCOAConfig = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_MASTER_DATA_KEYS.accounts.manage)
 
 // Fiscal Years (replaces periods)
-export const canViewFiscalYears = async (ctx: GLContext) =>
+export const canViewFiscalYears = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.fiscal_years.view)
 
-export const canManageFiscalYears = async (ctx: GLContext) =>
+export const canManageFiscalYears = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.fiscal_years.manage)
 
 // Currencies (replaces currency)
-export const canViewCurrencies = async (ctx: GLContext) =>
+export const canViewCurrencies = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.currencies.view)
 
-export const canManageCurrencies = async (ctx: GLContext) =>
+export const canManageCurrencies = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.currencies.manage)
 
 // Tax Settings (replaces tax)
@@ -192,10 +192,10 @@ export const canManageNumberRanges = async (ctx: GLContext) =>
     checkGLPermission(ctx, FI_CONFIG_KEYS.number_ranges.manage)
 
 // Posting Rules
-export const canViewPostingRules = async (ctx: GLContext) =>
+export const canViewPostingRules = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.posting_rules.view)
 
-export const canManagePostingRules = async (ctx: GLContext) =>
+export const canManagePostingRules = async (ctx: GLContext) => 
     checkGLPermission(ctx, FI_CONFIG_KEYS.posting_rules.manage)
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -220,13 +220,13 @@ export const canApproveJournals = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.journal_entries.approve)
 
 // Reports
-export const canViewReports = async (ctx: GLContext) =>
+export const canViewReports = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reports.view)
 
-export const canGenerateReports = async (ctx: GLContext) =>
+export const canGenerateReports = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reports.generate)
 
-export const canApproveReports = async (ctx: GLContext) =>
+export const canApproveReports = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reports.approve)
 
 // Consolidation (agency-only)
@@ -247,11 +247,11 @@ export const canCloseYearEnd = async (ctx: GLContext) =>
     checkGLPermission(ctx, GL_PERMISSION_KEYS.year_end.close)
 
 // Reconciliation
-export const canViewReconciliation = async (ctx: GLContext) =>
+export const canViewReconciliation = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reconciliation.view)
 
-export const canManageReconciliation = async (ctx: GLContext) =>
+export const canManageReconciliation = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reconciliation.manage)
 
-export const canClearReconciliation = async (ctx: GLContext) =>
+export const canClearReconciliation = async (ctx: GLContext) => 
     checkGLPermission(ctx, GL_PERMISSION_KEYS.reconciliation.clear)

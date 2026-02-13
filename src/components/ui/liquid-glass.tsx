@@ -10,7 +10,9 @@ type Props = React.ComponentProps<typeof LiquidGlassBase>;
 
 const LiquidGlass = (props: Props) => {
   return (
-    <LiquidGlassBase {...props}
+    <LiquidGlassBase
+     {...props}
+     blurAmount={props.blurAmount}
       mouseContainer={props.mouseContainer}
     >
       {props.children}

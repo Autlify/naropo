@@ -5,15 +5,19 @@ import { requireRequestAccess, ApiAuthzError } from '@/lib/features/iam/authz/re
 import { logger } from '@/lib/logger'
 import type { MeteringScope } from '@/generated/prisma/client'
 import { getAgencySubscriptionState } from '@/lib/features/iam/authz/resolver'
-import { resolveEffectiveEntitlements } from '@/lib/features/core/billing/entitlements/resolve'
+import { resolveEffectiveEntitlements } from '@/lib/features/org/billing/entitlements/resolve'
 
 /**
  * GET /api/features/core/billing/entitlements/current
  * Get current effective entitlements for the context
  * 
- * Headers Required:
- * - x-naropo-agency: <agencyId>
- * - x-naropo-subaccount: <subAccountId> (optional)
+ * Context headers (preferred):
+ * - x-autlify-agency-id: <agencyId>
+ * - x-autlify-subaccount-id: <subAccountId> (optional)
+ *
+ * Legacy aliases also accepted:
+ * - x-autlify-agency
+ * - x-autlify-subaccount
  * 
  * Permissions: core.billing.entitlements.view
  */
@@ -21,7 +25,7 @@ export async function GET(req: NextRequest) {
   try {
     const { scope } = await requireRequestAccess({
       req,
-      requiredKeys: ['core.billing.entitlements.view'],
+      requiredKeys: ['org.billing.entitlements.view'],
       requireActiveSubscription: true,
     })
 

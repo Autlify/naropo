@@ -1,4 +1,5 @@
 import { getFunnels } from '@/lib/queries'
+import { hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
 import React from 'react'
 import FunnelsDataTable from './data-table'
 import { Plus } from 'lucide-react'
@@ -8,32 +9,29 @@ import BlurPage from '@/components/global/blur-page'
 
 const Funnels = async ({ params }: { params: Promise<{ subaccountId: string }> }) => {
   const { subaccountId } = await params
+
+  const canRead = await hasSubAccountPermission(subaccountId, 'crm.funnels.content.read')
+  if (!canRead) return null
+
   const funnels = await getFunnels(subaccountId)
   if (!funnels) return null
 
   return (
     <BlurPage>
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-4xl font-bold">Funnels</h1>
-          <p className="text-muted-foreground">Create and manage your marketing funnels and conversion paths</p>
-        </div>
-        
-        <FunnelsDataTable
-          actionButtonText={
-            <>
-              <Plus size={15} />
-              Create Funnel
-            </>
-          }
-          modalChildren={
-            <FunnelForm subAccountId={subaccountId}></FunnelForm>
-          }
-          filterValue="name"
-          columns={columns}
-          data={funnels}
-        />
-      </div>
+      <FunnelsDataTable
+        actionButtonText={
+          <>
+            <Plus size={15} />
+            Create Funnel
+          </>
+        }
+        modalChildren={
+          <FunnelForm subAccountId={subaccountId}></FunnelForm>
+        }
+        filterValue="name"
+        columns={columns}
+        data={funnels}
+      />
     </BlurPage>
   )
 }

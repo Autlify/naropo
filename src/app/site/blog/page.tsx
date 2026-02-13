@@ -10,18 +10,18 @@ import { Calendar, Clock, ArrowRight } from 'lucide-react'
 export default function BlogPage() {
   // Placeholder blog posts
   const featuredPost = {
-    title: "Introducing Naropo: Built for modern agency teams",
-    excerpt: "After years of frustration with existing project management tools, we decided to build something better. Here's why we created Naropo and what makes it different.",
+    title: "Introducing Autlify: Built for modern agency teams",
+    excerpt: "After years of frustration with existing project management tools, we decided to build something better. Here's why we created Autlify and what makes it different.",
     date: "Jan 15, 2026",
     readTime: "5 min read",
     category: "Product",
-    slug: "introducing-naropo"
+    slug: "introducing-autlify"
   }
 
   const blogPosts = [
     {
       title: "How we built a keyboard-first interface",
-      excerpt: "Speed is a feature. Learn how we optimized Naropo for keyboard shortcuts and why it matters for productivity.",
+      excerpt: "Speed is a feature. Learn how we optimized Autlify for keyboard shortcuts and why it matters for productivity.",
       date: "Jan 12, 2026",
       readTime: "4 min read",
       category: "Engineering",
@@ -29,7 +29,7 @@ export default function BlogPage() {
     },
     {
       title: "The principles behind our design system",
-      excerpt: "A deep dive into the design decisions that make Naropo feel fast, minimal, and delightful to use.",
+      excerpt: "A deep dive into the design decisions that make Autlify feel fast, minimal, and delightful to use.",
       date: "Jan 8, 2026",
       readTime: "6 min read",
       category: "Design",
@@ -45,7 +45,7 @@ export default function BlogPage() {
     },
     {
       title: "Building a collaborative roadmap",
-      excerpt: "How teams can use Naropo to align stakeholders and maintain a shared vision for their products.",
+      excerpt: "How teams can use Autlify to align stakeholders and maintain a shared vision for their products.",
       date: "Dec 28, 2025",
       readTime: "5 min read",
       category: "Guides",
@@ -53,15 +53,15 @@ export default function BlogPage() {
     },
     {
       title: "The importance of iteration speed",
-      excerpt: "Why moving fast matters and how we've optimized Naropo to help teams ship faster.",
+      excerpt: "Why moving fast matters and how we've optimized Autlify to help teams ship faster.",
       date: "Dec 20, 2025",
       readTime: "4 min read",
       category: "Product",
       slug: "iteration-speed"
     },
     {
-      title: "Migrating from other tools to Naropo",
-      excerpt: "A step-by-step guide to importing your data and transitioning your team to Naropo.",
+      title: "Migrating from other tools to Autlify",
+      excerpt: "A step-by-step guide to importing your data and transitioning your team to Autlify.",
       date: "Dec 15, 2025",
       readTime: "7 min read",
       category: "Guides",
@@ -91,7 +91,7 @@ export default function BlogPage() {
           <div className="h-6" aria-hidden="true" />
 
           <p className="text-lg md:text-xl text-fg-secondary max-w-2xl mx-auto leading-[1.6]">
-            Updates, insights, and stories from the Naropo team.
+            Updates, insights, and stories from the Autlify team.
           </p>
         </div>
       </section>

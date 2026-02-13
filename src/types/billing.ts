@@ -38,7 +38,7 @@ export type CurrencyCodeType = ICountry['currency']
  * @see Stripe V2 Core AccountsResource.d.ts: type Type = 'customer' | 'merchant' | 'recipient'
  * 
  * @description
- * - 'customer': Account used to pay for subscriptions/services (eg., Agency ---pay---> Naropo)
+ * - 'customer': Account used to pay for subscriptions/services (eg., Agency ---pay---> Autlify)
  * - 'merchant': Account acting as a connected account and collecting payments (eg., Agency <---collect--- Clients)
  * - 'recipient': Account receiving funds but not acting as the Merchant of Record (eg., SubAccount <---receive--- Agency <--collect--- Clients)
  */
@@ -68,13 +68,13 @@ export type ProductType = 'good' | 'service'
  * Billing Scheme Type (Stripe.Price.BillingScheme)
  * @see Stripe Prices.d.ts: type BillingScheme = 'per_unit' | 'tiered'
  * 
- * Extended for Naropo's additional billing models:
+ * Extended for Autlify's additional billing models:
  * - 'per_unit': Standard per-unit pricing
  * - 'tiered': Price varies by quantity tier
- * - 'flat': Fixed price (Naropo extension for simple pricing)
+ * - 'flat': Fixed price (Autlify extension for simple pricing)
  */
 export type StripeBillingSchemeType = 'per_unit' | 'tiered'
-export type BillingSchemeType = Stripe.Price.BillingScheme extends infer T ? T
+export type BillingSchemeType = Stripe.Price.BillingScheme extends infer T ? T 
   | 'flat'
   | 'base_plus_overage'
   | 'tiered_volume'
@@ -83,7 +83,7 @@ export type BillingSchemeType = Stripe.Price.BillingScheme extends infer T ? T
 
 /**
  * Extended Billing Scheme for calculation purposes
- * @description Internal Naropo schemes for complex pricing logic
+ * @description Internal Autlify schemes for complex pricing logic
  */
 export type ExtendedBillingSchemeType =
   | BillingSchemeType
@@ -132,13 +132,13 @@ export type TransformQuantityRoundType = 'down' | 'up'
 // ============================================================================
 
 /**
- * Billing Interval Type (Naropo)
+ * Billing Interval Type (Autlify)
  * @description Simplified interval including one_time for addons
  */
 export type BillingIntervalType = RecurringIntervalType | 'one_time'
 
 /** 
- * Pricing Unit Type (Naropo)
+ * Pricing Unit Type (Autlify)
  * @description What unit the pricing is based on
  */
 export type PricingUnitType =
@@ -204,10 +204,10 @@ export type AllPlanKeyType = PlanKeyType | YearlyPlanKeyType
  * @ssot @/lib/registry/plans/pricing-config.ts → PRICING_CONFIG
  * @description Must match keys in PRICING_CONFIG where type === 'addon' and billingInterval !== 'one_time'
  */
-export type ServiceAddonKeyType =
-  | 'PRIORITY_SUPPORT'
-  | 'FI_GL' | 'FI_AR' | 'FI_AP' | 'FI_BL' | 'FI_FS'
-  | 'WHITE_LABEL'
+export type ServiceAddonKeyType = 
+    | 'PRIORITY_SUPPORT' 
+    | 'FI_GL' | 'FI_AR' | 'FI_AP' | 'FI_BL' | 'FI_FS' 
+    | 'WHITE_LABEL'
 
 /**
  * Good Addon Key Type (one-time purchases)
@@ -250,7 +250,7 @@ export interface StripeTier {
 }
 
 /**
- * Pricing Tier Definition (Naropo simplified)
+ * Pricing Tier Definition (Autlify simplified)
  * @description Simplified tier for internal use
  */
 export interface PricingTier {
@@ -304,7 +304,7 @@ export interface TransformQuantity {
 }
 
 /**
- * Overage Configuration (Naropo)
+ * Overage Configuration (Autlify)
  * @description For base_plus_overage billing scheme
  */
 export interface PricingOverage {
@@ -327,7 +327,7 @@ export interface PricingOverage {
 export type TaxCategoryType = 'standard' | 'reduced' | 'zero' | 'exempt' | 'reverse_charge'
 
 /**
- * Tax Configuration (Naropo + Stripe Tax)
+ * Tax Configuration (Autlify + Stripe Tax)
  */
 export interface PricingTax {
   /** Tax category for this product */
@@ -728,11 +728,12 @@ export interface CurrentPlan {
 export interface TrialExpiryCardProps {
   trialEndDate?: Date | string | number;
   daysRemaining?: number;
-  onUpgrade?: () => void | Promise<void>;
+  onUpgrade?: () => void | Promise<void>;  
+  cancelTrial: CancelSubscriptionDialogProps
   className?: string;
   title?: string;
   description?: string;
-  upgradeButtonText?: string;
+  upgradeButtonText?: string; 
   features?: string[];
 }
 
@@ -1539,7 +1540,7 @@ export type AddonClassificationType = 'support' | 'branding' | 'finance' | 'inte
  * Addon Category Classification
  * @description Categories for grouping add-ons (matches module structure)
  */
-export type AddonCategoryType = 'core' | 'fi' | 'co' | 'crm' | 'apps' | 'iam'
+export type AddonCategoryType = 'org' | 'fi' | 'co' | 'crm' | 'apps' | 'iam'
 
 /**
  * Catalog Product - Local representation of a Stripe Product
@@ -1815,7 +1816,8 @@ export interface CheckoutItem {
 /**
  * Existing Customer Data for pre-fill
  */
-export interface CustomerData {
+export interface CustomerData
+ {
   id: string
   email: string | null
   name: string | null
@@ -1905,7 +1907,7 @@ export interface CheckoutProps {
   /** Additional CSS classes */
   className?: string
 }
-
+ 
 /**
  * Checkout Result - Result of a successful checkout
  */

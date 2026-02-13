@@ -45,9 +45,9 @@ export function SupportTicketsPanel({ scope }: { scope: SupportScope }) {
   // Build proper headers for scope context
   const scopeHeaders = useMemo((): HeadersInit => {
     if (scope.type === 'AGENCY') {
-      return { 'x-naropo-agency': scope.agencyId }
+      return { 'x-autlify-agency': scope.agencyId }
     }
-    return { 'x-naropo-subaccount': scope.subaccountId }
+    return { 'x-autlify-subaccount': scope.subaccountId }
   }, [scope])
 
   const [tickets, setTickets] = useState<Ticket[]>([])

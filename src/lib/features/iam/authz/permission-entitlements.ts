@@ -1,6 +1,6 @@
 import 'server-only'
 
-import type { EffectiveEntitlement } from '@/lib/features/core/billing/entitlements/types'
+import type { EffectiveEntitlement } from '@/lib/features/org/billing/entitlements/types'
 import type { FeatureKey, SubModuleKey } from '@/lib/registry'
 
 export type PermissionEntitlementGate = {
@@ -33,32 +33,32 @@ export const PERMISSION_ENTITLEMENT_GATES: PermissionEntitlementGate[] = [
   // CORE AGENCY - Require a subscription to Agency module
   // ─────────────────────────────────────────────────────────
   // Agency account management entitlements
-  { prefix: 'core.agency.', requireAny: ['core.agency.account'] },
-  { prefix: 'core.billing.', requireAll: ['core.agency.account'] },
+  { prefix: 'org.agency.', requireAny: ['org.agency.account'] },
+  { prefix: 'org.billing.', requireAll: ['org.agency.account'] },
 
   // IAM / AuthZ management: allow if either Agency or Subaccount team-member bundle is available.
   {
     prefix: 'iam.authZ.',
     requireAnyAll: [
-      ['core.agency.account'],
-      ['core.subaccount.account'],
+      ['org.agency.account'],
+      ['org.subaccount.account'],
     ],
   },
 
   // CORE SUBACCOUNT - Require core.agency.subaccounts to create (agency level), core.subaccount.account to access/manage (subaccount level)
-  { prefix: 'core.subaccount.', requireAny: ['core.agency.subaccounts', 'core.subaccount.account'] },
+  { prefix: 'org.subaccount.', requireAny: ['org.agency.subaccounts', 'org.subaccount.account'] },
 
   // ─────────────────────────────────────────────────────────
   // APPS
   // ─────────────────────────────────────────────────────────
-  { prefix: 'core.apps.', requireAny: ['core.apps.api_keys', 'core.apps.app', 'core.apps.webhooks'] },
+  { prefix: 'org.apps.', requireAny: ['org.apps.api_keys', 'org.apps.app', 'org.apps.webhooks'] },
 
   // ─────────────────────────────────────────────────────────
   // BILLING (feature-gated parts)
   // ─────────────────────────────────────────────────────────
-  { prefix: 'core.billing.priority_support.', requireAny: ['core.billing.priority_support'] },
+  { prefix: 'org.billing.priority_support.', requireAny: ['org.billing.priority_support'] },
   // permissions live in core.billing.rebilling.* but entitlement is crm.customers.billing
-  { prefix: 'core.billing.rebilling.', requireAny: ['crm.customers.billing'] },
+  { prefix: 'org.billing.rebilling.', requireAny: ['crm.customers.billing'] },
 
   // ─────────────────────────────────────────────────────────
   // CRM
@@ -89,6 +89,12 @@ export const PERMISSION_ENTITLEMENT_GATES: PermissionEntitlementGate[] = [
       'fi.advanced_reporting.financial_statements',
     ],
   },
+
+  // Master data is shared across FI modules. Gate each domain by the owning module entitlement.
+  { prefix: 'fi.master_data.accounts.', requireAny: ['fi.general_ledger.settings'] },
+  { prefix: 'fi.master_data.customers.', requireAny: ['fi.accounts_receivable.subledgers'] },
+  { prefix: 'fi.master_data.vendors.', requireAny: ['fi.accounts_payable.subledgers'] },
+  { prefix: 'fi.master_data.banks.', requireAny: ['fi.bank_ledger.bank_accounts'] },
 
   // Submodule access toggles (gate entire FI submodule by its access entitlement)
   { prefix: 'fi.general_ledger.', requireAny: ['fi.general_ledger.settings'] },

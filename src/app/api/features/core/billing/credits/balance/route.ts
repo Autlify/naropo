@@ -10,9 +10,13 @@ import type { MeteringScope } from '@/generated/prisma/client'
  * GET /api/features/core/billing/credits/balance
  * Get credit balances for features
  * 
- * Headers Required:
- * - x-naropo-agency: <agencyId>
- * - x-naropo-subaccount: <subAccountId> (optional)
+ * Context headers (preferred):
+ * - x-autlify-agency-id: <agencyId>
+ * - x-autlify-subaccount-id: <subAccountId> (optional)
+ *
+ * Legacy aliases also accepted:
+ * - x-autlify-agency
+ * - x-autlify-subaccount
  * 
  * Query Parameters:
  * - featureKey (optional): Filter by specific feature
@@ -23,7 +27,7 @@ export async function GET(req: NextRequest) {
   try {
     const { scope } = await requireRequestAccess({
       req,
-      requiredKeys: ['core.billing.credits.view'],
+      requiredKeys: ['org.billing.credits.view'],
       requireActiveSubscription: false, // Can check credits even without active subscription
     })
 

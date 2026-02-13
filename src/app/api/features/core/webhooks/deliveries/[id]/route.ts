@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { requireIntegrationAuth } from '@/lib/features/core/integrations/guards'
-import { getDeliveryDetail, createAttempt, incrementDeliveryAttempt } from '@/lib/features/core/integrations/store'
-import { sendWebhookAttempt } from '@/lib/features/core/integrations/delivery'
+import { requireIntegrationAuth } from '@/lib/features/org/integrations/guards'
+import { getDeliveryDetail, createAttempt, incrementDeliveryAttempt } from '@/lib/features/org/integrations/store'
+import { sendWebhookAttempt } from '@/lib/features/org/integrations/delivery'
 import { db } from '@/lib/db'
 import { Prisma } from '@/generated/prisma/client'
 import { KEYS } from '@/lib/registry/keys/permissions'
@@ -10,7 +10,7 @@ type Props = { params: Promise<{ id: string }> }
 
 export async function GET(req: Request, props: Props) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.core.apps.webhooks.view] })
+    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.org.apps.webhooks.view] })
     const { id } = await props.params
     const detail = await getDeliveryDetail(id, scope)
     if (!detail) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -41,7 +41,7 @@ export async function POST(req: Request, props: Props) {
 }
 
 async function handleReplay(req: Request, props: Props) {
-  const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+  const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
   const { id } = await props.params
   const detail = await getDeliveryDetail(id, scope)
   if (!detail) return NextResponse.json({ error: 'Not found' }, { status: 404 })

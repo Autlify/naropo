@@ -2,7 +2,7 @@
  * GL Error Types
  * Typed errors with user-friendly messages
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Core.Errors
+ * @namespace Autlify.Lib.Features.FI.GL.Core.Errors
  */
 
 /** Error codes for GL operations */
@@ -13,12 +13,12 @@ export const GL_ERROR_CODES = {
   NO_CONTEXT: 'GL_NO_CONTEXT',
   PERMISSION_DENIED: 'GL_PERMISSION_DENIED',
   AGENCY_ONLY: 'GL_AGENCY_ONLY',
-
+  
   // Validation errors
   VALIDATION_FAILED: 'GL_VALIDATION_FAILED',
   INVALID_DOUBLE_ENTRY: 'GL_INVALID_DOUBLE_ENTRY',
   DUPLICATE_CODE: 'GL_DUPLICATE_CODE',
-
+  
   // Business rule errors
   PERIOD_CLOSED: 'GL_PERIOD_CLOSED',
   PERIOD_LOCKED: 'GL_PERIOD_LOCKED',
@@ -26,13 +26,13 @@ export const GL_ERROR_CODES = {
   ACCOUNT_HAS_TRANSACTIONS: 'GL_ACCOUNT_HAS_TRANSACTIONS',
   MAX_HIERARCHY_DEPTH: 'GL_MAX_HIERARCHY_DEPTH',
   PERIOD_OVERLAP: 'GL_PERIOD_OVERLAP',
-
+  
   // Not found errors
   NOT_FOUND: 'GL_NOT_FOUND',
   ACCOUNT_NOT_FOUND: 'GL_ACCOUNT_NOT_FOUND',
   JOURNAL_NOT_FOUND: 'GL_JOURNAL_NOT_FOUND',
   PERIOD_NOT_FOUND: 'GL_PERIOD_NOT_FOUND',
-
+  
   // System errors
   DATABASE_ERROR: 'GL_DATABASE_ERROR',
   UNKNOWN_ERROR: 'GL_UNKNOWN_ERROR',
@@ -169,7 +169,7 @@ export class GLNotFoundError extends GLError {
 }
 
 /** Standard action result type */
-export type ActionResult<T> =
+export type ActionResult<T> = 
   | { success: true; data: T }
   | { success: false; error: string; code?: GLErrorCode }
 

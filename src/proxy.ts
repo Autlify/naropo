@@ -1,5 +1,5 @@
 /**
- * Naropo Middleware Proxy
+ * Autlify Middleware Proxy
  *
  * Request flow (in order):
  * 1. Static assets & API routes → pass through
@@ -10,20 +10,21 @@
  * 6. Context tracking → set last-visited context cookie
  */
 
-import { auth } from '@/auth'
-import { NextResponse } from 'next/server'
-import { NextRequest } from 'next/server'
-import { logger } from '@/lib/logger'
+import { getToken } from 'next-auth/jwt'
+import { NextRequest, NextResponse } from 'next/server'
+import {
+  AUTLIFY_CONTEXT_COOKIE,
+  AUTLIFY_CONTEXT_COOKIE_MAX_AGE_SECONDS,
+  getLegacyCookieNames,
+  deriveAutlifyScope,
+  injectAutlifyScopeHeaders,
+} from '@/lib/core/proxy/scope'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CONTEXT_COOKIE = 'naropo.context-token'
-const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 60 // 60 days
-
-const AUTH_PAGES = ['/agency/sign-in', '/agency/sign-up', '/agency/verify']
-const NON_CONTEXT_SLUGS = ['sign-in', 'sign-up', 'verify', 'api']
+const AUTH_PAGES = ['/agency/sign-in', '/agency/sign-up', '/agency/verify', '/agency/password']
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -53,32 +54,21 @@ const withPathname = (res: NextResponse, pathname: string) => {
   return res
 }
 
-/** Set context tracking cookie */
-const setContextCookie = (res: NextResponse, ctx: string) => {
-  res.cookies.set(CONTEXT_COOKIE, ctx, {
+/** Persist last-active tenant scopeKey cookie. */
+const setContextCookie = (res: NextResponse, scopeKey: string) => {
+  res.cookies.set(AUTLIFY_CONTEXT_COOKIE, scopeKey, {
     path: '/',
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
-    maxAge: COOKIE_MAX_AGE_SECONDS,
+    maxAge: AUTLIFY_CONTEXT_COOKIE_MAX_AGE_SECONDS,
   })
 }
 
-/** Extract and set context cookie based on pathname */
-const setContextFromPath = (req: NextRequest, res: NextResponse) => {
-  const pathname = req.nextUrl.pathname
-
-  // Agency context: /agency/[agencyId]/...
-  const agencyMatch = pathname.match(/^\/agency\/([^/]+)(?:\/|$)/)
-  if (agencyMatch?.[1] && !NON_CONTEXT_SLUGS.includes(agencyMatch[1])) {
-    setContextCookie(res, `agency:${agencyMatch[1]}`)
-    return
-  }
-
-  // Subaccount context: /subaccount/[subAccountId]/...
-  const subMatch = pathname.match(/^\/subaccount\/([^/]+)(?:\/|$)/)
-  if (subMatch?.[1]) {
-    setContextCookie(res, `subaccount:${subMatch[1]}`)
+/** Clear legacy cookies during migration */
+const clearLegacyCookies = (res: NextResponse) => {
+  for (const name of getLegacyCookieNames()) {
+    res.cookies.delete(name)
   }
 }
 
@@ -108,8 +98,28 @@ export default async function proxy(req: NextRequest) {
     return withPathname(NextResponse.next(), pathname)
   }
 
-  if (pathname.startsWith('/api')) {
-    return withPathname(NextResponse.next(), pathname)
+  // Build request headers for downstream Server Components/Route Handlers.
+  // NOTE: Must not perform DB queries in proxy.
+  const requestHeaders = new Headers(req.headers)
+  requestHeaders.set('x-pathname', pathname)
+
+  const scope = deriveAutlifyScope({
+    pathname,
+    searchParams: url.searchParams,
+    headers: req.headers,
+    cookieValue: req.cookies.get(AUTLIFY_CONTEXT_COOKIE)?.value ?? null,
+  })
+
+  // Always inject scope headers when derivable; do not override existing ones.
+  injectAutlifyScopeHeaders(requestHeaders, scope)
+
+  // Prepare a default "next" response with request header overrides.
+  const nextRes = () => NextResponse.next({ request: { headers: requestHeaders } })
+
+  // API/TRPC routes should never be rewritten via subdomain routing.
+  // Still inject scope headers so route handlers can resolve context without extra work.
+  if (pathname.startsWith('/api') || pathname.startsWith('/trpc')) {
+    return withPathname(nextRes(), pathname)
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -121,7 +131,12 @@ export default async function proxy(req: NextRequest) {
     const subdomain = host.replace(rootDomain, '') // "test." (keeps trailing dot)
     if (subdomain && subdomain !== 'www.' && subdomain !== 'www') {
       const targetPath = `/${subdomain}${buildPathWithSearch(pathname, url.searchParams)}`
-      return withPathname(NextResponse.rewrite(new URL(targetPath, req.url)), pathname)
+      return withPathname(
+        NextResponse.rewrite(new URL(targetPath, req.url), {
+          request: { headers: requestHeaders },
+        }),
+        pathname
+      )
     }
   }
 
@@ -136,44 +151,57 @@ export default async function proxy(req: NextRequest) {
   // 4. Site/Home Routing → Rewrite root to /site
   // ─────────────────────────────────────────────────────────────────────────
   if (pathname === '/' || (pathname === '/site' && host === rootDomain)) {
-    return withPathname(NextResponse.rewrite(new URL('/site', req.url)), pathname)
+    return withPathname(
+      NextResponse.rewrite(new URL('/site', req.url), {
+        request: { headers: requestHeaders },
+      }),
+      pathname
+    )
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // 5. Protected Routes → Require authentication
   // ─────────────────────────────────────────────────────────────────────────
-  const session = await auth()
-  const isLoggedIn = !!session
+  if (isProtectedRoute(pathname) && !isAuthPage(pathname)) {
+    let token: any = null
+    try {
+      token = await getToken({ req, secret: process.env.AUTH_SECRET })
+    } catch {
+      token = null
+    }
+    const isLoggedIn = !!token
 
-  if (isProtectedRoute(pathname) && !isLoggedIn && !isAuthPage(pathname)) {
-    return withPathname(NextResponse.redirect(new URL('/agency/sign-in', req.url)), pathname)
-  }
+    if (!isLoggedIn) {
+      return withPathname(NextResponse.redirect(new URL('/agency/sign-in', req.url)), pathname)
+    }
 
-  // Redirect unverified users to verification page
-  if (isLoggedIn && isProtectedRoute(pathname) && !isAuthPage(pathname)) {
-    const user = session?.user as { email?: string; emailVerified?: Date | null }
+    // Redirect unverified users to verification page (best-effort, based on JWT claims).
     const alreadyVerified = url.searchParams.get('verified') === 'true'
+    const email = typeof token?.email === 'string' ? token.email : undefined
+    const emailVerified = (token as any)?.emailVerified
+    const isVerified = !!emailVerified
 
-    if (user?.email && !user.emailVerified && !alreadyVerified) {
-      const verifyUrl = `/agency/verify?email=${encodeURIComponent(user.email)}`
+    if (email && !isVerified && !alreadyVerified) {
+      const verifyUrl = `/agency/verify?email=${encodeURIComponent(email)}`
       return withPathname(NextResponse.redirect(new URL(verifyUrl, req.url)), pathname)
     }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 6. Context Tracking → Set last-visited context cookie
+  // 6. Context Tracking → Persist "last active scope" cookie
   // ─────────────────────────────────────────────────────────────────────────
-  if (pathname.startsWith('/agency') || pathname.startsWith('/subaccount')) {
-    const targetPath = buildPathWithSearch(pathname, url.searchParams)
-    const res = NextResponse.rewrite(new URL(targetPath, req.url))
-    setContextFromPath(req, res)
+  // Only persist when scope is derived from the URL path (navigation-safe).
+  if (scope?.source === 'pathname') {
+    const res = nextRes()
+    setContextCookie(res, scope.scopeKey)
+    clearLegacyCookies(res)
     return withPathname(res, pathname)
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // 7. Default → Pass through
   // ─────────────────────────────────────────────────────────────────────────
-  return withPathname(NextResponse.next(), pathname)
+  return withPathname(nextRes(), pathname)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

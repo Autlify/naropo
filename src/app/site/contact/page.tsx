@@ -12,8 +12,8 @@ export default function ContactPage() {
       icon: Mail,
       title: "Email Support",
       description: "Get help from our support team",
-      action: "support@naropo.com",
-      href: "mailto:support@naropo.com"
+      action: "support@autlify.com",
+      href: "mailto:support@autlify.com"
     },
     {
       icon: MessageSquare,
@@ -130,7 +130,7 @@ export default function ContactPage() {
                 Can I schedule a demo?
               </h3>
               <p className="text-fg-secondary leading-[1.6]">
-                Absolutely! Email us at support@naropo.com to schedule a personalized demo
+                Absolutely! Email us at support@autlify.com to schedule a personalized demo
                 with our team.
               </p>
             </div>

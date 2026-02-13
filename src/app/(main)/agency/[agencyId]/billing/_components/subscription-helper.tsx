@@ -80,12 +80,12 @@ const formatDate = (date?: Date | null) => {
 
 const getTrialDaysRemaining = (trialEndDate?: Date | null) => {
   if (!trialEndDate) return 0
-
+  
   const now = new Date()
   const trialEnd = new Date(trialEndDate)
   const diffTime = trialEnd.getTime() - now.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
+  
   return diffDays > 0 ? diffDays : 0
 }
 
@@ -230,7 +230,7 @@ const SubscriptionHelper = ({
                   size="sm"
                   className="mt-3"
                   onClick={() => {
-                    window.location.href = `mailto:support@naropo.com?subject=Unpaid Subscription - ${customerId}`
+                    window.location.href = `mailto:support@autlify.com?subject=Unpaid Subscription - ${customerId}`
                   }}
                 >
                   Contact Support

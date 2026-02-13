@@ -4,7 +4,7 @@
  * 
  * Uses EVENT_KEYS from registry as Single Source of Truth
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Actions.Fanout
+ * @namespace Autlify.Lib.Features.FI.GL.Actions.Fanout
  */
 
 'use server'

@@ -1,7 +1,7 @@
 import BlurPage from '@/components/global/blur-page'
 import InfoBar from '@/components/global/infobar'
-import Sidebar from '@/components/sidebar-01'
-import { LayoutWrapper } from '@/components/sidebar-01/sidebar-context'
+import Sidebar from '@/components/sidebar'
+import { LayoutWrapper } from '@/components/sidebar/sidebar-context'
 import Unauthorized from '@/components/unauthorized'
 import {
   getNotificationAndUser,
@@ -11,6 +11,7 @@ import { hasAgencyPermission } from '@/lib/features/iam/authz/permissions'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import React from 'react' 
+import PermissionVersionSync from '@/components/features/iam/permission-version-sync'
 
 type Props = {
   children: React.ReactNode
@@ -35,7 +36,7 @@ const Layout = async ({ children, params }: Props) => {
   }
 
   // Check if user has agency access permission
-  const hasAgencyAccess = await hasAgencyPermission(paramsAgencyId, 'core.agency.account.read')
+  const hasAgencyAccess = await hasAgencyPermission(paramsAgencyId, 'org.agency.account.read')
 
   if (!hasAgencyAccess) {
     return <Unauthorized />
@@ -46,7 +47,7 @@ const Layout = async ({ children, params }: Props) => {
   if (notifications) allNoti = notifications
 
   // Check permission for filtering notifications
-  const canFilterBySubAccount = await hasAgencyPermission(paramsAgencyId,'core.subaccount.account.read')
+  const canFilterBySubAccount = await hasAgencyPermission(paramsAgencyId,'org.subaccount.account.read')
 
   return (
     <LayoutWrapper
@@ -58,6 +59,7 @@ const Layout = async ({ children, params }: Props) => {
         />
       }
     >
+      <PermissionVersionSync agencyId={paramsAgencyId} />
       <BlurPage>{children}</BlurPage>
     </LayoutWrapper>
   )

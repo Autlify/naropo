@@ -3,10 +3,24 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React from 'react'
-import { CreditCard, Receipt, BarChart3, Gift, type LucideIcon } from 'lucide-react'
-
+import { CreditCard, BarChart3, Gift, PackagePlus, ReceiptText, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { Button } from "@/components/ui-2/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui-2/dropdown-menu"
 
 type Item = { href: string; label: string; icon: LucideIcon }
 
@@ -15,17 +29,16 @@ export function BillingNav(props: { baseHref: string; className?: string }) {
   const base = props.baseHref
 
   const items: Item[] = [
-    { href: `${base}/subscription`, label: 'Subscription', icon: Receipt },
+    { href: `${base}/subscription`, label: 'Subscription', icon: ReceiptText },
     { href: `${base}/payment-methods`, label: 'Payment Methods', icon: CreditCard },
     { href: `${base}/usage`, label: 'Usage', icon: BarChart3 },
     { href: `${base}/credits`, label: 'Credits & Coupons', icon: Gift },
-    { href: `${base}/invoices`, label: 'Invoices', icon: Receipt },
-    { href: `${base}/addons`, label: 'Add-ons', icon: Gift },
+    { href: `${base}/addons`, label: 'Add-ons', icon: PackagePlus },
   ]
 
   return (
-    <div className={cn('w-full', props.className)}>
-      <ScrollArea className="w-full">
+    <div className={cn('flex w-full justify-end', props.className)}>
+      <ScrollArea className="w-auto max-w-full">
         <div className="inline-flex h-10 items-center justify-start gap-1 rounded-lg bg-muted p-1">
           {items.map((item) => {
             const active = pathname === item.href || pathname?.startsWith(item.href)

@@ -53,25 +53,18 @@ const TeamPage = async ({ params }: Props) => {
   if (!agencyDetails) return
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-bold">Team</h1>
-        <p className="text-muted-foreground">Manage your agency team members and permissions</p>
-      </div>
-      
-      <DataTable
-        actionButtonText={
-          <>
-            <Plus size={15} />
-            Add
-          </>
-        }
-        modalChildren={<SendInvitation agencyId={agencyDetails.id} />}
-        filterValue="name"
-        columns={columns}
-        data={teamMembers}
-      ></DataTable>
-    </div>
+    <DataTable
+      actionButtonText={
+        <>
+          <Plus size={15} />
+          Add
+        </>
+      }
+      modalChildren={<SendInvitation agencyId={agencyDetails.id} />}
+      filterValue="name"
+      columns={columns}
+      data={teamMembers}
+    ></DataTable>
   )
 }
 

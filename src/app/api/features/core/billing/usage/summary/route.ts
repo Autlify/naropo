@@ -4,8 +4,8 @@ import type { NextRequest } from 'next/server'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import type { MeteringScope, UsagePeriod } from '@/generated/prisma/client'
-import { resolveEffectiveEntitlements } from '@/lib/features/core/billing/entitlements/resolve'
-import { getUsageWindowWithOffset } from '@/lib/features/core/billing/usage/period'
+import { resolveEffectiveEntitlements } from '@/lib/features/org/billing/entitlements/resolve'
+import { getUsageWindowWithOffset } from '@/lib/features/org/billing/usage/period'
 
 const n = (v: any): number => {
   if (v == null) return 0

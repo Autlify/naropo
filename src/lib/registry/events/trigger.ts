@@ -2,9 +2,9 @@ export const EVENT_KEYS = {
     // core: {
     //     agency: {
     //         account: {
-    //             created: 'core.agency.account.created',
-    //             updated: 'core.agency.account.updated',
-    //             deleted: 'core.agency.account.deleted',
+    //             created: 'org.agency.account.created',
+    //             updated: 'org.agency.account.updated',
+    //             deleted: 'org.agency.account.deleted',
     //         }
     //     }
     // },
@@ -393,13 +393,12 @@ export type EventKey = {
 
 export type EventType = Uppercase<EventCode>;
 
-// automatic validate all these key for Module, SubModule, Resource are valid in registry.keys.permissions (not frontend)
-import { ModuleCode as PermModuleCode, SubModuleOf as PermSubModuleOf, ResourceOf as PermResourceOf, ActionOf as PermActionOf } from '@/lib/registry/keys/permissions';
-
-type ValidateModule<M extends ModuleCode> = M extends PermModuleCode ? M : never;
-type ValidateSubModule<M extends ModuleCode, S extends SubModuleOf<M>> = S extends PermSubModuleOf<ValidateModule<M>> ? S : never;
-type ValidateResource<M extends ModuleCode, S extends SubModuleOf<M>, R extends ResourceOf<M, S>> = R extends PermResourceOf<ValidateModule<M>, ValidateSubModule<M, S>> ? R : never;
-type ValidateAction<M extends ModuleCode, S extends SubModuleOf<M>, R extends ResourceOf<M, S>, A extends EventOf<M, S, R>> = A extends PermActionOf<ValidateModule<M>, ValidateSubModule<M, S>, ValidateResource<M, S, R>> ? A : never;
-
-// Validate all EVENT_KEYS
-// Q: no redline error means correct ? A: yes
+/**
+ * IMPORTANT:
+ * Event verbs intentionally differ from permission actions.
+ * Example: permission action `create` -> event verb `created`.
+ *
+ * Avoid string-inflection hacks (e.g. `action + 'ed' | 'd' | 'red'`).
+ * If you need a mapping between command verbs and event verbs, use
+ * `src/lib/registry/events/verbs.ts`.
+ */

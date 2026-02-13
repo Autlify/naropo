@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { db } from '@/lib/db'
 import { auth } from '@/auth'
+import { makeStripeIdempotencyKey } from '@/lib/stripe/idempotency'
 
 /**
  * GET /api/stripe/customer
@@ -202,17 +203,25 @@ export async function POST(req: Request) {
             ) as Record<string, string>
             : {}
 
-        const customer = await stripe.customers.create({
+        const idem = makeStripeIdempotencyKey('customer_create', [
+            'api_customer',
+            userId || '',
             email,
-            name,
-            phone,
-            individual_name,
-            business_name,
-            address,
-            shipping,
-            metadata: cleanMetadata
-            
-        })
+        ])
+
+        const customer = await stripe.customers.create(
+            {
+                email,
+                name,
+                phone,
+                individual_name,
+                business_name,
+                address,
+                shipping,
+                metadata: cleanMetadata,
+            },
+            { idempotencyKey: idem }
+        )
         console.log('✅ Stripe customer created:', customer.id, 'with metadata:', cleanMetadata)
 
         // If userId provided, update user with customerId inline (replaces /api/user/update-customer)

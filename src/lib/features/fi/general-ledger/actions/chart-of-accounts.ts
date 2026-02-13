@@ -6,9 +6,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions';
 import { 
   createAccountSchema, 
   updateAccountSchema,
@@ -19,6 +17,7 @@ import {
 import { logGLAudit } from './audit';
 import { emitEvent } from './fanout';
 import { EVENT_KEYS } from '@/lib/registry/events/trigger';
+import { getActionContext, hasContextPermission, type ActionContext } from '@/lib/features/iam/authz/action-context';
 
 type ActionResult<T> = {
   success: boolean;
@@ -26,27 +25,9 @@ type ActionResult<T> = {
   error?: string;
 };
 
-type Context = {
-  agencyId?: string;
-  subAccountId?: string;
-  userId: string;
-};
+type Context = ActionContext;
 
-const getContext = async (): Promise<Context | null> => {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const dbSession = await db.session.findFirst({
-    where: { userId: session.user.id },
-    select: { activeAgencyId: true, activeSubAccountId: true },
-  });
-
-  return {
-    userId: session.user.id,
-    agencyId: dbSession?.activeAgencyId ?? undefined,
-    subAccountId: dbSession?.activeSubAccountId ?? undefined,
-  };
-};
+const getContext = getActionContext;
 
 /**
  * Get Account by ID
@@ -58,9 +39,7 @@ export const getAccount = async (accountId: string): Promise<ActionResult<any>> 
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.master_data.accounts.view')
-      : await hasAgencyPermission(context.agencyId!, 'fi.master_data.accounts.view');
+    const hasPermission = await hasContextPermission(context, 'fi.master_data.accounts.view');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to view COA' };
@@ -110,9 +89,7 @@ export const listChartOfAccounts = async (): Promise<ActionResult<any>> => {
     }
 
     // Build permission check based on context
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.master_data.accounts.view')
-      : await hasAgencyPermission(context.agencyId!, 'fi.master_data.accounts.view');
+    const hasPermission = await hasContextPermission(context, 'fi.master_data.accounts.view');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to view COA' };
@@ -153,9 +130,7 @@ export const createAccount = async (input: CreateAccountInput): Promise<ActionRe
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.master_data.accounts.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.master_data.accounts.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.master_data.accounts.manage');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to create accounts' };
@@ -260,9 +235,7 @@ export const updateAccount = async (input: UpdateAccountInput): Promise<ActionRe
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.master_data.accounts.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.master_data.accounts.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.master_data.accounts.manage');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to edit accounts' };
@@ -354,9 +327,7 @@ export const archiveAccount = async (accountId: string, reason: string): Promise
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.master_data.accounts.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.master_data.accounts.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.master_data.accounts.manage');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to delete accounts' };
@@ -459,9 +430,7 @@ export const moveAccountInHierarchy = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.master_data.accounts.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.master_data.accounts.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.master_data.accounts.manage');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to manage hierarchy' };

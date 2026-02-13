@@ -1,12 +1,12 @@
 # SaaS Website Builder, Project Management And Dashboard With Stripe using Nextjs14, Bun, Stripe Connect, Prisma, MySQL, Tailwind
 
-License: [Purchase your license from here to use this project for commercial use](https://naropo.com/codelicense)
+License: [Purchase your license from here to use this project for commercial use](https://autlify.com/codelicense)
 
 ![Application Logo](https://storage.googleapis.com/msgsndr/0wtSXexlPhMN1945ooxW/media/65b7c3d24660477daf3d6708.png)
 
 | 🟢 Full Video | 🔴 Demo |
 |------------|------|
-| [Full Video](https://youtu.be/#na) | [Demo](https://naropo.com/demo) |
+| [Full Video](https://youtu.be/#na) | [Demo](https://autlify.com/demo) |
 
 ## ✨ Private Web design / development FREELANCE Community 
 Join the Community if you want to learn how to make money this year with websites! 

@@ -2,7 +2,7 @@
  * Template Service
  * FI-GL Module - System and custom template management
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Actions.Templates
+ * @namespace Autlify.Lib.Features.FI.GL.Actions.Templates
  */
 
 'use server'
@@ -235,11 +235,11 @@ export async function getSystemTemplates(
   category?: TemplateCategory
 ): Promise<ActionResult<any[]>> {
   const templates = Object.values(SYSTEM_TEMPLATES)
-
+  
   if (category) {
     return successResult(templates.filter((t) => t.category === category))
   }
-
+  
   return successResult(templates)
 }
 

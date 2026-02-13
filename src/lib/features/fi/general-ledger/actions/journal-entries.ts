@@ -6,9 +6,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions';
 import {
     createJournalEntrySchema,
     updateJournalEntrySchema,
@@ -21,33 +19,20 @@ import { EVENT_KEYS } from '@/lib/registry/events/trigger';
 import { ConsolidationMethod, JournalEntryStatus, PeriodStatus } from '@/generated/prisma/client';
 import { format } from 'date-fns';
 import { Decimal } from 'decimal.js';
+import { getActionContext, hasContextPermission, type ActionContext } from '@/lib/features/iam/authz/action-context';
 type ActionResult<T> = {
     success: boolean;
     data?: T;
     error?: string;
 };
 
-type Context = {
-    agencyId?: string;
-    subAccountId?: string;
-    userId: string;
-};
+type Context = ActionContext;
 
-const getContext = async (): Promise<Context | null> => {
-    const session = await auth();
-    if (!session?.user?.id) return null;
-
-    const dbSession = await db.session.findFirst({
-        where: { userId: session.user.id },
-        select: { activeAgencyId: true, activeSubAccountId: true },
-    });
-
-    return {
-        userId: session.user.id,
-        agencyId: dbSession?.activeAgencyId ?? undefined,
-        subAccountId: dbSession?.activeSubAccountId ?? undefined,
-    };
-};
+const getContext = getActionContext;
+const getJournalEntriesPath = (context: Context) =>
+    context.subAccountId
+        ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
+        : `/agency/${context.agencyId}/fi/general-ledger/journal-entries`
 
 /**
  * Validate double-entry balance
@@ -74,55 +59,144 @@ const updateAccountBalances = async (
     tx: any,
     periodId: string,
     lines: Array<{ accountId: string; debitAmount: number; creditAmount: number; currency: string }>,
-    userId: string,
     context: Context
 ) => {
-    for (const line of lines) {
-        const balance = await tx.accountBalance.findFirst({
-            where: {
-                accountId: line.accountId,
-                financialPeriodId: periodId,
-            },
-        });
+    type ExistingBalanceRow = {
+        id: string
+        accountId: string
+        currencyCode: string
+        openingBalance: Decimal.Value
+        openingBalanceBase: Decimal.Value
+        debitMovement: Decimal.Value
+        creditMovement: Decimal.Value
+        debitMovementBase: Decimal.Value
+        creditMovementBase: Decimal.Value
+    }
 
-        if (balance) {
-            // Update existing balance
-            const newDebit = new Decimal(balance.debitAmount).plus(line.debitAmount).toNumber();
-            const newCredit = new Decimal(balance.creditAmount).plus(line.creditAmount).toNumber();
-            const newEnding = new Decimal(balance.openingBalance)
-                .plus(newDebit)
-                .minus(newCredit)
-                .toNumber();
+    if (lines.length === 0) return
 
-            await tx.accountBalance.update({
-                where: { id: balance.id },
-                data: {
-                    debitAmount: newDebit,
-                    creditAmount: newCredit,
-                    endingBalance: newEnding,
-                    updatedBy: userId,
-                },
-            });
-        } else {
-            // Create new balance entry
-            const endingBalance = new Decimal(line.debitAmount).minus(line.creditAmount).toNumber();
-
-            await tx.accountBalance.create({
-                data: {
-                    accountId: line.accountId,
-                    financialPeriodId: periodId,
-                    agencyId: context.subAccountId ? null : context.agencyId,
-                    subAccountId: context.subAccountId || null,
-                    openingBalance: 0,
-                    debitAmount: line.debitAmount,
-                    creditAmount: line.creditAmount,
-                    endingBalance,
-                    currency: line.currency,
-                    createdBy: userId,
-                    updatedBy: userId,
-                },
-            });
+    const grouped = new Map<
+        string,
+        {
+            accountId: string
+            currencyCode: string
+            debitMovement: Decimal
+            creditMovement: Decimal
+            transactionCount: number
         }
+    >()
+
+    for (const line of lines) {
+        const key = `${line.accountId}:${line.currency}`
+        const current = grouped.get(key)
+        if (current) {
+            current.debitMovement = current.debitMovement.plus(line.debitAmount || 0)
+            current.creditMovement = current.creditMovement.plus(line.creditAmount || 0)
+            current.transactionCount += 1
+            continue
+        }
+
+        grouped.set(key, {
+            accountId: line.accountId,
+            currencyCode: line.currency,
+            debitMovement: new Decimal(line.debitAmount || 0),
+            creditMovement: new Decimal(line.creditAmount || 0),
+            transactionCount: 1,
+        })
+    }
+
+    const groupedValues = Array.from(grouped.values())
+    const accountIds = Array.from(new Set(groupedValues.map((value) => value.accountId)))
+    const currencyCodes = Array.from(new Set(groupedValues.map((value) => value.currencyCode)))
+    const scopeWhere = context.subAccountId
+        ? { subAccountId: context.subAccountId }
+        : { agencyId: context.agencyId, subAccountId: null }
+
+    const existingBalances = (await tx.accountBalance.findMany({
+        where: {
+            ...scopeWhere,
+            periodId,
+            accountId: { in: accountIds },
+            currencyCode: { in: currencyCodes },
+        },
+        select: {
+            id: true,
+            accountId: true,
+            currencyCode: true,
+            openingBalance: true,
+            openingBalanceBase: true,
+            debitMovement: true,
+            creditMovement: true,
+            debitMovementBase: true,
+            creditMovementBase: true,
+        },
+    })) as ExistingBalanceRow[]
+
+    const existingByKey = new Map<string, ExistingBalanceRow>(
+        existingBalances.map((balance) => [`${balance.accountId}:${balance.currencyCode}`, balance] as const)
+    )
+
+    const updates: Promise<unknown>[] = []
+    const creates: Array<Record<string, unknown>> = []
+
+    for (const item of groupedValues) {
+        const key = `${item.accountId}:${item.currencyCode}`
+        const existing = existingByKey.get(key)
+
+        if (existing) {
+            const nextDebitMovement = new Decimal(existing.debitMovement).plus(item.debitMovement)
+            const nextCreditMovement = new Decimal(existing.creditMovement).plus(item.creditMovement)
+            const nextDebitMovementBase = new Decimal(existing.debitMovementBase).plus(item.debitMovement)
+            const nextCreditMovementBase = new Decimal(existing.creditMovementBase).plus(item.creditMovement)
+            const nextClosing = new Decimal(existing.openingBalance)
+                .plus(nextDebitMovement)
+                .minus(nextCreditMovement)
+            const nextClosingBase = new Decimal(existing.openingBalanceBase)
+                .plus(nextDebitMovementBase)
+                .minus(nextCreditMovementBase)
+
+            updates.push(
+                tx.accountBalance.update({
+                    where: { id: existing.id },
+                    data: {
+                        debitMovement: nextDebitMovement.toNumber(),
+                        creditMovement: nextCreditMovement.toNumber(),
+                        debitMovementBase: nextDebitMovementBase.toNumber(),
+                        creditMovementBase: nextCreditMovementBase.toNumber(),
+                        closingBalance: nextClosing.toNumber(),
+                        closingBalanceBase: nextClosingBase.toNumber(),
+                        transactionCount: { increment: item.transactionCount },
+                    },
+                })
+            )
+            continue
+        }
+
+        const closingBalance = item.debitMovement.minus(item.creditMovement)
+        creates.push({
+            accountId: item.accountId,
+            periodId,
+            currencyCode: item.currencyCode,
+            agencyId: context.subAccountId ? null : context.agencyId,
+            subAccountId: context.subAccountId ?? null,
+            openingBalance: 0,
+            openingBalanceBase: 0,
+            debitMovement: item.debitMovement.toNumber(),
+            creditMovement: item.creditMovement.toNumber(),
+            closingBalance: closingBalance.toNumber(),
+            debitMovementBase: item.debitMovement.toNumber(),
+            creditMovementBase: item.creditMovement.toNumber(),
+            closingBalanceBase: closingBalance.toNumber(),
+            transactionCount: item.transactionCount,
+        })
+    }
+
+    if (updates.length > 0) {
+        await Promise.all(updates)
+    }
+
+    if (creates.length > 0) {
+        await tx.accountBalance.createMany({ data: creates })
     }
 };
 
@@ -138,9 +212,7 @@ export const getJournalEntry = async (
             return { success: false, error: 'Unauthorized: No session found' };
         }
 
-        const hasPermission = context.subAccountId
-            ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.journal_entries.read')
-            : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.journal_entries.read');
+        const hasPermission = await hasContextPermission(context, 'fi.general_ledger.journal_entries.read');
 
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing permission to view journal entries' };
@@ -197,9 +269,7 @@ export const listJournalEntries = async (filters?: {
             return { success: false, error: 'Unauthorized: No session found' };
         }
 
-        const hasPermission = context.subAccountId
-            ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.journal_entries.read')
-            : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.journal_entries.read');
+        const hasPermission = await hasContextPermission(context, 'fi.general_ledger.journal_entries.read');
 
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing permission to view journal entries' };
@@ -260,9 +330,7 @@ export const getPendingApprovals = async (): Promise<ActionResult<{
             return { success: false, error: 'Unauthorized: No session found' };
         }
 
-        const hasPermission = context.subAccountId
-            ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.journal_entries.approve')
-            : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.journal_entries.approve');
+        const hasPermission = await hasContextPermission(context, 'fi.general_ledger.journal_entries.approve');
 
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing approval permission' };
@@ -288,18 +356,32 @@ export const getPendingApprovals = async (): Promise<ActionResult<{
             take: 50,
         });
 
-        // Get submitter info
-        const withSubmitter = await Promise.all(
-            journalEntries.map(async (entry) => {
-                const submitter = entry.submittedBy
-                    ? await db.user.findUnique({
-                          where: { id: entry.submittedBy },
-                          select: { name: true, email: true },
-                      })
-                    : null;
-                return { ...entry, submitter };
+        const submitterIds = Array.from(
+            new Set(
+                journalEntries
+                    .map((entry) => entry.submittedBy)
+                    .filter((id): id is string => Boolean(id))
+            )
+        )
+
+        const submitterMap = new Map<string, { name: string | null; email: string | null }>()
+        if (submitterIds.length > 0) {
+            const submitters = await db.user.findMany({
+                where: { id: { in: submitterIds } },
+                select: { id: true, name: true, email: true },
             })
-        );
+            for (const submitter of submitters) {
+                submitterMap.set(submitter.id, {
+                    name: submitter.name,
+                    email: submitter.email,
+                })
+            }
+        }
+
+        const withSubmitter = journalEntries.map((entry) => ({
+            ...entry,
+            submitter: entry.submittedBy ? submitterMap.get(entry.submittedBy) ?? null : null,
+        }))
 
         return {
             success: true,
@@ -326,9 +408,7 @@ export const createJournalEntry = async (
             return { success: false, error: 'Unauthorized: No session found' };
         }
 
-        const hasPermission = context.subAccountId
-            ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.journal_entries.create')
-            : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.journal_entries.create');
+        const hasPermission = await hasContextPermission(context, 'fi.general_ledger.journal_entries.create');
 
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing permission to create journal entries' };
@@ -369,7 +449,7 @@ export const createJournalEntry = async (
             select: { entryNumber: true },
         });
 
-        const nextNumber = lastEntry ? lastEntry.entryNumber + 1 : 1;
+        const nextNumber = lastEntry ? Number.parseInt(lastEntry.entryNumber, 10) + 1 : 1;
 
         // Create entry with lines in transaction
         const entry = await db.$transaction(async (tx) => {
@@ -387,29 +467,23 @@ export const createJournalEntry = async (
                     createdBy: context.userId,
                     updatedBy: context.userId,
                 },
-                include: {
-                    Lines: true,
-                },
             });
 
-            // Create journal entry lines
-            for (const line of validated.data.lines) {
-                await tx.journalEntryLine.create({
-                    data: {
-                        lineNumber: line.lineNumber,
-                        journalEntryId: created.id,
-                        accountId: line.accountId,
-                        description: line.description || created.description,
-                        debitAmount: line.debitAmount || 0,
-                        creditAmount: line.creditAmount || 0,
-                        taxCode: line.taxCode || null,
-                        taxAmount: line.taxAmount || 0,
-                        debitAmountBase: (line.debitAmount || 0) * (line.exchangeRate || 1),
-                        creditAmountBase: (line.creditAmount || 0) * (line.exchangeRate || 1),
-                        createdAt: new Date(),
-                    }
-                });
-            }
+            await tx.journalEntryLine.createMany({
+                data: validated.data.lines.map((line) => ({
+                    lineNumber: line.lineNumber,
+                    journalEntryId: created.id,
+                    accountId: line.accountId,
+                    description: line.description || created.description,
+                    debitAmount: line.debitAmount || 0,
+                    creditAmount: line.creditAmount || 0,
+                    taxCode: line.taxCode || null,
+                    taxAmount: line.taxAmount || 0,
+                    exchangeRate: line.exchangeRate || 1,
+                    debitAmountBase: (line.debitAmount || 0) * (line.exchangeRate || 1),
+                    creditAmountBase: (line.creditAmount || 0) * (line.exchangeRate || 1),
+                })),
+            })
 
             return tx.journalEntry.findUnique({
                 where: { id: created.id },
@@ -445,10 +519,7 @@ export const createJournalEntry = async (
             }
         );
 
-        const basePath = context.subAccountId
-            ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
-            : `/agency/${context.agencyId}/fi/general-ledger/journal-entries`;
-        revalidatePath(basePath);
+        revalidatePath(getJournalEntriesPath(context));
 
         return { success: true, data: entry };
     } catch (error) {
@@ -469,9 +540,7 @@ export const updateJournalEntry = async (
             return { success: false, error: 'Unauthorized: No session found' };
         }
 
-        const hasPermission = context.subAccountId
-            ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.journal_entries.update')
-            : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.journal_entries.update');
+        const hasPermission = await hasContextPermission(context, 'fi.general_ledger.journal_entries.update');
 
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing permission to edit journal entries' };
@@ -526,10 +595,9 @@ export const updateJournalEntry = async (
                     where: { journalEntryId: id },
                 });
 
-                // Create new lines
-                for (const line of lines) {
-                    await tx.journalEntryLine.create({
-                        data: {
+                if (lines.length > 0) {
+                    await tx.journalEntryLine.createMany({
+                        data: lines.map((line) => ({
                             journalEntryId: id,
                             accountId: line.accountId,
                             description: line.description || updated.description,
@@ -541,10 +609,8 @@ export const updateJournalEntry = async (
                             creditAmountBase: (line.creditAmount || 0) * (line.exchangeRate || 1),
                             debitAmountBase: (line.debitAmount || 0) * (line.exchangeRate || 1),
                             lineNumber: line.lineNumber,
-                            createdAt: new Date(),
-
-                        },
-                    });
+                        })),
+                    })
                 }
             }
 
@@ -572,10 +638,7 @@ export const updateJournalEntry = async (
             newValues: entry,
         });
 
-        const basePath = context.subAccountId
-            ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
-            : `/agency/${context.agencyId}/fi/general-ledger/journal-entries`;
-        revalidatePath(basePath);
+        revalidatePath(getJournalEntriesPath(context));
 
         return { success: true, data: entry };
     } catch (error) {
@@ -594,9 +657,7 @@ export const submitJournalEntry = async (entryId: string): Promise<ActionResult<
             return { success: false, error: 'Unauthorized: No session found' };
         }
 
-        const hasPermission = context.subAccountId
-            ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.journal_entries.submit')
-            : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.journal_entries.submit');
+        const hasPermission = await hasContextPermission(context, 'fi.general_ledger.journal_entries.submit');
 
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing permission to submit journal entries' };
@@ -658,10 +719,7 @@ export const submitJournalEntry = async (entryId: string): Promise<ActionResult<
             }
         );
 
-        const basePath = context.subAccountId
-            ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
-            : `/agency/${context.agencyId}/fi/general-ledger/journal-entries`;
-        revalidatePath(basePath);
+        revalidatePath(getJournalEntriesPath(context));
 
         return { success: true, data: updated };
     } catch (error) {
@@ -683,9 +741,7 @@ export const approveJournalEntry = async (
             return { success: false, error: 'Unauthorized: No session found' };
         }
 
-        const hasPermission = context.subAccountId
-            ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.journal_entries.approve')
-            : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.journal_entries.approve');
+        const hasPermission = await hasContextPermission(context, 'fi.general_ledger.journal_entries.approve');
 
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing permission to approve journal entries' };
@@ -761,9 +817,8 @@ export const approveJournalEntry = async (
                     accountId: line.accountId,
                     debitAmount: line.debitAmount.toNumber(),
                     creditAmount: line.creditAmount.toNumber(),
-                    currency: 'USD', // Assuming USD, adjust as needed
+                    currency: entry.currencyCode,
                 })),
-                context.userId,
                 context
             );
 
@@ -850,10 +905,7 @@ export const approveJournalEntry = async (
             }
         );
 
-        const basePath = context.subAccountId
-            ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
-            : `/agency/${context.agencyId}/fi/general-ledger/journal-entries`;
-        revalidatePath(basePath);
+        revalidatePath(getJournalEntriesPath(context));
 
         return { success: true, data: updated };
     } catch (error) {
@@ -875,9 +927,7 @@ export const rejectJournalEntry = async (
             return { success: false, error: 'Unauthorized: No session found' };
         }
 
-        const hasPermission = context.subAccountId
-            ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.journal_entries.reject')
-            : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.journal_entries.reject');
+        const hasPermission = await hasContextPermission(context, 'fi.general_ledger.journal_entries.reject');
 
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing permission to reject journal entries' };
@@ -931,10 +981,7 @@ export const rejectJournalEntry = async (
             }
         );
 
-        const basePath = context.subAccountId
-            ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
-            : `/agency/${context.agencyId}/fi/general-ledger/journal-entries`;
-        revalidatePath(basePath);
+        revalidatePath(getJournalEntriesPath(context));
 
         return { success: true, data: updated };
     } catch (error) {
@@ -957,9 +1004,7 @@ export const reverseJournalEntry = async (
             return { success: false, error: 'Unauthorized: No session found' };
         }
 
-        const hasPermission = context.subAccountId
-            ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.journal_entries.reverse')
-            : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.journal_entries.reverse');
+        const hasPermission = await hasContextPermission(context, 'fi.general_ledger.journal_entries.reverse');
 
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing permission to reverse journal entries' };
@@ -1042,22 +1087,19 @@ export const reverseJournalEntry = async (
             });
 
             // Create reversing lines (swap debit/credit)
-            for (const line of entry.Lines) {
-                await tx.journalEntryLine.create({
-                    data: {
-                        journalEntryId: reversalEntry.id,
-                        accountId: line.accountId,
-                        description: line.description,
-                        debitAmount: line.creditAmount.toNumber(), // Swap
-                        creditAmount: line.debitAmount.toNumber(), // Swap 
-                        exchangeRate: line.exchangeRate,
-                        debitAmountBase: line.debitAmountBase.toNumber(), // Swap
-                        creditAmountBase: line.creditAmountBase.toNumber(), // Swap
-                        createdAt: new Date(),
-                        lineNumber: line.lineNumber,
-                    },
-                });
-            }
+            await tx.journalEntryLine.createMany({
+                data: entry.Lines.map((line) => ({
+                    journalEntryId: reversalEntry.id,
+                    accountId: line.accountId,
+                    description: line.description,
+                    debitAmount: line.creditAmount.toNumber(),
+                    creditAmount: line.debitAmount.toNumber(),
+                    exchangeRate: line.exchangeRate,
+                    debitAmountBase: line.creditAmountBase.toNumber(),
+                    creditAmountBase: line.debitAmountBase.toNumber(),
+                    lineNumber: line.lineNumber,
+                })),
+            })
 
             // Mark original as reversed
             await tx.journalEntry.update({
@@ -1075,7 +1117,7 @@ export const reverseJournalEntry = async (
                 accountId: line.accountId,
                 debitAmount: line.creditAmount, // Swapped
                 creditAmount: line.debitAmount, // Swapped
-                currency: 'USD'
+                currency: entry.currencyCode
             }));
 
             await updateAccountBalances(
@@ -1086,7 +1128,6 @@ export const reverseJournalEntry = async (
                     debitAmount: line.debitAmount.toNumber(),
                     creditAmount: line.creditAmount.toNumber(),
                 })),
-                context.userId,
                 context
             );
 
@@ -1137,10 +1178,7 @@ export const reverseJournalEntry = async (
             }
         );
 
-        const basePath = context.subAccountId
-            ? `/subaccount/${context.subAccountId}/fi/general-ledger/journal-entries`
-            : `/agency/${context.agencyId}/fi/general-ledger/journal-entries`;
-        revalidatePath(basePath);
+        revalidatePath(getJournalEntriesPath(context));
 
         return { success: true, data: reversal };
     } catch (error) {

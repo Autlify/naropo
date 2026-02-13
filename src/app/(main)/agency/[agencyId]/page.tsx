@@ -55,10 +55,13 @@ const Page = async ({
     },
   })
 
-  if (agencyDetails.connectAccountId) {
+  let connectAccountId = agencyDetails.connectAccountId
+  let connectAccountInvalid = false
+
+  if (connectAccountId) {
     try {
       const response = await stripe.accounts.retrieve({
-        stripeAccount: agencyDetails.connectAccountId,
+        stripeAccount: connectAccountId,
       })
 
       currency = response.default_currency?.toUpperCase() || 'USD'
@@ -67,7 +70,7 @@ const Page = async ({
           created: { gte: startDate, lte: endDate },
           limit: 100,
         },
-        { stripeAccount: agencyDetails.connectAccountId }
+        { stripeAccount: connectAccountId }
       )
       sessions = checkoutSessions.data
       totalClosedSessions = checkoutSessions.data
@@ -98,20 +101,41 @@ const Page = async ({
       ? +(((totalClosedSessions.length / totalSessions) * 100).toFixed(2))
       : 0
     } catch (error) {
-      // Connected account no longer accessible - log and continue with defaults
+      // Connected account no longer accessible - handle deauth / wrong key gracefully
+      const code = (error as any)?.code
+      const status = (error as any)?.statusCode
       console.error('Failed to fetch Stripe Connect account data:', error)
+
+      // Common cases:
+      // - account_invalid (wrong platform key / access revoked)
+      // - oauth invalid_grant / deauthorized flows
+      if (code === 'account_invalid' || status === 403) {
+        connectAccountInvalid = true
+        connectAccountId = ''
+        // Best-effort: clear saved connectAccountId so UI will prompt reconnect
+        try {
+          await db.agency.update({
+            where: { id: agencyDetails.id },
+            data: { connectAccountId: '' },
+          })
+        } catch {
+          // ignore
+        }
+      }
     }
   }
 
   return (
     <div className="relative h-full">
-      {!agencyDetails.connectAccountId && (
+      {(!connectAccountId || connectAccountInvalid) && (
         <div className="absolute -top-10 -left-10 right-0 bottom-0 z-30 flex items-center justify-center backdrop-blur-md bg-background/50">
           <Card>
             <CardHeader>
               <CardTitle>Connect Your Stripe</CardTitle>
               <CardDescription>
-                You need to connect your stripe account to see metrics
+                {connectAccountInvalid
+                  ? 'Your Stripe connection is no longer valid (access revoked or wrong key). Please reconnect to continue.'
+                  : 'You need to connect your Stripe account to see metrics.'}
               </CardDescription>
               <Link
                 href={`/agency/${agencyDetails.id}/launchpad`}

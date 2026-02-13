@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
 import { EditorBtns } from '@/lib/constants'
-import { getFunnel, getSubaccountDetails } from '@/lib/queries'
 import { getStripe } from '@/lib/stripe/stripe-client'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
 import {
@@ -13,7 +12,6 @@ import {
 } from '@stripe/react-stripe-js'
 import clsx from 'clsx'
 import { Trash } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import React, { useEffect, useMemo, useState } from 'react'
 
 type Props = {
@@ -21,84 +19,55 @@ type Props = {
 }
 
 const Checkout = (props: Props) => {
-  const { dispatch, state, subaccountId, funnelId, pageDetails } = useEditor()
-  const router = useRouter()
+  const { dispatch, state, subaccountId, funnelId } = useEditor()
   const [clientSecret, setClientSecret] = useState('')
-  const [livePrices, setLivePrices] = useState([])
-  const [subAccountConnectAccId, setSubAccountConnectAccId] = useState('')
+  const [connectAccountId, setConnectAccountId] = useState('')
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [fetchNonce, setFetchNonce] = useState(0)
   const options = useMemo(() => ({ clientSecret }), [clientSecret])
   const styles = props.element.styles
 
   useEffect(() => {
-    if (!subaccountId) return
-    const fetchData = async () => {
-      const subaccountDetails = await getSubaccountDetails(subaccountId)
-      if (subaccountDetails) {
-        if (!subaccountDetails.connectAccountId) return
-        setSubAccountConnectAccId(subaccountDetails.connectAccountId)
-      }
-    }
-    fetchData()
-  }, [subaccountId])
+    if (!funnelId) return
+    const getClientSecret = async () => {
+      setCheckoutError(null)
+      try {
+        const body = JSON.stringify({ funnelId, subaccountId })
+        const response = await fetch('/api/features/crm/funnels/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+          cache: 'no-store',
+        })
 
-  useEffect(() => {
-    if (funnelId) {
-      const fetchData = async () => {
-        const funnelData = await getFunnel(funnelId)
-        setLivePrices(JSON.parse(funnelData?.liveProducts || '[]'))
-      }
-      fetchData()
-    }
-  }, [funnelId])
-
-  useEffect(() => {
-    if (livePrices.length && subaccountId && subAccountConnectAccId) {
-      const getClientSercet = async () => {
-        setCheckoutError(null)
-        try {
-          const body = JSON.stringify({
-            subAccountConnectAccId,
-            prices: livePrices,
-            subaccountId,
-          })
-          // Use a relative URL to avoid NEXT_PUBLIC_URL misconfiguration (which can lead to
-          // a stuck loading state when the request never reaches the API route).
-          const response = await fetch('/api/features/crm/funnels/create-checkout-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body,
-            cache: 'no-store',
-          })
-
-          const responseJson = await response.json().catch(() => null)
-          if (!response.ok) {
-            const message =
-              (responseJson && (responseJson.error || responseJson.message)) ||
-              `Request failed (${response.status})`
-            throw new Error(message)
-          }
-
-          if (!responseJson || !responseJson.clientSecret) {
-            throw new Error('Missing clientSecret from checkout session')
-          }
-          setClientSecret(responseJson.clientSecret)
-        } catch (error) {
-          const message = error instanceof Error ? error.message : 'An error occurred'
-          setCheckoutError(message)
-          toast({
-            open: true,
-            className: 'z-[100000]',
-            variant: 'destructive',
-            title: 'Oops!',
-            description: message,
-          })
+        const responseJson = await response.json().catch(() => null)
+        if (!response.ok) {
+          const message =
+            (responseJson && (responseJson.error || responseJson.message)) ||
+            `Request failed (${response.status})`
+          throw new Error(message)
         }
+
+        if (!responseJson || !responseJson.clientSecret || !responseJson.connectAccountId) {
+          throw new Error('Missing checkout session details')
+        }
+        setConnectAccountId(String(responseJson.connectAccountId))
+        setClientSecret(String(responseJson.clientSecret))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'An error occurred'
+        setCheckoutError(message)
+        toast({
+          open: true,
+          className: 'z-[100000]',
+          variant: 'destructive',
+          title: 'Oops!',
+          description: message,
+        })
       }
-      getClientSercet()
     }
-  }, [livePrices, subaccountId, subAccountConnectAccId, fetchNonce])
+
+    getClientSecret()
+  }, [funnelId, subaccountId, fetchNonce])
 
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
     if (type === null) return
@@ -113,22 +82,6 @@ const Checkout = (props: Props) => {
         elementDetails: props.element,
       },
     })
-  }
-
-  const goToNextPage = async () => {
-    if (!state.editor.liveMode) return
-    const funnelPages = await getFunnel(funnelId)
-    if (!funnelPages || !pageDetails) return
-    if (funnelPages.FunnelPages.length > pageDetails.order + 1) {
-      console.log(funnelPages.FunnelPages.length, pageDetails.order + 1)
-      const nextPage = funnelPages.FunnelPages.find(
-        (page) => page.order === pageDetails.order + 1
-      )
-      if (!nextPage) return
-      router.replace(
-        `${process.env.NEXT_PUBLIC_SCHEME}${funnelPages.subDomainName}.${process.env.NEXT_PUBLIC_DOMAIN}/${nextPage.pathName}`
-      )
-    }
   }
 
   const handleDeleteElement = () => {
@@ -164,10 +117,10 @@ const Checkout = (props: Props) => {
 
       <div className="border-none transition-all w-full">
         <div className="flex flex-col gap-4 w-full">
-          {options.clientSecret && subAccountConnectAccId && (
+          {options.clientSecret && connectAccountId && (
             <div className="text-white">
               <EmbeddedCheckoutProvider
-                stripe={getStripe(subAccountConnectAccId)}
+                stripe={getStripe(connectAccountId)}
                 options={options}
               >
                 <EmbeddedCheckout />

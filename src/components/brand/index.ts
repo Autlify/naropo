@@ -1,15 +1,14 @@
 /**
- * Naropo Brand Assets
+ * Autlify Brand Assets
  * 
  * Premium logo components with multiple variants and themes.
  * 
  * Usage:
- * import { NaropoLogo, NaropoLogoModern } from '@/components/brand'
+ * import { AutlifyLogo, AutlifyLogoModern } from '@/components/brand'
  * 
- * <NaropoLogo size={48} variant="full" theme="gradient" animated />
- * <NaropoLogoModern size={40} variant="icon" animated />
+ * <AutlifyLogo size={48} variant="full" theme="gradient" animated />
+ * <AutlifyLogoModern size={40} variant="icon" animated />
  */
 
-
-export { default as NaropoLogo } from './naropo-logo'
-export { default as NaropoLogoModern } from './naropo-logo-modern'
+export { default as AutlifyLogo } from './autlify-logo'
+export { default as AutlifyLogoModern } from './autlify-logo-modern'

@@ -88,7 +88,7 @@ const AuthForm = ({
   const [showPassword, setShowPassword] = useState(false)
   const [termsAgreed, setTermsAgreed] = useState(false)
   const { data: session } = useSession()
-
+  
 
 
 
@@ -162,7 +162,7 @@ const AuthForm = ({
     switch (mode) {
       case 'initial':
         try {
-          const result = await adapter.getUserByEmail?.(email)
+          const result = await adapter.getUserByEmail?.(email) 
 
           if (!result) {
             setMode('signUp')
@@ -258,7 +258,7 @@ const AuthForm = ({
         const user = {
           email: email,
           firstName: firstName,
-          lastName: lastName,
+          lastName: lastName, 
         } as AdapterUser
         const newUser = await adapter.createUser?.(user)
 
@@ -414,15 +414,15 @@ const AuthForm = ({
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
                 <Image
-                  src="/assets/naropo-logo.svg"
-                  alt="Naropo"
+                  src="/assets/autlify-logo.svg"
+                  alt="Autlify"
                   width={48}
                   height={48}
                   className="relative"
                 />
               </div>
               <span className="ml-3 text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-                Naropo
+                Autlify
               </span>
             </div>
 
@@ -476,7 +476,7 @@ const AuthForm = ({
           {/* ================================================================ */}
           {/* INITIAL: Email input + OAuth/Passkey buttons */}
           {/* ================================================================ */}
-
+      
           <form onSubmit={handleCredentialsSignIn} className="space-y-4">
             <div className="grid md:grid-cols-2 space-y-2 md:space-y-0 md:gap-4" hidden={firstName === undefined && lastName === undefined}>
               <div>
@@ -544,7 +544,7 @@ const AuthForm = ({
               Sign in {mode}
             </Button>
 
-            <div className="space-y-6">
+                 <div className="space-y-6">
               {/* OAuth Buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <Button

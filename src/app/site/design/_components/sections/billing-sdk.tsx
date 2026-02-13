@@ -311,7 +311,7 @@ export function BillingSDKSection() {
     ];
 
     // Convert local dunningStrikes to SDK's expected alerts format
-    const dunningAlerts = dunningStrikes.flatMap(strike =>
+    const dunningAlerts = dunningStrikes.flatMap(strike => 
         strike.failedPayments.map(fp => ({
             id: fp.id,
             level: strike.level as 1 | 2 | 3,

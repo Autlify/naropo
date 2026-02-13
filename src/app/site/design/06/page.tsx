@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
+import { 
   GitBranch,
   GitCommit,
   Globe,
@@ -47,9 +47,9 @@ function DeploymentStatus({ status }: { status: 'building' | 'ready' | 'error' |
     cancelled: { icon: XCircle, className: 'bg-muted text-muted-foreground border-border', iconClass: '' },
     queued: { icon: Clock, className: 'bg-blue-500/20 text-blue-400 border-blue-500/30', iconClass: '' },
   }
-
+  
   const { icon: Icon, className, iconClass } = styles[status]
-
+  
   return (
     <Badge className={cn("text-xs font-medium gap-1", className)}>
       <Icon className={cn("h-3 w-3", iconClass)} />
@@ -59,7 +59,7 @@ function DeploymentStatus({ status }: { status: 'building' | 'ready' | 'error' |
 }
 
 // Deployment Row
-function DeploymentRow({
+function DeploymentRow({ 
   branch,
   commit,
   commitMessage,
@@ -82,14 +82,14 @@ function DeploymentRow({
     <div className="group flex items-center gap-4 px-4 py-4 border-b border-border/30 hover:bg-muted/20 transition-colors">
       {/* Status */}
       <DeploymentStatus status={status} />
-
+      
       {/* Production Badge */}
       {production && (
         <Badge variant="secondary" className="text-[10px] bg-foreground/10 text-foreground border-0">
           Production
         </Badge>
       )}
-
+      
       {/* Branch & Commit */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -104,24 +104,24 @@ function DeploymentRow({
         </div>
         <p className="text-sm text-muted-foreground truncate mt-0.5">{commitMessage}</p>
       </div>
-
+      
       {/* Duration */}
       {duration && (
         <span className="text-xs text-muted-foreground">{duration}</span>
       )}
-
+      
       {/* Time */}
       <span className="text-xs text-muted-foreground whitespace-nowrap">{time}</span>
-
+      
       {/* Author */}
-      <div
+      <div 
         className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium text-white"
         style={{ backgroundColor: author.color }}
         title={author.name}
       >
         {author.initials}
       </div>
-
+      
       {/* Actions */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {status === 'ready' && (
@@ -138,12 +138,12 @@ function DeploymentRow({
 }
 
 // Domain Card
-function DomainCard({
-  domain,
+function DomainCard({ 
+  domain, 
   primary = false,
   valid = true,
   redirect
-}: {
+}: { 
   domain: string
   primary?: boolean
   valid?: boolean
@@ -196,7 +196,7 @@ function EnvVarRow({ name, value, decrypted = false }: { name: string; value: st
 // Build Log Preview
 function BuildLogPreview() {
   const logs = [
-    { type: 'info', message: 'Cloning github.com/Autlify/naropo (Branch: main, Commit: 3a8f2d1)' },
+    { type: 'info', message: 'Cloning github.com/autlify/autlify (Branch: main, Commit: 3a8f2d1)' },
     { type: 'info', message: 'Installing dependencies...' },
     { type: 'success', message: 'Dependencies installed successfully' },
     { type: 'info', message: 'Running build command: next build' },
@@ -206,7 +206,7 @@ function BuildLogPreview() {
     { type: 'info', message: 'Generating static pages (24/24)' },
     { type: 'success', message: 'Build completed in 42s' },
   ]
-
+  
   return (
     <div className="bg-[#0a0a0a] rounded-lg border border-border/50 p-4 font-mono text-xs overflow-hidden">
       <div className="space-y-1">
@@ -250,8 +250,8 @@ function NavItem({ icon: Icon, label, active = false, badge }: { icon: React.Com
   return (
     <button className={cn(
       "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors",
-      active
-        ? "bg-muted text-foreground"
+      active 
+        ? "bg-muted text-foreground" 
         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
     )}>
       <Icon className="h-4 w-4" />
@@ -283,12 +283,12 @@ export default function DesignSample06() {
                 <Box className="h-4 w-4 text-background" />
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-foreground">naropo</span>
+              <span className="font-medium text-foreground">autlify</span>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">naropo-app</span>
+              <span className="text-muted-foreground">autlify-app</span>
             </div>
           </div>
-
+          
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm">Feedback</Button>
             <Button variant="ghost" size="sm">Docs</Button>
@@ -298,7 +298,7 @@ export default function DesignSample06() {
           </div>
         </div>
       </header>
-
+      
       {/* Project Header */}
       <div className="border-b border-border/50 bg-gradient-to-b from-muted/30 to-transparent">
         <div className="max-w-7xl mx-auto px-6 py-6">
@@ -308,10 +308,10 @@ export default function DesignSample06() {
                 <Rocket className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">naropo-app</h1>
+                <h1 className="text-xl font-bold text-foreground">autlify-app</h1>
                 <div className="flex items-center gap-3 mt-1">
                   <a href="#" className="text-sm text-blue-400 hover:underline flex items-center gap-1">
-                    naropo.com
+                    autlify.com
                     <ExternalLink className="h-3 w-3" />
                   </a>
                   <span className="text-sm text-muted-foreground">•</span>
@@ -323,7 +323,7 @@ export default function DesignSample06() {
                 </div>
               </div>
             </div>
-
+            
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
                 <GitBranch className="h-4 w-4 mr-2" />
@@ -335,12 +335,12 @@ export default function DesignSample06() {
               </Button>
             </div>
           </div>
-
+          
           {/* Project Tabs */}
           <Tabs defaultValue="deployments" className="mt-6">
             <TabsList className="bg-transparent border-b border-border/50 rounded-none p-0 h-auto gap-6">
               {['Project', 'Deployments', 'Analytics', 'Speed Insights', 'Logs', 'Storage', 'Settings'].map((tab) => (
-                <TabsTrigger
+                <TabsTrigger 
                   key={tab}
                   value={tab.toLowerCase().replace(' ', '-')}
                   className={cn(
@@ -355,7 +355,7 @@ export default function DesignSample06() {
           </Tabs>
         </div>
       </div>
-
+      
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content - Deployments */}
@@ -366,7 +366,7 @@ export default function DesignSample06() {
               <StatCard label="Avg Build Time" value="38s" icon={Clock} />
               <StatCard label="Success Rate" value="98.2%" icon={CheckCircle2} />
             </div>
-
+            
             {/* Deployments List */}
             <Card className="border-border/50 bg-gradient-to-br from-muted/20 to-transparent">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -384,7 +384,7 @@ export default function DesignSample06() {
                 ))}
               </CardContent>
             </Card>
-
+            
             {/* Build Logs */}
             <Card className="border-border/50 bg-gradient-to-br from-muted/20 to-transparent">
               <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -404,7 +404,7 @@ export default function DesignSample06() {
               </CardContent>
             </Card>
           </div>
-
+          
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Domains */}
@@ -416,12 +416,12 @@ export default function DesignSample06() {
                 </Button>
               </CardHeader>
               <CardContent className="pt-0">
-                <DomainCard domain="naropo.com" primary valid />
-                <DomainCard domain="www.naropo.com" redirect="naropo.com" valid />
-                <DomainCard domain="naropo.netlify.app" valid />
+                <DomainCard domain="autlify.com" primary valid />
+                <DomainCard domain="www.autlify.com" redirect="autlify.com" valid />
+                <DomainCard domain="autlify.vercel.app" valid />
               </CardContent>
             </Card>
-
+            
             {/* Environment Variables */}
             <Card className="border-border/50 bg-gradient-to-br from-muted/20 to-transparent">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -439,7 +439,7 @@ export default function DesignSample06() {
                 <EnvVarRow name="STRIPE_SECRET_KEY" value="sk_live_..." />
               </CardContent>
             </Card>
-
+            
             {/* Quick Actions */}
             <Card className="border-border/50 bg-gradient-to-br from-muted/20 to-transparent">
               <CardHeader className="pb-3">
@@ -453,7 +453,7 @@ export default function DesignSample06() {
                 <NavItem icon={Settings} label="Settings" />
               </CardContent>
             </Card>
-
+            
             {/* Redeploy Button */}
             <Button variant="outline" className="w-full">
               <RotateCcw className="h-4 w-4 mr-2" />

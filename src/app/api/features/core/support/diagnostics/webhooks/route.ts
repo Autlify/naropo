@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { requireRequestAccess } from '@/lib/features/iam/authz/require'
-import { listDeliveries } from '@/lib/features/core/integrations/store'
-import type { IntegrationScope } from '@/lib/features/core/integrations/guards'
+import { listDeliveries } from '@/lib/features/org/integrations/store'
+import type { IntegrationScope } from '@/lib/features/org/integrations/guards'
 
 const hasBaselineRead = (pks: string[], scopeKind: 'agency' | 'subaccount') => {
-  if (scopeKind === 'agency') return pks.includes('core.agency.account.read')
-  return pks.includes('core.subaccount.account.read')
+  if (scopeKind === 'agency') return pks.includes('org.agency.account.read')
+  return pks.includes('org.subaccount.account.read')
 }
 
 const toIntegrationScope = (s: any): IntegrationScope => {

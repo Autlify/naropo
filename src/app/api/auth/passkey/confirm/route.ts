@@ -10,9 +10,34 @@ import type {
 } from '@simplewebauthn/types'
 import { signIn } from '@/auth'
 import { deleteVerificationToken } from '@/lib/queries'
+import { getAppOrigin } from '@/lib/core/runtime/origins'
 
-const rpID = process.env.NEXT_PUBLIC_DOMAIN || 'localhost'
-const origin = process.env.NEXT_PUBLIC_URL?.replace(/\/$/, '') || 'http://localhost:3000'
+function resolveRpId(req: Request): string {
+  const raw = process.env.NEXT_PUBLIC_DOMAIN?.trim()
+  if (raw) {
+    try {
+      const url = raw.includes('://') ? new URL(raw) : new URL(`https://${raw}`)
+      return url.hostname
+    } catch {
+      return raw.split(':')[0] || 'localhost'
+    }
+  }
+  try {
+    return new URL(getAppOrigin({ headers: req.headers as any })).hostname || 'localhost'
+  } catch {
+    return 'localhost'
+  }
+}
+
+function resolveOrigin(req: Request): string {
+  const raw = process.env.NEXT_PUBLIC_URL?.trim()
+  if (raw) return raw.replace(/\/$/, '')
+  try {
+    return getAppOrigin({ headers: req.headers as any }).replace(/\/$/, '')
+  } catch {
+    return 'http://localhost:3000'
+  }
+}
 
 /**
  * @file src/app/api/auth/passkey/confirm/route.ts
@@ -23,6 +48,8 @@ const origin = process.env.NEXT_PUBLIC_URL?.replace(/\/$/, '') || 'http://localh
  */
 export async function POST(req: Request) {
   try {
+    const rpID = resolveRpId(req)
+    const origin = resolveOrigin(req)
     const { mode, credential, email, token, deviceName } = await req.json()
 
     if (!mode || !credential) {
@@ -34,7 +61,7 @@ export async function POST(req: Request) {
 
     // SIGNIN MODE: Verify signin authentication
     if (mode === 'signin') {
-      return await handleSigninConfirmation(credential, email)
+      return await handleSigninConfirmation({ credential, email, rpID, origin })
     }
 
     // REGISTER MODE: Complete passkey registration
@@ -45,7 +72,7 @@ export async function POST(req: Request) {
           { status: 400 }
         )
       }
-      return await handleRegistrationConfirmation(email, token, credential, deviceName)
+      return await handleRegistrationConfirmation({ email, token, credential, deviceName, rpID, origin })
     }
 
     return NextResponse.json(
@@ -64,7 +91,13 @@ export async function POST(req: Request) {
 /**
  * Handle signin authentication confirmation
  */
-async function handleSigninConfirmation(credential: AuthenticationResponseJSON, email?: string) {
+async function handleSigninConfirmation(args: {
+  credential: AuthenticationResponseJSON
+  email?: string
+  rpID: string
+  origin: string
+}) {
+  const { credential, email, rpID, origin } = args
   // For usernameless flow: Find passkey by credential ID
   // For email flow: Verify email matches the passkey owner
   const credentialIdBase64 = Buffer.from(credential.id, 'base64url').toString('base64')
@@ -182,12 +215,15 @@ async function handleSigninConfirmation(credential: AuthenticationResponseJSON, 
 /**
  * Handle registration completion
  */
-async function handleRegistrationConfirmation(
-  email: string,
-  token: string,
-  credential: RegistrationResponseJSON,
+async function handleRegistrationConfirmation(args: {
+  email: string
+  token: string
+  credential: RegistrationResponseJSON
   deviceName?: string
-) {
+  rpID: string
+  origin: string
+}) {
+  const { email, token, credential, deviceName, rpID, origin } = args
   // Verify token exists and is not expired
   const tokenRecord = await db.verificationToken.findFirst({
     where: { identifier: email, token },

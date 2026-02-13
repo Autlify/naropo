@@ -163,7 +163,7 @@ export function Footer() {
                   />
                 </motion.div>
                 <span className="font-bold text-lg bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                  Naropo
+                  Autlify
                 </span>
               </Link>
 
@@ -274,7 +274,7 @@ export function Footer() {
               className="text-sm text-muted-foreground"
               whileHover={{ scale: 1.02 }}
             >
-              © 2024 Naropo. All rights reserved.
+              © 2024 Autlify. All rights reserved.
             </motion.p>
 
             <motion.div

@@ -11,11 +11,12 @@ const Page = async ({
 }) => {
   const { domain, path } = await params
   const domainData = await getDomainContent(domain.slice(0, -1))
+  if (!domainData || !domainData.published) return notFound()
   const pageData = domainData?.FunnelPages.find(
     (page) => page.pathName === path
   )
 
-  if (!pageData || !domainData) return notFound()
+  if (!pageData) return notFound()
 
   return (
     <EditorProvider

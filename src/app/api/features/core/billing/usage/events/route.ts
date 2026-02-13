@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import type { MeteringScope, UsagePeriod } from '@/generated/prisma/client'
-import { getUsageWindowWithOffset } from '@/lib/features/core/billing/usage/period'
+import { getUsageWindowWithOffset } from '@/lib/features/org/billing/usage/period'
 
 export async function GET(req: NextRequest) {
   const session = await auth()

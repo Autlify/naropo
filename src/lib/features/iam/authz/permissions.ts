@@ -1,86 +1,162 @@
 import 'server-only'
 
-import { auth } from '@/auth'
+import { cache } from 'react'
 import { db } from '@/lib/db'
 import type { Permission } from '@/generated/prisma/client'
 import type { ActionKey } from '@/lib/registry'
-import { resolveEffectiveEntitlements } from '@/lib/features/core/billing/entitlements/resolve'
+import { resolveEffectiveEntitlements } from '@/lib/features/org/billing/entitlements/resolve'
 import { getPermissionCatalogSeeds } from '@/lib/features/iam/authz/permission-catalog'
 import { isPermissionAssignable } from '@/lib/features/iam/authz/permission-entitlements'
+import {
+  getAgencyAccessSnapshot,
+  getSubAccountAccessSnapshot,
+  getAccessSnapshotForUser,
+} from '@/lib/features/iam/authz/access-snapshot'
+import { getAuthedUserIdCached as getAuthedUserIdFromSessionCached } from '@/lib/features/iam/authz/session'
 
 type PermissionKey = ActionKey
 
 const normalizeKey = (k: string) => k.trim()
 
-export const getAuthUserMemberships = async () => {
-  const session = await auth()
-  const userId = session?.user?.id
-  if (!userId) return null
+// Backwards-compatible export. Prefer importing from `authz/session` directly.
+export const getAuthedUserIdCached = getAuthedUserIdFromSessionCached
 
-  return db.user.findUnique({
-    where: { id: userId },
-    include: {
-      AgencyMemberships: {
-        where: { isActive: true },
-        include: {
-          Agency: true,
-          Role: {
-            include: {
-              Permissions: {
-                where: { granted: true },
-                include: { Permission: true },
-              },
-            },
-          },
-        },
-      },
-      SubAccountMemberships: {
-        where: { isActive: true },
-        include: {
-          SubAccount: true,
-          Role: {
-            include: {
-              Permissions: {
-                where: { granted: true },
-                include: { Permission: true },
-              },
-            },
-          },
-        },
-      },
-    },
+// Paid / add-on namespaces that must be entitlement-checked at runtime
+const ENTITLEMENT_CHECK_PREFIXES = ['fi.', 'co.'] as const
+const shouldCheckEntitlements = (key: string) =>
+  ENTITLEMENT_CHECK_PREFIXES.some((p) => key.startsWith(p))
+
+const getAgencyEntitlementsCached = cache(async (agencyId: string) =>
+  resolveEffectiveEntitlements({ scope: 'AGENCY', agencyId, subAccountId: null })
+)
+
+const getSubAccountEntitlementsCached = cache(async (agencyId: string, subAccountId: string) =>
+  resolveEffectiveEntitlements({ scope: 'SUBACCOUNT', agencyId, subAccountId })
+)
+
+const getSubAccountAgencyIdCached = cache(async (subAccountId: string) => {
+  const sub = await db.subAccount.findUnique({
+    where: { id: subAccountId },
+    select: { agencyId: true },
   })
+  return sub?.agencyId ?? null
+})
+
+const getAuthMembershipsForUserIdCached = cache(async (userId: string) => {
+  const [agencyMemberships, subAccountMemberships] = await Promise.all([
+    db.agencyMembership.findMany({
+      where: { userId, isActive: true },
+      select: {
+        Agency: { select: { id: true, name: true, agencyLogo: true } },
+      },
+    }),
+    db.subAccountMembership.findMany({
+      where: { userId, isActive: true },
+      select: {
+        SubAccount: {
+          select: { id: true, name: true, subAccountLogo: true, agencyId: true },
+        },
+      },
+    }),
+  ])
+
+  return {
+    AgencyMemberships: agencyMemberships,
+    SubAccountMemberships: subAccountMemberships,
+  }
+})
+
+export const getAuthUserMemberships = async () => {
+  const userId = await getAuthedUserIdCached()
+  if (!userId) return null
+  return getAuthMembershipsForUserIdCached(userId)
 }
 
+const getActiveRoleIdsForUserCached = cache(async (userId: string): Promise<string[]> => {
+  const [agencyRoles, subAccountRoles] = await Promise.all([
+    db.agencyMembership.findMany({
+      where: { userId, isActive: true },
+      select: { roleId: true },
+    }),
+    db.subAccountMembership.findMany({
+      where: { userId, isActive: true },
+      select: { roleId: true },
+    }),
+  ])
+
+  const roleIds = [...agencyRoles, ...subAccountRoles]
+    .map((row) => row.roleId)
+    .filter((roleId): roleId is string => Boolean(roleId))
+
+  return Array.from(new Set(roleIds))
+})
+
+const getActiveRoleIdsForUser = async (userId: string): Promise<string[]> =>
+  getActiveRoleIdsForUserCached(userId)
+
+const getPermissionKeysForUserIdCached = cache(async (userId: string): Promise<PermissionKey[]> => {
+  const roleIds = await getActiveRoleIdsForUser(userId)
+  if (roleIds.length === 0) return []
+
+  const rows = await db.rolePermission.findMany({
+    where: { roleId: { in: roleIds }, granted: true },
+    select: { Permission: { select: { key: true } } },
+  })
+
+  const unique = new Set<string>()
+  for (const row of rows) unique.add(row.Permission.key)
+  return Array.from(unique) as PermissionKey[]
+})
+
+export const getPermissionKeysForUserId = async (
+  userId: string
+): Promise<PermissionKey[]> => {
+  return getPermissionKeysForUserIdCached(userId)
+}
+
+const getUserPermissionsByUserIdCached = cache(async (userId: string): Promise<Permission[]> => {
+  const roleIds = await getActiveRoleIdsForUser(userId)
+  if (roleIds.length === 0) return []
+
+  const rolePermissions = await db.rolePermission.findMany({
+    where: { roleId: { in: roleIds }, granted: true },
+    select: { permissionId: true },
+  })
+
+  const permissionIds = Array.from(new Set(rolePermissions.map((rp) => rp.permissionId)))
+  if (permissionIds.length === 0) return []
+
+  const permissions = await db.permission.findMany({
+    where: { id: { in: permissionIds } },
+    orderBy: { key: 'asc' },
+  })
+
+  const unique = new Map<string, Permission>()
+  for (const p of permissions) unique.set(p.key, p)
+  return Array.from(unique.values())
+})
+
 export const getUserPermissions = async (): Promise<Permission[]> => {
-  const user = await getAuthUserMemberships()
-  if (!user) return []
-
-  const agencyPerms = user.AgencyMemberships.flatMap((m) =>
-    m.Role.Permissions.map((rp) => rp.Permission)
-  )
-  const subPerms = user.SubAccountMemberships.flatMap((m) =>
-    m.Role.Permissions.map((rp) => rp.Permission)
-  )
-
-  const unique: Record<string, Permission> = {}
-  for (const p of [...agencyPerms, ...subPerms]) {
-    unique[p.key] = p
-  }
-
-  return Object.keys(unique).map((k) => unique[k])
+  const userId = await getAuthedUserIdCached()
+  if (!userId) return []
+  return getUserPermissionsByUserIdCached(userId)
 }
 
 export const getUserPermissionKeys = async (): Promise<PermissionKey[]> => {
-  const perms = await getUserPermissions()
-  // DB stores strings but we trust seeded permission keys match ActionKey
-  return perms.map((p) => p.key as PermissionKey)
+  const userId = await getAuthedUserIdCached()
+  if (!userId) return []
+  return getPermissionKeysForUserId(userId)
 }
+
+const getUserPermissionKeySetCached = cache(async () => {
+  const keys = await getUserPermissionKeys()
+  return new Set(keys)
+})
 
 export const hasPermission = async (permissionKey: PermissionKey): Promise<boolean> => {
   const key = normalizeKey(permissionKey) as PermissionKey
-  const keys = await getUserPermissionKeys()
-  return keys.includes(key)
+  const keys = await getUserPermissionKeySetCached()
+  return keys.has(key)
 }
 
 /**
@@ -89,47 +165,99 @@ export const hasPermission = async (permissionKey: PermissionKey): Promise<boole
 export const getAgencyPermissionKeys = async (
   agencyId: string
 ): Promise<PermissionKey[]> => {
-  const user = await getAuthUserMemberships()
-  if (!user) return []
-
-  const membership = user.AgencyMemberships.find((m) => m.agencyId === agencyId)
-  if (!membership) return []
-
-  // DB stores strings but we trust seeded permission keys match ActionKey
-  return membership.Role.Permissions.map((rp) => rp.Permission.key as PermissionKey)
+  const snap = await getAgencyAccessSnapshot(agencyId)
+  if (!snap) return []
+  return (snap.permissionKeys || []).map((k) => k as PermissionKey)
 }
 
 export const getSubAccountPermissionKeys = async (
   subAccountId: string
 ): Promise<PermissionKey[]> => {
-  const user = await getAuthUserMemberships()
-  if (!user) return []
-
-  const membership = user.SubAccountMemberships.find(
-    (m) => m.subAccountId === subAccountId
-  )
-  if (!membership) return []
-
-  // DB stores strings but we trust seeded permission keys match ActionKey
-  return membership.Role.Permissions.map((rp) => rp.Permission.key as PermissionKey)
+  const snap = await getSubAccountAccessSnapshot(subAccountId)
+  if (!snap) return []
+  return (snap.permissionKeys || []).map((k) => k as PermissionKey)
 }
 
 export const hasAgencyPermission = async (
   agencyId: string,
   permissionKey: PermissionKey
 ): Promise<boolean> => {
-  const key = normalizeKey(permissionKey) as PermissionKey
-  const keys = await getAgencyPermissionKeys(agencyId)
-  return keys.includes(key)
+  const userId = await getAuthedUserIdCached()
+  if (!userId) return false
+  return hasAgencyPermissionForUser({ userId, agencyId, permissionKey })
 }
 
 export const hasSubAccountPermission = async (
   subAccountId: string,
   permissionKey: PermissionKey
 ): Promise<boolean> => {
-  const key = normalizeKey(permissionKey) as PermissionKey
-  const keys = await getSubAccountPermissionKeys(subAccountId)
-  return keys.includes(key)
+  const userId = await getAuthedUserIdCached()
+  if (!userId) return false
+  return hasSubAccountPermissionForUser({ userId, subAccountId, permissionKey })
+}
+
+export const hasAgencyPermissionForUser = async (args: {
+  userId: string
+  agencyId: string
+  permissionKey: PermissionKey
+}): Promise<boolean> => {
+  const key = normalizeKey(args.permissionKey) as PermissionKey
+
+  const snapshot = await getAccessSnapshotForUser({
+    userId: args.userId,
+    scope: 'AGENCY',
+    agencyId: args.agencyId,
+  })
+  if (!snapshot) return false
+
+  const keySet = new Set((snapshot.permissionKeys || []).map((k) => k as PermissionKey))
+  if (!keySet.has(key)) return false
+  if (!shouldCheckEntitlements(key)) return true
+
+  const entitlements = await getAgencyEntitlementsCached(args.agencyId)
+  return isPermissionAssignable(key, entitlements)
+}
+
+export const hasSubAccountPermissionForUser = async (args: {
+  userId: string
+  subAccountId: string
+  permissionKey: PermissionKey
+  agencyId?: string
+}): Promise<boolean> => {
+  const key = normalizeKey(args.permissionKey) as PermissionKey
+
+  const resolvedAgencyId = args.agencyId ?? (await getSubAccountAgencyIdCached(args.subAccountId))
+  if (!resolvedAgencyId) return false
+
+  const snapshot = await getAccessSnapshotForUser({
+    userId: args.userId,
+    scope: 'SUBACCOUNT',
+    agencyId: resolvedAgencyId,
+    subAccountId: args.subAccountId,
+  })
+  if (!snapshot) return false
+
+  const keySet = new Set((snapshot.permissionKeys || []).map((k) => k as PermissionKey))
+  if (!keySet.has(key)) return false
+  if (!shouldCheckEntitlements(key)) return true
+
+  const entitlements = await getSubAccountEntitlementsCached(resolvedAgencyId, args.subAccountId)
+  return isPermissionAssignable(key, entitlements)
+}
+
+export const hasSubAccountPermissionWithAgency = async (
+  agencyId: string,
+  subAccountId: string,
+  permissionKey: PermissionKey
+): Promise<boolean> => {
+  const userId = await getAuthedUserIdCached()
+  if (!userId) return false
+  return hasSubAccountPermissionForUser({
+    userId,
+    agencyId,
+    subAccountId,
+    permissionKey,
+  })
 }
 
 // =============================================================================
@@ -146,7 +274,9 @@ export const hasSubAccountPermission = async (
  */
 export type PermissionsByCategory = Record<string, Permission[]>
 
-export const getEntitledPermissions = async (
+const PERMISSION_CATALOG_SEEDS = getPermissionCatalogSeeds()
+
+const getEntitledPermissionsCached = cache(async (
   agencyId: string,
   scope: 'AGENCY' | 'SUBACCOUNT'
 ): Promise<PermissionsByCategory> => {
@@ -158,10 +288,10 @@ export const getEntitledPermissions = async (
 
   const scopePrefixes =
     scope === 'AGENCY'
-      ? ['core.agency.', 'core.billing.', 'core.apps.', 'core.experimental.', 'crm.', 'fi.']
-      : ['core.subaccount.', 'crm.', 'fi.']
+      ? ['org.agency.', 'org.billing.', 'org.apps.', 'org.experimental.', 'crm.', 'fi.', 'co.']
+      : ['org.subaccount.', 'crm.', 'fi.', 'co.']
 
-  const seeds = getPermissionCatalogSeeds()
+  const seeds = PERMISSION_CATALOG_SEEDS
     .filter((s) => scopePrefixes.some((p) => s.key.startsWith(p)))
     .filter((s) => isPermissionAssignable(s.key, entitlements))
 
@@ -192,6 +322,13 @@ export const getEntitledPermissions = async (
   }
 
   return grouped
+})
+
+export const getEntitledPermissions = async (
+  agencyId: string,
+  scope: 'AGENCY' | 'SUBACCOUNT'
+): Promise<PermissionsByCategory> => {
+  return getEntitledPermissionsCached(agencyId, scope)
 }
 
 /**

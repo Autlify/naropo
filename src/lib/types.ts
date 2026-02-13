@@ -9,7 +9,7 @@ import {
   User,
 } from '@/generated/prisma/client'
 import {
-  _getTicketsWithAllRelations,
+  _getTicketsWithAllRelations, 
   getAuthUserDetails,
   getFunnels,
   getMedia,

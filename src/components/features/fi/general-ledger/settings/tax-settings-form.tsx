@@ -5,7 +5,7 @@
  * Form sections for tax configuration
  */
 
-import { useState, useTransition } from 'react'
+import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -30,7 +30,7 @@ import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
-import { updateGLConfiguration } from '@/lib/features/fi/general-ledger/actions/configuration'
+import { updateTaxSettings } from '@/lib/features/fi/general-ledger/actions/tax-settings'
 
 interface Account {
   id: string
@@ -40,6 +40,7 @@ interface Account {
 }
 
 interface TaxSettingsFormProps {
+  agencyId: string
   section: 'general' | 'vatAccounts' | 'withholdingAccounts' | 'clearingAccounts'
   initialData: Record<string, any>
   accounts?: Account[]
@@ -71,6 +72,7 @@ const clearingAccountsSchema = z.object({
 })
 
 export function TaxSettingsForm({
+  agencyId,
   section,
   initialData,
   accounts = [],
@@ -99,12 +101,7 @@ export function TaxSettingsForm({
   const onSubmit = (data: any) => {
     startTransition(async () => {
       try {
-        // Build tax settings update
-        const taxSettingsUpdate = { ...data }
-
-        const result = await updateGLConfiguration({
-          taxSettings: taxSettingsUpdate,
-        })
+        const result = await updateTaxSettings(agencyId, { ...data })
 
         if (result.success) {
           toast.success('Tax settings updated')
@@ -183,6 +180,28 @@ export function TaxSettingsForm({
                   <FormLabel>Auto-apply Default Tax</FormLabel>
                   <FormDescription>
                     Automatically apply default tax code to new transactions
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    disabled={disabled}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="requireTaxOnInvoice"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                <div className="space-y-0.5">
+                  <FormLabel>Require Tax On Invoices</FormLabel>
+                  <FormDescription>
+                    Enforce tax code selection before posting invoices
                   </FormDescription>
                 </div>
                 <FormControl>

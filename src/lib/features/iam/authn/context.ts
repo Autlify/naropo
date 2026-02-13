@@ -46,8 +46,8 @@ const assertSubAccountBelongsToAgency = async (args: {
  * Resolve the effective Agency/SubAccount scope for the current request.
  *
  * Header-based scoping:
- * - x-naropo-agency: target agency
- * - x-naropo-subaccount: act on behalf of a subaccount (must belong to the agency)
+ * - x-autlify-agency: target agency
+ * - x-autlify-subaccount: act on behalf of a subaccount (must belong to the agency)
  *
  * Rules:
  * - AGENCY api key: agencyId fixed; optional subaccount header selects sub-scope.
@@ -178,7 +178,7 @@ export const resolveScopeFromHeaders = async (args: {
       throw new AutlifyContextError({
         status: 400,
         code: 'CONTEXT_MISSING',
-        message: 'Missing x-naropo-agency or x-naropo-subaccount header',
+        message: 'Missing x-autlify-agency or x-autlify-subaccount header',
       })
     }
 
@@ -207,7 +207,7 @@ export const resolveScopeFromHeaders = async (args: {
     throw new AutlifyContextError({
       status: 400,
       code: 'CONTEXT_MISSING',
-      message: 'Missing x-naropo-agency or x-naropo-subaccount header',
+      message: 'Missing x-autlify-agency or x-autlify-subaccount header',
     })
   }
 

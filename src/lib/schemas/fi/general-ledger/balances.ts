@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 export const glBalanceSchema = z.object({
   accountCode: z.string().min(1).max(20),
-  periodId: z.uuid(),
+  periodId: z.string().uuid(),
   debit: z.number().min(0).default(0),
   credit: z.number().min(0).default(0),
   beginningBalance: z.number().default(0),
@@ -13,7 +13,7 @@ export const glBalanceSchema = z.object({
 
 export const glBalanceAdjustmentSchema = z.object({
   accountCode: z.string().min(1).max(20),
-  periodId: z.uuid(),
+  periodId: z.string().uuid(),
   adjustmentAmount: z.number(),
   reason: z.string().max(500).optional(),
 });

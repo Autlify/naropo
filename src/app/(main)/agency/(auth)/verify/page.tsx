@@ -27,7 +27,7 @@ const Page = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
-
+  
   // URL params
   const email = searchParams.get('email')
   const error = searchParams.get('error')
@@ -63,7 +63,7 @@ const Page = () => {
   // Auto-login after email verification
   useEffect(() => {
     if (verified !== 'true' || !autoLoginToken || !email || autoLoginAttempted.current) return
-
+    
     const performAutoLogin = async () => {
       // First check if token is authN type
       const tokenData = await getVerificationToken(autoLoginToken)
@@ -71,7 +71,7 @@ const Page = () => {
 
       autoLoginAttempted.current = true
       setIsAutoLoggingIn(true)
-
+      
       try {
         // Sign out first if there's an existing session to force fresh JWT
         if (session) {
@@ -202,13 +202,13 @@ const Page = () => {
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <Image
-              src="/assets/naropo-logo.svg"
-              alt="Naropo Logo"
+              src="/assets/autlify-logo.svg"
+              alt="Autlify Logo"
               width={40}
               height={40}
               style={{ height: 'auto' }}
             />
-            <span className="ml-2 text-2xl font-bold">Naropo</span>
+            <span className="ml-2 text-2xl font-bold">Autlify</span>
           </div>
           <div className="flex justify-center mb-4">
             <div className="rounded-full bg-primary/10 p-3">

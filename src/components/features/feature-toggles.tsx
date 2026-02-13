@@ -8,8 +8,8 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Info } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
-import { getFeatureFlagsByCategory } from '@/lib/features/preference/toggle'
-import type { FeatureFlagState } from '@/lib/features/preference/toggle'
+import { getFeatureFlagsByCategory } from '@/lib/features/org/preference/toggle'
+import type { FeatureFlagState } from '@/lib/features/org/preference/toggle'
 
 export function FeatureToggles() {
   const [flags, setFlags] = useState<Record<string, FeatureFlagState[]>>({})

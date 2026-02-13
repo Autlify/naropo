@@ -82,3 +82,99 @@ export interface CooldownStatus {
   cooldownActive: boolean
   remainingSeconds: number
 }
+
+
+export interface AuthConfig {
+  requireEmailVerification: boolean
+  enablePasskeys: boolean
+  passwordPolicy: {
+    minLength: number
+    requireUppercase: boolean
+    requireLowercase: boolean
+    requireNumbers: boolean
+    requireSpecialChars: boolean
+  }
+}
+
+// ---------------------------------------------------------------------------
+// User Types (for future use)
+// ---------------------------------------------------------------------------
+export interface BasicUser {
+  id: string;
+  email: string;
+  name: string | null;
+}
+
+export interface AuthUser extends BasicUser {
+  tenantId: string | null;
+  businessId?: string | null;
+  emailVerified?: boolean;
+  authenticatorEnabled?: boolean;
+}
+
+export interface FullUser extends AuthUser {
+  profile?: {
+    firstName: string | null;
+    lastName: string | null;
+    fullName: string | null;
+    avatar: string | null;
+  } | null;
+  tenant?: {
+    id: string;
+    name: string;
+  } | null;
+  businesses?: Array<{
+    id: string;
+    name: string;
+  }>;
+  permissions?: Array<{
+    businessId: string;
+    access: boolean;
+  }>;
+}
+
+// ---------------------------------------------------------------------------
+// Deprecated User Types
+// ---------------------------------------------------------------------------
+
+
+
+// export interface CurrentUser {
+//   id: string;
+//   email: string;
+//   name: string | null;
+//   tenantId: string | null;
+//   businessId?: string | null;
+//   avatar?: string | null;
+//   emailVerified?: boolean;
+//   authenticatorEnabled?: boolean;
+//   role?: string; // User's primary role
+//   // RBAC hints for client-side optimization
+//   rbacHints?: {
+//     roleKeys: string[];
+//     isSuperuser: boolean;
+//     tenantId?: string | null;
+//     businessId?: string | null;
+//   };
+// }
+
+// export interface FullUser extends CurrentUser {
+//   Profile?: {
+//     firstName: string | null;
+//     lastName: string | null;
+//     fullName: string | null;
+//     avatar: string | null;
+//   } | null;
+//   Tenant?: {
+//     id: string;
+//     name: string;
+//   } | null;
+//   Businesses?: Array<{
+//     id: string;
+//     name: string;
+//   }>;
+//   Permissions?: Array<{
+//     businessId: string;
+//     access: boolean;
+//   }>;
+// }

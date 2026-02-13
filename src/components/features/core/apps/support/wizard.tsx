@@ -42,13 +42,13 @@ export function SupportWizardPanel({ scope }: { scope: SupportScope }) {
 
   const canRunBilling = category === 'BILLING'
   const canRunWebhooks = category === 'WEBHOOKS'
-
+  
   // Build proper headers for scope context
   const scopeHeaders = useMemo((): HeadersInit => {
     if (scope.type === 'AGENCY') {
-      return { 'x-naropo-agency': scope.agencyId }
+      return { 'x-autlify-agency': scope.agencyId }
     }
-    return { 'x-naropo-subaccount': scope.subaccountId }
+    return { 'x-autlify-subaccount': scope.subaccountId }
   }, [scope])
 
   const runDiagnostics = async () => {
@@ -89,10 +89,10 @@ export function SupportWizardPanel({ scope }: { scope: SupportScope }) {
       }
       const r = await fetch(`${base}/tickets?${qp}`, {
         method: 'POST',
-        headers: {
+        headers: { 
           ...scopeHeaders,
           'content-type': 'application/json'
-        },
+         },
         body: JSON.stringify(payload),
       })
       if (!r.ok) {

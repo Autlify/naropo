@@ -28,7 +28,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs'
-import { useSidebarPreferences } from '@/components/sidebar-01/context'
+import { useSidebarPreferences } from '@/components/sidebar/context'
 import {
   type SidebarLayout,
   type PrimaryBehavior,

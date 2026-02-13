@@ -7,9 +7,9 @@
  * - Basic (price_1SwgiCJglUPlULDQ9XByIzXp): RM 199/mo - Unlimited sub-accounts & team members
  * - Advanced (price_1SwgiDJglUPlULDQ0LqXQpip): RM 399/mo - Everything + Rebilling + 24/7 support
  * 
- * @namespace Naropo.Lib.Registry.Plans.PlanEntitlements
+ * @namespace Autlify.Lib.Registry.Plans.PlanEntitlements
  * @module REGISTRY
- * @author Naropo Team
+ * @author Autlify Team
  * @created 2026-01-29
  */
 
@@ -25,6 +25,20 @@ import type { PriceKey, PlanKey, AddonKey } from '@/lib/registry/plans/pricing-c
 
 // Import for local use in this file
 import { PRICING_CONFIG, PRICE_IDS } from '@/lib/registry/plans/pricing-config'
+
+function dedupePlanEntitlements(rows: PlanEntitlementSeed[]): PlanEntitlementSeed[] {
+  const seen = new Set<string>()
+  const deduped: PlanEntitlementSeed[] = []
+
+  for (const row of rows) {
+    const key = `${row.planId}::${row.featureKey}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    deduped.push(row)
+  }
+
+  return deduped
+}
 
 /** Plan entitlement seed for database seeding */
 export type PlanEntitlementSeed = {
@@ -49,20 +63,20 @@ export type PlanEntitlementSeed = {
  * @namespace PlanEntitlements
  * @description Static plan entitlements mapping.
  * @module REGISTRY
- * @author Naropo Team 
+ * @author Autlify Team 
  */
-export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
+const RAW_PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   // ─────────────────────────────────────────────────────────
   // STARTER PLAN (RM 79/mo)
   // ─────────────────────────────────────────────────────────
   {
     planId: PRICE_IDS.STARTER,
-    featureKey: 'core.agency.account',
+    featureKey: 'org.agency.account',
     isEnabled: true,
   },
   {
     planId: PRICE_IDS.STARTER,
-    featureKey: 'core.billing.account',
+    featureKey: 'org.billing.account',
     isEnabled: true,
   },
   {
@@ -74,21 +88,21 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   },
   {
     planId: PRICE_IDS.STARTER,
-    featureKey: 'core.agency.subaccounts',
+    featureKey: 'org.agency.subaccounts',
     isEnabled: true,
     maxInt: 3,
     enforcement: 'HARD',
   },
   {
     planId: PRICE_IDS.STARTER,
-    featureKey: 'core.agency.team_member',
+    featureKey: 'org.agency.team_member',
     isEnabled: true,
     maxInt: 2,
     enforcement: 'HARD',
   },
   {
     planId: PRICE_IDS.STARTER,
-    featureKey: 'core.agency.storage',
+    featureKey: 'org.agency.storage',
     isEnabled: true,
     maxDec: '5.0', // 5 GB
     enforcement: 'SOFT',
@@ -127,19 +141,19 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   },
   {
     planId: PRICE_IDS.STARTER,
-    featureKey: 'core.billing.priority_support',
+    featureKey: 'org.billing.priority_support',
     isEnabled: false,
   },
   {
     planId: PRICE_IDS.STARTER,
-    featureKey: 'core.apps.api_keys',
+    featureKey: 'org.apps.api_keys',
     isEnabled: true,
     maxInt: 3,
     enforcement: 'HARD',
   },
   {
     planId: PRICE_IDS.STARTER,
-    featureKey: 'core.apps.webhooks',
+    featureKey: 'org.apps.webhooks',
     isEnabled: true,
     maxInt: 5,
     enforcement: 'HARD',
@@ -150,18 +164,18 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   // ─────────────────────────────────────────────────────────
   {
     planId: PRICE_IDS.BASIC,
-    featureKey: 'core.agency.account',
+    featureKey: 'org.agency.account',
     isEnabled: true,
   },
   {
     planId: PRICE_IDS.BASIC,
-    featureKey: 'core.agency.subaccounts',
+    featureKey: 'org.agency.subaccounts',
     isEnabled: true,
     isUnlimited: true,
   },
-  {
+    {
     planId: PRICE_IDS.BASIC,
-    featureKey: 'core.billing.account',
+    featureKey: 'org.billing.account',
     isEnabled: true,
   },
   {
@@ -173,13 +187,13 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   },
   {
     planId: PRICE_IDS.BASIC,
-    featureKey: 'core.agency.team_member',
+    featureKey: 'org.agency.team_member',
     isEnabled: true,
     isUnlimited: true,
   },
   {
     planId: PRICE_IDS.BASIC,
-    featureKey: 'core.agency.storage',
+    featureKey: 'org.agency.storage',
     isEnabled: true,
     maxDec: '25.0', // 25 GB
     enforcement: 'SOFT',
@@ -218,19 +232,19 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   },
   {
     planId: PRICE_IDS.BASIC,
-    featureKey: 'core.billing.priority_support',
+    featureKey: 'org.billing.priority_support',
     isEnabled: false,
   },
   {
     planId: PRICE_IDS.BASIC,
-    featureKey: 'core.apps.api_keys',
+    featureKey: 'org.apps.api_keys',
     isEnabled: true,
     maxInt: 10,
     enforcement: 'HARD',
   },
   {
     planId: PRICE_IDS.BASIC,
-    featureKey: 'core.apps.webhooks',
+    featureKey: 'org.apps.webhooks',
     isEnabled: true,
     maxInt: 25,
     enforcement: 'HARD',
@@ -241,18 +255,18 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   // ─────────────────────────────────────────────────────────
   {
     planId: PRICE_IDS.ADVANCED,
-    featureKey: 'core.agency.account',
+    featureKey: 'org.agency.account',
     isEnabled: true,
   },
   {
     planId: PRICE_IDS.ADVANCED,
-    featureKey: 'core.agency.subaccounts',
+    featureKey: 'org.agency.subaccounts',
     isEnabled: true,
     isUnlimited: true,
   },
-  {
+    {
     planId: PRICE_IDS.ADVANCED,
-    featureKey: 'core.billing.account',
+    featureKey: 'org.billing.account',
     isEnabled: true,
   },
   {
@@ -264,13 +278,13 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   },
   {
     planId: PRICE_IDS.ADVANCED,
-    featureKey: 'core.agency.team_member',
+    featureKey: 'org.agency.team_member',
     isEnabled: true,
     isUnlimited: true,
   },
   {
     planId: PRICE_IDS.ADVANCED,
-    featureKey: 'core.agency.storage',
+    featureKey: 'org.agency.storage',
     isEnabled: true,
     maxDec: '100.0', // 100 GB
     enforcement: 'SOFT',
@@ -306,18 +320,18 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   },
   {
     planId: PRICE_IDS.ADVANCED,
-    featureKey: 'core.billing.priority_support',
+    featureKey: 'org.billing.priority_support',
     isEnabled: true, // 24/7 support enabled for Advanced
   },
   {
     planId: PRICE_IDS.ADVANCED,
-    featureKey: 'core.apps.api_keys',
+    featureKey: 'org.apps.api_keys',
     isEnabled: true,
     isUnlimited: true,
   },
   {
     planId: PRICE_IDS.ADVANCED,
-    featureKey: 'core.apps.webhooks',
+    featureKey: 'org.apps.webhooks',
     isEnabled: true,
     isUnlimited: true,
   },
@@ -327,7 +341,7 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   // ─────────────────────────────────────────────────────────
   {
     planId: PRICE_IDS.PRIORITY_SUPPORT,
-    featureKey: 'core.billing.priority_support',
+    featureKey: 'org.billing.priority_support',
     isEnabled: true,
   },
   // FI-GL: General Ledger Add-on
@@ -393,17 +407,17 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
     featureKey: 'fi.accounts_receivable.subledgers',
     isEnabled: true,
   },
-  {
+    {
     planId: PRICE_IDS.FI_AP,
     featureKey: 'fi.accounts_payable.subledgers',
     isEnabled: true,
   },
-  {
+    {
     planId: PRICE_IDS.FI_BL,
     featureKey: 'fi.bank_ledger.bank_accounts',
     isEnabled: true,
   },
-  {
+    {
     planId: PRICE_IDS.FI_BL,
     featureKey: 'fi.bank_ledger.subledgers',
     isEnabled: true,
@@ -483,24 +497,51 @@ export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = [
   },
 ]
 
+export const PLAN_ENTITLEMENTS: PlanEntitlementSeed[] = dedupePlanEntitlements(RAW_PLAN_ENTITLEMENTS)
+
+type PricingConfigEntry = (typeof PRICING_CONFIG)[keyof typeof PRICING_CONFIG]
+
+const PLAN_ENTITLEMENTS_BY_PLAN_ID = new Map<string, PlanEntitlementSeed[]>()
+const PLAN_ENTITLEMENT_BY_PLAN_AND_FEATURE = new Map<string, PlanEntitlementSeed>()
+
+for (const entitlement of PLAN_ENTITLEMENTS) {
+  const list = PLAN_ENTITLEMENTS_BY_PLAN_ID.get(entitlement.planId)
+  if (list) {
+    list.push(entitlement)
+  } else {
+    PLAN_ENTITLEMENTS_BY_PLAN_ID.set(entitlement.planId, [entitlement])
+  }
+  PLAN_ENTITLEMENT_BY_PLAN_AND_FEATURE.set(
+    `${entitlement.planId}::${entitlement.featureKey}`,
+    entitlement
+  )
+}
+
+const PLAN_BY_PRICE_ID = new Map<string, PricingConfigEntry>()
+const PLAN_KEY_BY_PRICE_ID = new Map<string, string>()
+
+for (const [planKey, planConfig] of Object.entries(PRICING_CONFIG)) {
+  PLAN_BY_PRICE_ID.set(planConfig.stripePriceId, planConfig)
+  PLAN_KEY_BY_PRICE_ID.set(planConfig.stripePriceId, planKey)
+}
+
 /** Get entitlements for a specific plan */
 export function getPlanEntitlements(planId: string): PlanEntitlementSeed[] {
-  return PLAN_ENTITLEMENTS.filter(e => e.planId === planId)
+  const entitlements = PLAN_ENTITLEMENTS_BY_PLAN_ID.get(planId)
+  return entitlements ? [...entitlements] : []
 }
 
 /** Get a specific entitlement for a plan + feature */
 export function getPlanEntitlement(planId: string, featureKey: string): PlanEntitlementSeed | undefined {
-  return PLAN_ENTITLEMENTS.find(e => e.planId === planId && e.featureKey === featureKey)
+  return PLAN_ENTITLEMENT_BY_PLAN_AND_FEATURE.get(`${planId}::${featureKey}`)
 }
 
 /** Get plan by Stripe price ID - uses PRICING_CONFIG as SSoT */
 export function getPlanByPriceId(priceId: string) {
-  return Object.values(PRICING_CONFIG).find(p => p.stripePriceId === priceId)
+  return PLAN_BY_PRICE_ID.get(priceId)
 }
 
 /** Get plan key by Stripe price ID - uses PRICING_CONFIG as SSoT */
 export function getPlanKeyByPriceId(priceId: string): string | undefined {
-  const entry = Object.entries(PRICING_CONFIG).find(([, p]) => p.stripePriceId === priceId)
-  return entry?.[0]
+  return PLAN_KEY_BY_PRICE_ID.get(priceId)
 }
-

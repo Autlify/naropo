@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireIntegrationAuth } from '@/lib/features/core/integrations/guards'
+import { requireIntegrationAuth } from '@/lib/features/org/integrations/guards'
 import { db } from '@/lib/db'
 import { Prisma } from '@/generated/prisma/client'
-import { deleteSubscription, updateSubscription, getSubscriptionWithScope, updateSubscriptionSecret } from '@/lib/features/core/integrations/store'
-import { randomToken, sha256Hex, encryptStringGcm, decryptStringGcm } from '@/lib/features/core/integrations/crypto'
-import { sendWebhookAttempt } from '@/lib/features/core/integrations/delivery'
+import { deleteSubscription, updateSubscription, getSubscriptionWithScope, updateSubscriptionSecret } from '@/lib/features/org/integrations/store'
+import { randomToken, sha256Hex, encryptStringGcm, decryptStringGcm } from '@/lib/features/org/integrations/crypto'
+import { sendWebhookAttempt } from '@/lib/features/org/integrations/delivery'
 import { KEYS } from '@/lib/registry/keys/permissions'
 
 const PatchSchema = z.object({
@@ -18,7 +18,7 @@ type Props = { params: Promise<{ id: string }> }
 
 export async function GET(req: Request, props: Props) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.core.apps.webhooks.view] })
+    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.org.apps.webhooks.view] })
     const { id } = await props.params
     const ok = await subscriptionInScope(id, scope)
     if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -47,7 +47,7 @@ export async function GET(req: Request, props: Props) {
 
 export async function PATCH(req: Request, props: Props) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
     const { id } = await props.params
     const body = await req.json()
     const parsed = PatchSchema.safeParse(body)
@@ -66,7 +66,7 @@ export async function PATCH(req: Request, props: Props) {
 
 export async function DELETE(req: Request, props: Props) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
     const { id } = await props.params
     const ok = await subscriptionInScope(id, scope)
     if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -101,7 +101,7 @@ export async function POST(req: Request, props: Props) {
 }
 
 async function handleTest(req: Request, props: Props) {
-  const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+  const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
   const { id } = await props.params
   const sub = await getSubscriptionWithScope(id)
   if (!sub) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 })
@@ -118,7 +118,7 @@ async function handleTest(req: Request, props: Props) {
     url: sub.url,
     secret,
     body: {
-      event: 'naropo.webhook.test',
+      event: 'autlify.webhook.test',
       subscriptionId: sub.id,
       sentAt: new Date().toISOString(),
     },
@@ -128,7 +128,7 @@ async function handleTest(req: Request, props: Props) {
 }
 
 async function handleRotate(req: Request, props: Props) {
-  const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+  const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
   const { id } = await props.params
   const sub = await getSubscriptionWithScope(id)
   if (!sub) return NextResponse.json({ error: 'Not found' }, { status: 404 })

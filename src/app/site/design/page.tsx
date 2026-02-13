@@ -3,7 +3,7 @@ import { Metadata } from 'next'
 import { DesignShowcase } from './_components/design-showcase'
 
 export const metadata: Metadata = {
-  title: 'Design System Showcase | Naropo',
+  title: 'Design System Showcase | Autlify',
   description: 'Visual showcase of all UI components and design system tokens for accessibility and theming diagnostics',
 }
 

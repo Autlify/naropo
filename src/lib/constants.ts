@@ -6,7 +6,7 @@
  * - @/lib/registry/plans/pricing-config.ts (SSoT: PRICING_CONFIG, PLAN_IDS, pricing cards)
  * - @/lib/registry/plans/plan-entitlements.ts (entitlements, feature limits)
  * 
- * @namespace Naropo.Lib.Constants
+ * @namespace Autlify.Lib.Constants
  * @module LIB
  */
 
@@ -40,7 +40,7 @@ import Notification from '@/components/icons/notification'
 import Payment from '@/components/icons/payment'
 import Person from '@/components/icons/person'
 import Pipelines from '@/components/icons/pipelines'
-import AutlifyCategory from '@/components/icons/naropo-category'
+import AutlifyCategory from '@/components/icons/autlify-category'
 import Power from '@/components/icons/power'
 import Receipt from '@/components/icons/receipt'
 import Rocket from '@/components/icons/rocket'
@@ -53,6 +53,14 @@ import Tune from '@/components/icons/tune'
 import Video from '@/components/icons/video_recorder'
 import Wallet from '@/components/icons/wallet'
 import Warning from '@/components/icons/warning'
+import Zap from '@/components/icons/zap'
+import Addons from '@/components/icons/addons'
+import Roles from '@/components/icons/roles'
+import Permissions from '@/components/icons/permissions'
+import Member from '@/components/icons/member'
+import Policy from '@/components/icons/policy'
+import Team from '@/components/icons/team'
+
 
 export const icons = [
   {
@@ -269,6 +277,41 @@ export const icons = [
     value: 'file-text',
     label: 'File Text',
     path: FileText,
+  },
+  {
+    value: 'zap',
+    label: 'Zap',
+    path : Zap,
+  },
+  {
+    value: 'addons',
+    label: 'Addons',
+    path : Addons,
+  },
+  {
+    value: 'roles',
+    label: 'Roles',
+    path : Roles,
+  },
+  {
+    value: 'permissions',
+    label: 'Permissions',
+    path : Permissions,
+  },
+  {
+    value: 'member',
+    label: 'Member',
+    path : Member,
+  },
+  {
+    value: 'policy',
+    label: 'Policy',
+    path : Policy,
+  },
+  {
+    value: 'team',
+    label: 'Team',
+    path : Team,
   },
 ]
 

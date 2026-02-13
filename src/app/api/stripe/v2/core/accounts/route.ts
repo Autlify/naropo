@@ -2,6 +2,7 @@ import { stripe } from '@/lib/stripe'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import type { StripeAccountType } from '@/types/billing'
+import { makeStripeIdempotencyKey } from '@/lib/stripe/idempotency'
 
 /**
  * Stripe V2 Core Accounts API - Full Dynamic Attribute Capture
@@ -93,23 +94,23 @@ interface V2BusinessDetails {
     /** VAT ID */
     vatId?: string
     /** Business structure */
-    structure?:
-    | 'sole_proprietorship'
-    | 'single_member_llc'
-    | 'multi_member_llc'
-    | 'private_partnership'
-    | 'private_corporation'
-    | 'public_corporation'
-    | 'public_partnership'
-    | 'government_instrumentality'
-    | 'governmental_unit'
-    | 'tax_exempt_government_instrumentality'
-    | 'unincorporated_association'
-    | 'incorporated_non_profit'
-    | 'unincorporated_non_profit'
-    | 'free_zone_llc'
-    | 'free_zone_establishment'
-    | 'sole_establishment'
+    structure?: 
+        | 'sole_proprietorship'
+        | 'single_member_llc'
+        | 'multi_member_llc'
+        | 'private_partnership'
+        | 'private_corporation'
+        | 'public_corporation'
+        | 'public_partnership'
+        | 'government_instrumentality'
+        | 'governmental_unit'
+        | 'tax_exempt_government_instrumentality'
+        | 'unincorporated_association'
+        | 'incorporated_non_profit'
+        | 'unincorporated_non_profit'
+        | 'free_zone_llc'
+        | 'free_zone_establishment'
+        | 'sole_establishment'
     /** MCC (Merchant Category Code) */
     mcc?: string
     /** Product description */
@@ -261,7 +262,7 @@ export async function GET(req: Request) {
         }
 
         const accounts = await stripe.v2.core.accounts.list(listParams as Stripe.V2.Core.AccountListParams)
-        return NextResponse.json({
+        return NextResponse.json({ 
             accounts: accounts.data,
             hasMore: accounts.has_more,
         })
@@ -291,36 +292,36 @@ interface CreateAccountRequest {
     displayName?: string
     /** Dashboard access: 'none', 'express', 'full' */
     dashboard?: 'none' | 'express' | 'full'
-
+    
     // Identity
     /** Full identity structure */
     identity?: V2Identity
-
+    
     // Configuration
     /** Full configuration structure */
     configuration?: V2Configuration
-
+    
     // Defaults
     /** Default responsibilities */
     defaults?: V2Defaults
-
+    
     // Persons (for company entities)
     /** Persons to create with the account (representative, owners, directors) */
     persons?: V2Person[]
-
+    
     // Include fields in response
     /** Fields to include in response */
     include?: ('identity' | 'configuration' | 'defaults' | 'requirements')[]
-
+    
     // Internal references
     /** Agency ID (internal reference) */
     agencyId?: string
     /** SubAccount ID (internal reference) */
     subAccountId?: string
-
+    
     /** Additional metadata */
     metadata?: Record<string, string>
-
+    
     // ==========================================================================
     // Legacy fields (for backwards compatibility) - DEPRECATED
     // Use identity.individualDetails and identity.businessDetails instead
@@ -377,7 +378,7 @@ function toStripeAddress(addr?: V2Address): Record<string, string | undefined> |
  * @method POST /api/stripe/v2/core/accounts
  * @description Create a new Stripe V2 account with full dynamic attribute capture
  * 
- * NOTE: For checkout (Agency paying Naropo), use stripe.customers (V1), not V2 accounts.
+ * NOTE: For checkout (Agency paying Autlify), use stripe.customers (V1), not V2 accounts.
  * V2 accounts are for connected accounts: merchants (collect payments) or recipients (receive payouts).
  * 
  * EXAMPLES:
@@ -485,7 +486,7 @@ export async function POST(req: Request) {
                 const details = identity?.individualDetails || legacyIndividual
                 if (details) {
                     const individualDetails: Record<string, unknown> = {}
-
+                    
                     // Name handling - support both new and legacy
                     if ('name' in details && details.name) {
                         const name = details.name as V2IndividualName
@@ -515,7 +516,7 @@ export async function POST(req: Request) {
                     if ('phone' in details && details.phone) {
                         individualDetails.phone = details.phone
                     }
-
+                    
                     // Email
                     if ('email' in details && details.email) {
                         individualDetails.email = details.email
@@ -759,7 +760,15 @@ export async function POST(req: Request) {
 
         console.log('📤 Stripe V2 create params:', JSON.stringify(accountParams, null, 2))
 
-        const account = await stripe.v2.core.accounts.create(accountParams)
+        const idem = makeStripeIdempotencyKey('v2_core_accounts_create', [
+            accountType,
+            resolvedEntityType,
+            agencyId || '',
+            subAccountId || '',
+            email || '',
+        ])
+
+        const account = await stripe.v2.core.accounts.create(accountParams, { idempotencyKey: idem })
 
         console.log('✅ Created V2 account:', account.id, 'type:', accountType, 'entity:', resolvedEntityType)
 
@@ -794,7 +803,7 @@ export async function POST(req: Request) {
                     const createdPerson = await (stripe.v2.core.accounts as unknown as {
                         createPerson(accountId: string, params: unknown): Promise<{ id: string }>
                     }).createPerson(account.id, personParams)
-
+                    
                     createdPersons.push({
                         id: createdPerson.id,
                         relationship: person.relationship || {},
@@ -845,26 +854,26 @@ interface UpdateAccountRequest {
     displayName?: string
     /** Updated dashboard access */
     dashboard?: 'none' | 'express' | 'full'
-
+    
     // Identity updates
     /** Updated identity structure */
     identity?: Partial<V2Identity>
-
+    
     // Configuration updates
     /** Updated configuration */
     configuration?: Partial<V2Configuration>
-
+    
     // Defaults updates
     /** Updated defaults */
     defaults?: Partial<V2Defaults>
-
+    
     // Include fields in response
     /** Fields to include in response */
     include?: ('identity' | 'configuration' | 'defaults' | 'requirements')[]
-
+    
     /** Updated metadata (merged with existing) */
     metadata?: Record<string, string>
-
+    
     // ==========================================================================
     // Legacy fields (for backwards compatibility) - DEPRECATED
     // ==========================================================================
@@ -922,10 +931,10 @@ export async function PATCH(req: Request) {
         const body: UpdateAccountRequest = await req.json()
         console.log('🔄 Updating V2 account:', body.accountId)
 
-        const {
-            accountId,
-            email,
-            displayName,
+        const { 
+            accountId, 
+            email, 
+            displayName, 
             dashboard,
             identity,
             configuration,
@@ -1164,7 +1173,7 @@ export async function PATCH(req: Request) {
         console.log('📤 Stripe V2 update params:', JSON.stringify(updateParams, null, 2))
 
         const account = await stripe.v2.core.accounts.update(
-            accountId,
+            accountId, 
             updateParams as Stripe.V2.Core.AccountUpdateParams
         )
 
@@ -1196,7 +1205,7 @@ export async function PATCH(req: Request) {
 /**
  * @method DELETE /api/stripe/v2/core/accounts?accountId=xxx
  * @description Close a Stripe V2 account (marks as closed, cannot be deleted)
- *
+ * 
  * Note: V2 accounts cannot be fully deleted, only closed.
  * Closed accounts can still be retrieved via GET with closed=true filter.
  */

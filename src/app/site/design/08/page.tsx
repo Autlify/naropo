@@ -398,7 +398,7 @@ function RoadmapCard() {
   const items = [
     { label: 'Research & Planning', status: 'complete', date: 'Jan 2026' },
     { label: 'Design System', status: 'complete', date: 'Feb 2026' },
-    { label: 'Core Features', status: 'current', date: 'Mar 2026' },
+    { label: 'org.Features', status: 'current', date: 'Mar 2026' },
     { label: 'Beta Launch', status: 'upcoming', date: 'Apr 2026' },
     { label: 'Public Release', status: 'upcoming', date: 'May 2026' },
   ]

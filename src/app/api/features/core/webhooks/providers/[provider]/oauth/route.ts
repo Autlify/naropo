@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { requireIntegrationAuth } from '@/lib/features/core/integrations/guards'
-import { signOAuthState, verifyOAuthState } from '@/lib/features/core/integrations/oauth'
-import { upsertConnection, updateConnectionById } from '@/lib/features/core/integrations/store'
+import { requireIntegrationAuth } from '@/lib/features/org/integrations/guards'
+import { signOAuthState, verifyOAuthState } from '@/lib/features/org/integrations/oauth'
+import { upsertConnection, updateConnectionById } from '@/lib/features/org/integrations/store'
 import { KEYS } from '@/lib/registry/keys/permissions'
 
 type Props = { params: Promise<{ provider: string }> }
@@ -30,7 +30,7 @@ export async function GET(req: Request, props: Props) {
 
 async function handleStart(req: Request, provider: string, url: URL) {
   try {
-    const auth = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+    const auth = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
 
     // Create/update connection record
     const connection = await upsertConnection({

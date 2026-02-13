@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { registerPasskey } from '@/lib/webauthn';
+import { registerPasskey } from '@/lib/core/auth/webauthn';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import clsx from 'clsx';

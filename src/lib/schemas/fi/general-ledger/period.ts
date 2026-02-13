@@ -110,26 +110,26 @@ export const createPeriodSchema = z.object({
 );
 
 export const updatePeriodSchema = createPeriodSchema.extend({
-  id: z.uuid(),
+  id: z.string().uuid(),
 });
 
 export const openPeriodSchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
 });
 
 export const closePeriodSchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
   notes: z.string().max(500).optional(),
 });
 
 export const lockPeriodSchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
   notes: z.string().max(500).optional(),
 });
 
 export const yearEndProcessingSchema = z.object({
-  periodId: z.uuid(),
-  retainedEarningsAccountId: z.uuid(),
+  periodId: z.string().uuid(),
+  retainedEarningsAccountId: z.string().uuid(),
   createBroughtForward: z.boolean().default(true),
   notes: z.string().max(1000).optional(),
 });

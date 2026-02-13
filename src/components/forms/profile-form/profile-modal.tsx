@@ -48,13 +48,13 @@ export function ProfileModal({ open, onOpenChange, user, onUpdateProfile, subscr
   const [activeTab, setActiveTab] = useState('profile')
   const [showPermissionManagement, setShowPermissionManagement] = useState(false)
 
-  //   const handleAccessibilityChange = (preferences: AccessibilityPreferences) => {
-  //     onUpdateProfile({ accessibilityPreferences: preferences })
-  //   }
+//   const handleAccessibilityChange = (preferences: AccessibilityPreferences) => {
+//     onUpdateProfile({ accessibilityPreferences: preferences })
+//   }
 
-  //   const handlePermissionUpdate = (permissions: string[]) => {
-  //     onUpdateProfile({ permissions })
-  //   }
+//   const handlePermissionUpdate = (permissions: string[]) => {
+//     onUpdateProfile({ permissions })
+//   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

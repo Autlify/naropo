@@ -15,14 +15,24 @@ type Props = {
   children: React.ReactNode
   defaultOpen?: boolean
   className?: string
+  /** Optional callback when dialog open state changes (e.g., outside click, escape key) */
+  onOpenChange?: (open: boolean) => void
 }
 
-const CustomModal = ({ children, defaultOpen, subheading, title, className }: Props) => {
+const CustomModal = ({ children, defaultOpen, subheading, title, className, onOpenChange }: Props) => {
   const { isOpen, setClose } = useModal()
+  
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setClose()
+      onOpenChange?.(false)
+    }
+  }
+  
   return (
     <Dialog
       open={isOpen || defaultOpen}
-      onOpenChange={setClose}
+      onOpenChange={handleOpenChange}
     >
       <DialogContent className={`md:max-h-[800px] md:h-fit h-screen bg-card ${className}`}>
         <DialogHeader className="pt-8 text-left">

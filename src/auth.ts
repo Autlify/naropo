@@ -5,9 +5,21 @@ import authConfig from '@/auth.config'
 import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import type { Adapter } from 'next-auth/adapters'
-import type { Role } from '@/generated/prisma/client'
 
-import { SYSTEM_USER_EMAIL } from '@/lib/features/system/system-user'
+import { SYSTEM_USER_EMAIL } from '@/lib/core/system/system-user'
+
+// ---- Deployment-friendly Auth.js env fallbacks ----
+// Netlify provides URL/DEPLOY_PRIME_URL automatically. Prefer those if AUTH_URL is unset.
+if (!process.env.AUTH_URL) {
+  process.env.AUTH_URL =
+    process.env.URL || process.env.DEPLOY_PRIME_URL || process.env.NEXTAUTH_URL || undefined
+}
+// Support legacy env var names if present.
+if (!process.env.AUTH_SECRET && process.env.NEXTAUTH_SECRET) {
+  process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET
+}
+
+const JWT_USER_REFRESH_INTERVAL_MS = 5 * 60 * 1000
 
 // Custom adapter to map 'image' to 'avatarUrl'
 const customAdapter: Adapter = {
@@ -62,6 +74,9 @@ const customAdapter: Adapter = {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Netlify (and other proxy-based platforms) often require trusting the incoming Host header.
+  // This reduces "error=Configuration" issues caused by host validation.
+  trustHost: true,
   adapter: customAdapter,
   session: { strategy: 'jwt' },
   pages: {
@@ -157,10 +172,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true
     },
     async jwt({ token, user, account, trigger }) {
-      // Always fetch fresh user data from database
       const userId = user?.id || token.id
+      const lastSyncedAt =
+        typeof (token as any).userSyncedAt === 'number'
+          ? (token as any).userSyncedAt
+          : 0
+      const shouldRefreshFromDb =
+        !!user ||
+        trigger === 'signIn' ||
+        trigger === 'update' ||
+        !token.id ||
+        !token.email ||
+        Date.now() - lastSyncedAt > JWT_USER_REFRESH_INTERVAL_MS
 
-      if (userId) {
+      if (userId && shouldRefreshFromDb) {
         const dbUser = await db.user.findUnique({
           where: { id: userId as string },
           select: {
@@ -182,6 +207,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.lastName = dbUser.lastName
           token.picture = dbUser.avatarUrl
           token.emailVerified = dbUser.emailVerified
+          ;(token as any).userSyncedAt = Date.now()
 
           // Update avatarUrl from OAuth provider if available
           if (user?.image && !dbUser.avatarUrl) {
@@ -192,6 +218,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.picture = user.image
           }
         }
+      } else if (userId && !token.id) {
+        token.id = userId as string
       }
       return token
     },

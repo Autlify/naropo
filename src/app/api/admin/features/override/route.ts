@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireRequestAccess, ApiAuthzError } from '@/lib/features/iam/authz/require'
-import { inferScopeFromIds } from '@/lib/features/core/billing/entitlements/resolve'
+import { inferScopeFromIds } from '@/lib/features/org/billing/entitlements/resolve'
 import type { MeteringScope } from '@/generated/prisma/client'
 
 /**
  * POST /api/admin/features/override
  * Create/update admin override for a feature
  * 
- * Requires: x-naropo-agency or x-naropo-subaccount header
+ * Requires: x-autlify-agency or x-autlify-subaccount header
  * Supports: User sessions and API keys
  */
 export async function POST(request: Request) {
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     // Secure authorization with header-based context resolution
     const { scope } = await requireRequestAccess({
       req: request,
-      requiredKeys: ['core.billing.features.manage'],
+      requiredKeys: ['org.billing.features.manage'],
       requireActiveSubscription: true,
     })
 
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
  * DELETE /api/admin/features/override
  * Remove an admin override
  * 
- * Requires: x-naropo-agency or x-naropo-subaccount header
+ * Requires: x-autlify-agency or x-autlify-subaccount header
  * Supports: User sessions and API keys
  */
 export async function DELETE(request: Request) {
@@ -97,7 +97,7 @@ export async function DELETE(request: Request) {
     // Secure authorization with header-based context resolution
     const { scope } = await requireRequestAccess({
       req: request,
-      requiredKeys: ['core.billing.features.manage'],
+      requiredKeys: ['org.billing.features.manage'],
       requireActiveSubscription: true,
     })
 

@@ -1,8 +1,10 @@
 'use client'
-import { NotificationWithUser } from '@/lib/types'
+import { ModeButton } from '@/components/global/mode-toggle'
 import { UserButton } from '@/components/global/user-button'
-import React, { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useSidebar } from '@/components/sidebar/sidebar-context'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import {
   Sheet,
   SheetContent,
@@ -10,18 +12,15 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '../ui/sheet'
-import { Accessibility, Bell } from 'lucide-react'
-import { Card } from '../ui/card'
-import { Switch } from '../ui/switch'
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
-import { ModeToggle, ModeButton } from './mode-toggle'
-import { IconLayoutNavbarCollapse } from '@tabler/icons-react'
-import { Button } from '../ui/button'
-import { useSidebar } from '@/components/sidebar-01/sidebar-context'
-import { TbLayoutSidebarLeftExpand } from 'react-icons/tb'
+} from '@/components/ui/sheet'
+import { Switch } from '@/components/ui/switch'
+import { NotificationWithUser } from '@/lib/types'
+import { Bell } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import React, { useMemo, useState } from 'react'
+import { TbLayoutSidebarLeftExpand } from 'react-icons/tb'
+import { twMerge } from 'tailwind-merge'
 
 import {
   Breadcrumb,
@@ -32,7 +31,6 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 
-import { cn } from '../../lib/utils'
 
 type Props = {
   notifications: NotificationWithUser | []
@@ -134,7 +132,7 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
       if (notifications?.length !== 0) {
         setAllNotifications(
           notifications?.filter((item) => item.subAccountId === subAccountId) ??
-            []
+          []
         )
       }
     }
@@ -143,7 +141,7 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
 
   return (
     <>
-    
+
       <div
         className={twMerge(
           'fixed z-[20] left-0 right-0 top-0 py-4 pr-4 bg-background/80 backdrop-blur-md flex gap-4 items-center border-b-[1px] transition-all duration-300',
@@ -151,7 +149,7 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
           className
         )}
       >
-        <Button variant="ghost" size="icon" onClick={toggle} className='bg-transparent hover:bg-muted/50'>
+        <Button variant="ghost" size="icon" onClick={toggle} className='bg-transparent hover:bg-muted/50 hidden md:flex'>
           <TbLayoutSidebarLeftExpand className={twMerge(isCollapsed ? '' : 'rotate-180', 'bg-transparent w-6 h-6')} />
         </Button>
 
@@ -180,15 +178,6 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
           </Breadcrumb>
         )}
 
-        {/* {title && (() => {
-          const [pageTitle, pageDescription] = title.split('|')
-          return (
-            <div className="flex-1 min-w-0">
-              <span className="font-semibold text-2xl">{pageTitle}</span>
-           
-            </div>
-          )
-        })()} */}
         <div className="flex items-center gap-2 ml-auto">
 
           <UserButton />
@@ -259,7 +248,9 @@ const InfoBar = ({ notifications, subAccountId, className, canFilterBySubAccount
               )}
             </SheetContent>
           </Sheet>
+
           <ModeButton />
+          
         </div>
       </div>
     </>

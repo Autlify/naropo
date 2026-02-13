@@ -4,16 +4,19 @@ import type { NextRequest } from 'next/server'
 import { requireRequestAccess, ApiAuthzError } from '@/lib/features/iam/authz/require'
 import { logger } from '@/lib/logger'
 import type { MeteringScope } from '@/generated/prisma/client'
-import { consumeUsage } from '@/lib/features/core/billing/usage/consume'
-import { inferScopeFromIds } from '@/lib/features/core/billing/entitlements/resolve'
+import { consumeUsage } from '@/lib/features/org/billing/usage/consume'
 
 /**
  * POST /api/features/core/billing/usage/consume
  * Consume usage for a feature
  * 
- * Headers Required:
- * - x-naropo-agency: <agencyId>
- * - x-naropo-subaccount: <subAccountId> (optional)
+ * Context headers (preferred):
+ * - x-autlify-agency-id: <agencyId>
+ * - x-autlify-subaccount-id: <subAccountId> (optional)
+ *
+ * Legacy aliases also accepted:
+ * - x-autlify-agency
+ * - x-autlify-subaccount
  * 
  * Permissions: core.billing.usage.consume
  */
@@ -21,7 +24,7 @@ export async function POST(req: NextRequest) {
   try {
     const { scope } = await requireRequestAccess({
       req,
-      requiredKeys: ['core.billing.usage.consume'],
+      requiredKeys: ['org.billing.usage.consume'],
       requireActiveSubscription: true,
     })
 

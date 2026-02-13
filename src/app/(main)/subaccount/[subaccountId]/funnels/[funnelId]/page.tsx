@@ -1,11 +1,12 @@
 import BlurPage from '@/components/global/blur-page'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getFunnel } from '@/lib/queries'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import React from 'react'
 import FunnelSettings from './_components/funnel-settings'
 import FunnelSteps from './_components/funnel-steps'
+import { FunnelHeaderActions } from './_components/funnel-header-actions'
+import { hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
 
 type Props = {
   params: Promise<{ funnelId: string; subaccountId: string }>
@@ -13,6 +14,9 @@ type Props = {
 
 const FunnelPage = async ({ params }: Props) => {
   const { funnelId, subaccountId } = await params
+
+  const canRead = await hasSubAccountPermission(subaccountId, 'crm.funnels.content.read')
+  if (!canRead) return redirect(`/subaccount/${subaccountId}`)
   
   const funnelPages = await getFunnel(funnelId)
   if (!funnelPages)
@@ -20,13 +24,20 @@ const FunnelPage = async ({ params }: Props) => {
 
   return (
     <BlurPage>
-      <Link
-        href={`/subaccount/${subaccountId}/funnels`}
-        className="flex justify-between gap-4 mb-4 text-muted-foreground"
-      >
-        Back
-      </Link>
-      <h1 className="text-3xl mb-8">{funnelPages.name}</h1>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-semibold tracking-tight truncate">{funnelPages.name}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage pages, publish state, and live checkout.
+          </p>
+        </div>
+        <FunnelHeaderActions
+          subAccountId={subaccountId}
+          funnelId={funnelId}
+          published={!!funnelPages.published}
+          subDomainName={funnelPages.subDomainName}
+        />
+      </div>
       <Tabs
         defaultValue="steps"
         className="w-full"

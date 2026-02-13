@@ -14,18 +14,32 @@ interface GlassContainerProps extends React.HTMLAttributes<HTMLDivElement> {
   innerRadius?: number
   /** Padding between outer and inner */
   padding?: number
+  /** Enable mask fade effect on edges (Linear-style) */
+  maskFade?: boolean | 'bottom-right' | 'bottom' | 'right'
 }
 
 /**
- * GlassContainer - Premium frosted glass effect container
+ * GlassContainer - Premium frosted glass effect container (Linear-style)
+ * 
+ * Features:
+ * - Gradient border using pseudo-element mask trick
+ * - Diagonal gradient fill on inner container
+ * - Noise texture overlay
+ * - Optional edge fading with mask-composite
  * 
  * @example
  * ```tsx
+ * // Basic usage
  * <GlassContainer>
  *   <p>Your content here</p>
  * </GlassContainer>
  * 
- * // With custom styling
+ * // With edge fading (Linear hero style)
+ * <GlassContainer maskFade="bottom-right">
+ *   <Image src="/preview.png" />
+ * </GlassContainer>
+ * 
+ * // Custom styling
  * <GlassContainer 
  *   className="max-w-md" 
  *   innerClassName="p-6"
@@ -43,31 +57,49 @@ export function GlassContainer({
   outerRadius = 18,
   innerRadius = 10,
   padding = 8,
+  maskFade = false,
   style,
   ...props
 }: GlassContainerProps) {
+  // Determine wrapper className based on maskFade
+  const wrapperClass = maskFade === true || maskFade === 'bottom-right' 
+    ? 'glass-container' 
+    : maskFade === 'bottom' 
+      ? 'mask-fade-bottom' 
+      : maskFade === 'right' 
+        ? 'mask-fade-right' 
+        : ''
+
+  const content = (
+    <div
+      className={cn('glass-outer gradient-border', className)}
+      style={{
+        borderRadius: outerRadius,
+        padding,
+        ...style,
+      }}
+      {...props}
+    >
+      <div
+        className={cn('glass-inner gradient-border', innerClassName)}
+        style={{ borderRadius: innerRadius }}
+        data-noise={showNoise}
+      >
+        {children}
+      </div>
+    </div>
+  )
+
   return (
     <>
       {/* SVG Noise Filter - renders once, hidden */}
       <NoiseFilter />
       
-      <div
-        className={cn('glass-outer', className)}
-        style={{
-          borderRadius: outerRadius,
-          padding,
-          ...style,
-        }}
-        {...props}
-      >
-        <div
-          className={cn('glass-inner', innerClassName)}
-          style={{ borderRadius: innerRadius }}
-          data-noise={showNoise}
-        >
-          {children}
-        </div>
-      </div>
+      {wrapperClass ? (
+        <div className={wrapperClass}>{content}</div>
+      ) : (
+        content
+      )}
     </>
   )
 }

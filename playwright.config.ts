@@ -34,7 +34,7 @@ export default defineConfig({
     // Trace on failure for debugging
     trace: 'on-first-retry',
     
-    // Viewport size
+    // Viewport szei
     viewport: { width: 1280, height: 720 },
     
     // Ignore HTTPS errors for local development

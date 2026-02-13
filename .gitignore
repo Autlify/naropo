@@ -52,6 +52,8 @@ src/generated/prisma/
 
 # IDEs and editors
 .vscode/
+.merge_tmp
+MERGED_OUT
 /ai-agent-builder/
 /ai-agent-builder
 ai-agent-builder/

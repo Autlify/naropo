@@ -64,11 +64,11 @@ const GearIcon = () => (
 const ChevronIcon = ({ direction = 'right', className }: { direction?: 'up' | 'down' | 'left' | 'right'; className?: string }) => {
   const rotation = { up: -90, down: 90, left: 180, right: 0 }
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
+    <svg 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
       className={cn("h-4 w-4 transition-transform duration-200", className)}
       style={{ transform: `rotate(${rotation[direction]}deg)` }}
     >
@@ -85,7 +85,7 @@ const StatusDot = ({ status }: { status: 'active' | 'pending' | 'done' | 'idle' 
     idle: 'bg-slate-500'
   }
   return (
-    <motion.div
+    <motion.div 
       className={cn("w-2.5 h-2.5 rounded-full", colors[status])}
       animate={{ scale: status === 'active' ? [1, 1.2, 1] : 1 }}
       transition={{ repeat: status === 'active' ? Infinity : 0, duration: 2 }}
@@ -94,14 +94,14 @@ const StatusDot = ({ status }: { status: 'active' | 'pending' | 'done' | 'idle' 
 }
 
 // Collapsible Sidebar Item with dropdown
-function SidebarItem({
-  icon: Icon,
-  label,
+function SidebarItem({ 
+  icon: Icon, 
+  label, 
   active = false,
   badge,
   children,
   collapsed
-}: {
+}: { 
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   label: string
   active?: boolean
@@ -114,12 +114,12 @@ function SidebarItem({
 
   return (
     <div>
-      <motion.button
+      <motion.button 
         onClick={() => hasChildren && setIsOpen(!isOpen)}
         className={cn(
           "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
-          active
-            ? "bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-foreground border border-teal-500/30"
+          active 
+            ? "bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-foreground border border-teal-500/30" 
             : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
         )}
         whileHover={{ x: 4 }}
@@ -128,7 +128,7 @@ function SidebarItem({
         <Icon />
         <AnimatePresence>
           {!collapsed && (
-            <motion.span
+            <motion.span 
               className="flex-1 text-left"
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: 'auto' }}
@@ -184,14 +184,14 @@ function DropdownItem({ label, active = false }: { label: string; active?: boole
 }
 
 // Enhanced Issue Row with stagger animation
-function IssueRow({
-  id,
-  title,
-  status,
-  priority,
+function IssueRow({ 
+  id, 
+  title, 
+  status, 
+  priority, 
   assignee,
   index
-}: {
+}: { 
   id: string
   title: string
   status: 'active' | 'pending' | 'done' | 'idle'
@@ -207,14 +207,14 @@ function IssueRow({
   }
 
   return (
-    <motion.div
+    <motion.div 
       className="flex items-center gap-4 px-4 py-3.5 hover:bg-gradient-to-r hover:from-muted/30 hover:to-transparent transition-all cursor-pointer border-b border-border/30 last:border-b-0 group"
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3, ease: 'easeOut' }}
       whileHover={{ x: 4 }}
     >
-      <motion.div
+      <motion.div 
         className="w-5 h-5 rounded-md border-2 border-muted-foreground/30 group-hover:border-teal-500/50 transition-colors"
         whileHover={{ scale: 1.1 }}
       />
@@ -223,7 +223,7 @@ function IssueRow({
       <span className="text-xs font-mono text-muted-foreground w-16">{id}</span>
       <span className="flex-1 text-sm text-foreground truncate group-hover:text-teal-400 transition-colors">{title}</span>
       {assignee && (
-        <motion.div
+        <motion.div 
           className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-medium text-white"
           style={{ background: `linear-gradient(135deg, ${assignee.color}, ${assignee.color}88)` }}
           whileHover={{ scale: 1.1, rotate: 5 }}
@@ -236,14 +236,14 @@ function IssueRow({
 }
 
 // Enhanced Stat Card with spring animation
-function StatCard({
-  label,
-  value,
+function StatCard({ 
+  label, 
+  value, 
   change,
   changeType = 'neutral',
   index,
   gradient
-}: {
+}: { 
   label: string
   value: string | number
   change?: string
@@ -255,17 +255,17 @@ function StatCard({
     <motion.div
       initial={{ opacity: 0, y: 30, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        delay: index * 0.1,
-        type: 'spring',
-        stiffness: 200,
-        damping: 20
+      transition={{ 
+        delay: index * 0.1, 
+        type: 'spring', 
+        stiffness: 200, 
+        damping: 20 
       }}
     >
       <Card className={cn("bg-gradient-to-br border-border/30 hover:border-border/50 transition-all group", gradient)}>
         <CardContent className="p-5">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
-          <motion.p
+          <motion.p 
             className="text-3xl font-bold text-foreground mt-2"
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -292,15 +292,15 @@ function StatCard({
 }
 
 // Enhanced Project Card with teal/amber/cyan gradients
-function ProjectCard({
-  name,
-  description,
-  progress,
-  issues,
+function ProjectCard({ 
+  name, 
+  description, 
+  progress, 
+  issues, 
   members,
   color,
   index
-}: {
+}: { 
   name: string
   description: string
   progress: number
@@ -336,24 +336,24 @@ function ProjectCard({
               <h3 className="font-semibold text-foreground group-hover:text-teal-400 transition-colors">{name}</h3>
               <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
             </div>
-            <motion.div
+            <motion.div 
               className="opacity-0 group-hover:opacity-100 transition-opacity"
               whileHover={{ x: 3 }}
             >
               <ChevronIcon direction="right" className="text-teal-400" />
             </motion.div>
           </div>
-
+          
           {/* Progress Bar - No pink/purple */}
           <div className="w-full h-2 bg-muted/50 rounded-full overflow-hidden mt-4">
-            <motion.div
+            <motion.div 
               className={cn("h-full rounded-full bg-gradient-to-r", gradients[color])}
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ delay: 0.4 + index * 0.1, duration: 0.8, ease: 'easeOut' }}
             />
           </div>
-
+          
           <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span className={cn("w-2 h-2 rounded-full bg-gradient-to-r", gradients[color])} />
@@ -378,7 +378,7 @@ function ProjectCard({
 
 export default function DesignSample10() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-
+  
   const issues = [
     { id: 'AUT-142', title: 'Implement OAuth2 authentication flow for third-party integrations', status: 'active' as const, priority: 'high' as const, assignee: { name: 'John', color: '#14b8a6' } },
     { id: 'AUT-141', title: 'Fix memory leak in WebSocket connection handler', status: 'pending' as const, priority: 'urgent' as const, assignee: { name: 'Sarah', color: '#f59e0b' } },
@@ -392,9 +392,9 @@ export default function DesignSample10() {
     <div className="min-h-screen bg-slate-950 flex">
       {/* Gradient overlay */}
       <div className="fixed inset-0 bg-gradient-to-br from-teal-950/20 via-transparent to-cyan-950/20 pointer-events-none" />
-
+      
       {/* Animated Sidebar */}
-      <motion.aside
+      <motion.aside 
         className="relative border-r border-border/50 bg-gradient-to-b from-slate-900/80 to-slate-950 p-4 flex flex-col z-10"
         initial={{ width: 256 }}
         animate={{ width: sidebarCollapsed ? 72 : 256 }}
@@ -411,12 +411,12 @@ export default function DesignSample10() {
         </motion.button>
 
         {/* Workspace Selector */}
-        <motion.div
+        <motion.div 
           className="flex items-center gap-3 px-2 py-3"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <motion.div
+          <motion.div 
             className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
             whileHover={{ scale: 1.1, rotate: 5 }}
           >
@@ -424,25 +424,25 @@ export default function DesignSample10() {
           </motion.div>
           <AnimatePresence>
             {!sidebarCollapsed && (
-              <motion.div
+              <motion.div 
                 className="flex-1 overflow-hidden"
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: 'auto' }}
                 exit={{ opacity: 0, width: 0 }}
               >
-                <p className="text-sm font-semibold text-foreground">Naropo</p>
+                <p className="text-sm font-semibold text-foreground">Autlify</p>
                 <p className="text-xs text-teal-400">Enterprise</p>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
-
+        
         <Separator className="my-4 bg-border/30" />
-
+        
         {/* Search */}
         <AnimatePresence>
           {!sidebarCollapsed && (
-            <motion.div
+            <motion.div 
               className="relative mb-4"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -452,15 +452,15 @@ export default function DesignSample10() {
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
-              <input
-                type="text"
+              <input 
+                type="text" 
                 placeholder="Search..."
                 className="w-full h-10 pl-10 pr-3 rounded-xl bg-slate-800/50 border border-border/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal-500/50 focus:border-teal-500/50 transition-all"
               />
             </motion.div>
           )}
         </AnimatePresence>
-
+        
         {/* Navigation with dropdowns */}
         <nav className="space-y-1">
           <SidebarItem icon={GridIcon} label="Dashboard" active collapsed={sidebarCollapsed} />
@@ -481,20 +481,20 @@ export default function DesignSample10() {
             <DropdownItem label="Integrations" />
           </SidebarItem>
         </nav>
-
+        
         <div className="flex-1" />
-
+        
         {/* Bottom CTA */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          <Button
+          <Button 
             className={cn(
               "w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 border-0",
               sidebarCollapsed && "px-0"
-            )}
+            )} 
             size="sm"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
@@ -504,11 +504,11 @@ export default function DesignSample10() {
           </Button>
         </motion.div>
       </motion.aside>
-
+      
       {/* Main Content */}
       <main className="flex-1 overflow-auto relative">
         {/* Header */}
-        <motion.header
+        <motion.header 
           className="border-b border-border/30 px-8 py-4 flex items-center justify-between bg-slate-950/50 backdrop-blur-sm sticky top-0 z-10"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -518,24 +518,24 @@ export default function DesignSample10() {
             <p className="text-sm text-muted-foreground">Track progress and manage your projects</p>
           </div>
           <div className="flex items-center gap-3">
-            <motion.button
+            <motion.button 
               className="p-2 rounded-lg border border-border/30 hover:bg-muted/50 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               <BellDotIcon />
             </motion.button>
-            <motion.div
+            <motion.div 
               className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500"
               whileHover={{ scale: 1.1, rotate: 5 }}
             />
           </div>
         </motion.header>
-
+        
         <div className="p-8 space-y-8">
           {/* Stats Section */}
           <section>
-            <motion.h2
+            <motion.h2 
               className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -549,11 +549,11 @@ export default function DesignSample10() {
               <StatCard label="Overdue" value={7} change="-3 from last week" changeType="negative" index={3} gradient="from-red-500/10 to-transparent" />
             </div>
           </section>
-
+          
           {/* Projects Grid */}
           <section>
             <div className="flex items-center justify-between mb-4">
-              <motion.h2
+              <motion.h2 
                 className="text-sm font-medium text-muted-foreground uppercase tracking-wider"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -568,36 +568,36 @@ export default function DesignSample10() {
               </motion.div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <ProjectCard
-                name="Platform Core"
-                description="Core infrastructure and APIs"
-                progress={65}
-                issues={24}
-                members={8}
-                color="teal"
-                index={0}
+              <ProjectCard 
+                name="Platform Core" 
+                description="Core infrastructure and APIs" 
+                progress={65} 
+                issues={24} 
+                members={8} 
+                color="teal" 
+                index={0} 
               />
-              <ProjectCard
-                name="Mobile App"
-                description="iOS and Android applications"
-                progress={42}
-                issues={18}
-                members={5}
-                color="amber"
-                index={1}
+              <ProjectCard 
+                name="Mobile App" 
+                description="iOS and Android applications" 
+                progress={42} 
+                issues={18} 
+                members={5} 
+                color="amber" 
+                index={1} 
               />
-              <ProjectCard
-                name="Analytics"
-                description="Data pipeline and dashboards"
-                progress={89}
-                issues={7}
-                members={3}
-                color="cyan"
-                index={2}
+              <ProjectCard 
+                name="Analytics" 
+                description="Data pipeline and dashboards" 
+                progress={89} 
+                issues={7} 
+                members={3} 
+                color="cyan" 
+                index={2} 
               />
             </div>
           </section>
-
+          
           {/* Recent Issues */}
           <section>
             <motion.div

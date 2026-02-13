@@ -32,8 +32,18 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [liveProducts, setLiveProducts] = useState<
-    { productId: string; recurring: boolean }[] | []
-  >(JSON.parse(defaultData?.liveProducts || '[]'))
+    { priceId: string; recurring: boolean }[]
+  >(() => {
+    try {
+      const raw = JSON.parse(defaultData?.liveProducts || '[]') as any[]
+      return (Array.isArray(raw) ? raw : []).map((p) => ({
+        priceId: (p?.priceId ?? p?.productId) as string,
+        recurring: !!p?.recurring,
+      }))
+    } catch {
+      return []
+    }
+  })
 
   const handleSaveProducts = async () => {
     setIsLoading(true)
@@ -51,40 +61,25 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
   }
 
   const handleAddProduct = async (product: Stripe.Product) => {
-    const productIdExists = liveProducts.find(
-      //@ts-ignore
-      (prod) => prod.productId === product.default_price?.id
-    )
-    productIdExists
-      ? setLiveProducts(
-          liveProducts.filter(
-            (prod) =>
-              prod.productId !==
-              //@ts-ignore
-              product.default_price?.id
-          )
-        )
-      : //@ts-ignore
-        setLiveProducts([
-          ...liveProducts,
-          {
-            //@ts-ignore
-            productId: product.default_price?.id as string,
-            //@ts-ignore
-            recurring: !!product.default_price?.recurring,
-          },
-        ])
+    const defaultPrice = product.default_price as Stripe.Price | null
+    const priceId = defaultPrice?.id
+    if (!priceId) return
+
+    const exists = liveProducts.find((p) => p.priceId === priceId)
+    exists
+      ? setLiveProducts(liveProducts.filter((p) => p.priceId !== priceId))
+      : setLiveProducts([...liveProducts, { priceId, recurring: !!defaultPrice.recurring }])
   }
   return (
     <>
-      <Table className="bg-gradient-to-br from-muted/20 to-transparent border border-border/50 rounded-lg overflow-hidden">
-        <TableHeader className="bg-muted/30">
+      <Table className="bg-card border-[1px] border rounded-md">
+        <TableHeader className="rounded-md">
           <TableRow>
-            <TableHead className="font-semibold">Live</TableHead>
-            <TableHead className="font-semibold">Image</TableHead>
-            <TableHead className="font-semibold">Name</TableHead>
-            <TableHead className="font-semibold">Interval</TableHead>
-            <TableHead className="text-right font-semibold">Price</TableHead>
+            <TableHead>Live</TableHead>
+            <TableHead>Image</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Interval</TableHead>
+            <TableHead className="text-right">Price</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="font-medium truncate">
@@ -94,8 +89,7 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
                 <Input
                   defaultChecked={
                     !!liveProducts.find(
-                      //@ts-ignore
-                      (prod) => prod.productId === product.default_price?.id
+                      (prod) => prod.priceId === (product.default_price as any)?.id
                     )
                   }
                   onChange={() => handleAddProduct(product)}
@@ -110,27 +104,20 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
                     height={60}
                     width={60}
                     src={product.images[0]}
-                    className="rounded-lg border border-border/50 bg-muted/20 object-cover shadow-sm"
+                    className="rounded-md border bg-muted/20 object-cover"
                   />
                 ) : (
-                  <div className="flex h-[60px] w-[60px] items-center justify-center rounded-lg border border-border/50 bg-gradient-to-br from-muted/30 to-transparent">
+                  <div className="flex h-[60px] w-[60px] items-center justify-center rounded-md border bg-muted/20">
                     <ImageIcon className="h-5 w-5 text-muted-foreground" />
                   </div>
                 )}
               </TableCell>
               <TableCell>{product.name}</TableCell>
               <TableCell>
-                {
-                  //@ts-ignore
-                  product.default_price?.recurring ? 'Recurring' : 'One Time'
-                }
+                {(product.default_price as Stripe.Price | null)?.recurring ? 'Recurring' : 'One Time'}
               </TableCell>
               <TableCell className="text-right">
-                $
-                {
-                  //@ts-ignore
-                  product.default_price?.unit_amount / 100
-                }
+                ${((product.default_price as Stripe.Price | null)?.unit_amount ?? 0) / 100}
               </TableCell>
             </TableRow>
           ))}

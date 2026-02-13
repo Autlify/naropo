@@ -1,9 +1,8 @@
 import 'server-only'
 
-import { auth } from '@/auth'
-
 import { verifyApiKeyToken, type ApiKeyKind } from '@/lib/features/iam/authn/api-key'
 import { getAutlifyApiKeyHeader } from '@/lib/features/iam/authn/headers'
+import { getAuthedUserIdCached } from '@/lib/features/iam/authz/session'
 
 export type UserPrincipal = {
   kind: 'user'
@@ -50,8 +49,7 @@ export const getPrincipalFromRequest = async (req: Request): Promise<Principal |
     }
   }
 
-  const session = await auth()
-  const userId = session?.user?.id
+  const userId = await getAuthedUserIdCached()
   if (!userId) return null
   return { kind: 'user', userId }
 }

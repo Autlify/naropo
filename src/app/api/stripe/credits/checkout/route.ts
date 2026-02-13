@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { auth } from '@/auth'
+import { makeStripeIdempotencyKey } from '@/lib/stripe/idempotency'
+import { getAppOrigin } from '@/lib/core/runtime/origins'
 
 /**
  * POST /api/stripe/credits/checkout
@@ -53,11 +55,15 @@ export async function POST(req: NextRequest) {
 
         // Create customer if not exists
         if (!customerId) {
-            const customer = await stripe.customers.create({
-                email: agency.companyEmail || undefined,
-                name: agency.name,
-                metadata: { agencyId: agency.id },
-            })
+            const idem = makeStripeIdempotencyKey('customer_create', ['agency', agencyId])
+            const customer = await stripe.customers.create(
+                {
+                    email: agency.companyEmail || undefined,
+                    name: agency.name,
+                    metadata: { agencyId: agency.id },
+                },
+                { idempotencyKey: idem }
+            )
             customerId = customer.id
 
             await db.agency.update({
@@ -71,7 +77,7 @@ export async function POST(req: NextRequest) {
         const pricePerCredit = 1 // cents
         const totalAmount = Math.max(100, creditAmount * pricePerCredit) // minimum $1
 
-        const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'
+        const baseUrl = getAppOrigin({ headers: req.headers as any })
         const successUrl = `${baseUrl}/agency/${agencyId}/billing/credits?session_id={CHECKOUT_SESSION_ID}`
         const cancelUrl = `${baseUrl}/agency/${agencyId}/billing/credits`
 
@@ -90,7 +96,8 @@ export async function POST(req: NextRequest) {
                     line_items: [
                         {
                             price_data: {
-                                currency: 'usd',
+                                // Keep currency consistent with the unified /api/stripe/checkout flow.
+                                currency: 'myr',
                                 unit_amount: pricePerCredit,
                                 product_data: {
                                     name: `${featureKey} Credits`,
@@ -102,10 +109,13 @@ export async function POST(req: NextRequest) {
                     ],
                 }),
             metadata: {
+                // Legacy route, but emit metadata compatible with the unified checkout + webhook handlers.
+                checkoutType: 'credits',
                 type: 'credit_purchase',
                 agencyId,
                 subAccountId: subAccountId || '',
                 scope,
+                scopeLevel: subAccountId ? 'subAccount' : 'agency',
                 featureKey,
                 credits: String(creditAmount),
             },

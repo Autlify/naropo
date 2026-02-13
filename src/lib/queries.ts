@@ -9,6 +9,7 @@ import {
   Lane,
   Plan,
   Prisma,
+  Role,
   SubAccount,
   Tag,
   Ticket,
@@ -24,11 +25,30 @@ import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { randomBytes } from 'crypto'
 import { CONTEXT_COOKIE, parseSavedContext } from '@/lib/features/iam/authz/resolver'
-import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
-import { cookies } from 'next/headers'
+import { getLegacyCookieNames, AUTLIFY_CONTEXT_COOKIE } from '@/lib/core/proxy/scope'
+import {
+  getPermissionKeysForUserId,
+  hasAgencyPermission,
+  hasSubAccountPermission,
+} from '@/lib/features/iam/authz/permissions'
+import {
+  invalidateAccessSnapshot,
+  invalidateAccessSnapshotsByRoleId,
+} from '@/lib/features/iam/authz/access-snapshot'
+import { agencyScopeKey, subAccountScopeKey } from '@/lib/core/scope-key'
+import {
+  attachPermissions,
+  fetchRolePermissionsByRoleIds,
+  type RoleBase,
+  roleSelect,
+} from '@/lib/features/iam/authz/role-permissions'
+import { cookies, headers } from 'next/headers'
 import { ActionKey } from './registry'
 import type { TokenScopeInput, TokenScope, TokenValidationResult } from '@/types/auth'
+import { stripe } from '@/lib/stripe'
 import { normalizeTokenScope } from '@/types/auth'
+import { cache } from 'react'
+import { CurrentUser, FullUser } from 'next-auth'
 
 
 /**
@@ -91,11 +111,21 @@ import { normalizeTokenScope } from '@/types/auth'
  * =============================================================================
  */
 
+
+
+
+
+
+
 export const getContextCookie = async () => {
   const cookieStore = await cookies()
-  const contextCookie = cookieStore.get(CONTEXT_COOKIE)
-  if (!contextCookie) return null
-  return parseSavedContext(contextCookie.value)
+  const contextCookie = cookieStore.get(CONTEXT_COOKIE)?.value ?? null
+
+  if (contextCookie) return parseSavedContext(contextCookie)
+
+  // Header fallback (proxy injects this for requests where scope is derivable)
+  const scopeKeyHeader = (await headers()).get('x-autlify-scope-key')
+  return parseSavedContext(scopeKeyHeader)
 }
 
 export const getUsersWithAgencySubAccountPermissionsSidebarOptions = async (
@@ -137,7 +167,7 @@ export const getAuthUserDetails = async () => {
 
   const userData = await db.user.findUnique({
     where: {
-      email: session.user.email,
+      email: session.user?.email,
     },
     include: {
       AgencyMemberships: {
@@ -453,7 +483,72 @@ export const updateAgencyDetails = async (
 }
 
 export const deleteAgency = async (agencyId: string) => {
-  const response = await db.agency.delete({ where: { id: agencyId } })
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized')
+  }
+
+  // Server-side guard: must have permission to delete this agency
+  const membership = await db.agencyMembership.findFirst({
+    where: { agencyId, userId: session.user.id, isActive: true },
+    include: { Role: { include: { Permissions: { include: { Permission: true } } } } },
+  })
+  if (!membership) {
+    throw new Error('Agency not found or access denied')
+  }
+  const canDelete = hasAgencyPermission(agencyId, 'org.agency.account.delete')
+  if (!canDelete) {
+    throw new Error('Missing permission: core.agency.account.delete')
+  }
+
+  // Load current agency + subscription (if any)
+  const agency = await db.agency.findUnique({
+    where: { id: agencyId },
+    include: { Subscription: true },
+  })
+  if (!agency) throw new Error('Agency not found')
+
+  // Best-effort: cancel Stripe subscription so the customer can subscribe elsewhere.
+  // (If the agency is deleted with an active subscription, we must release it.)
+  const stripeSubId = (agency.Subscription as any)?.subscriptionId as string | undefined
+  if (stripeSubId) {
+    try {
+      await stripe.subscriptions.update(stripeSubId, { cancel_at_period_end: true })
+    } catch (err) {
+      // If subscription was already canceled or unavailable, continue deletion.
+      console.warn('Failed to cancel Stripe subscription during agency delete:', err)
+    }
+  }
+
+  // Delete in a transaction: agency delete will cascade; but we also clean session context.
+  const response = await db.$transaction(async (tx) => {
+    // Clear active context for all sessions pointing to this agency
+    await tx.session.updateMany({
+      where: { userId: session.user.id, activeAgencyId: agencyId },
+      data: { activeAgencyId: null, activeSubAccountId: null },
+    })
+
+    // Delete agency (cascades memberships/subaccounts/etc depending on schema)
+    const deleted = await tx.agency.delete({ where: { id: agencyId } })
+    return deleted
+  })
+
+  // Clear the saved context cookie (prevents UI/pricing from thinking there is still a tenant)
+  try {
+    const cookieStore = await cookies()
+    cookieStore.set(AUTLIFY_CONTEXT_COOKIE, '', { maxAge: 0, path: '/' })
+    // Clear legacy cookies
+    for (const name of getLegacyCookieNames()) {
+      cookieStore.set(name, '', { maxAge: 0, path: '/' })
+    }
+  } catch {
+    // ignore - cookies may be unavailable in some runtimes
+  }
+
+  // Revalidate commonly affected routes
+  revalidatePath('/agency')
+  revalidatePath('/site/pricing')
+
   return response
 }
 
@@ -666,7 +761,7 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
   }
 
   // Check permission for creating subaccount
-  const hasCreatePermission = await hasAgencyPermission(context.agencyId, 'core.agency.subaccounts.create')
+  const hasCreatePermission = await hasAgencyPermission(context.agencyId, 'org.agency.subaccounts.create')
   if (!hasCreatePermission) {
     console.log('🔴Error: No permission to create subaccount')
     return null
@@ -804,30 +899,6 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
 
 
 export const updateUser = async (user: Partial<User>) => {
-  const session = await auth()
-  if (!session?.user?.email) {
-    throw new Error('Unauthorized')
-  }
-
-  if (user.email && user.email !== session.user.email) {
-    const existingUser = await db.user.findUnique({
-      where: { email: user.email },
-    })
-
-    if (existingUser) {
-      throw new Error('Email already in use')
-    }
-
-    const response = await db.user.update({
-      where: { email: session.user.email },
-      data: { ...user, emailVerified: null },
-    })
-    
-    const token = await createVerificationToken(response.email,'verify', 60 * 24)
-    return redirect(`/agency/verify?email=${encodeURIComponent(response.email)}`)
-    
-  }
-
   const response = await db.user.update({
     where: { email: user.email },
     data: { ...user },
@@ -1361,7 +1432,7 @@ export const getFunnelPageDetails = async (funnelPageId: string) => {
 }
 
 export const getDomainContent = async (subDomainName: string) => {
-  const response = await db.funnel.findUnique({
+  const response = await db.funnel.findFirst({
     where: {
       subDomainName,
     },
@@ -1547,7 +1618,7 @@ export const getRoles = async (id: string, scope: 'AGENCY' | 'SUBACCOUNT') => {
     ? { agencyId: id }
     : { subAccountId: id }
 
-  return await db.role.findMany({
+  const roles = await db.role.findMany({
     where: {
       ...whereClause,
       OR: [
@@ -1555,16 +1626,12 @@ export const getRoles = async (id: string, scope: 'AGENCY' | 'SUBACCOUNT') => {
         { ...whereClause }
       ],
     },
-    include: {
-      Permissions: {
-        where: { granted: true },
-        include: {
-          Permission: true,
-        },
-      },
-    },
+    select: roleSelect,
     orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
   })
+
+  const permissionsMap = await fetchRolePermissionsByRoleIds(roles.map((r) => r.id))
+  return attachPermissions(roles as RoleBase[], permissionsMap)
 }
 
 /**
@@ -1613,18 +1680,13 @@ export const getRolesByScope = async (
     where.isSystem = true // Default to system only if no context
   }
 
-  return await db.role.findMany({
+  const roles = await db.role.findMany({
     where,
-    include: {
-      Permissions: {
-        where: { granted: true },
-        include: {
-          Permission: true,
-        },
-      },
-    },
+    select: roleSelect,
     orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
   })
+  const permissionsMap = await fetchRolePermissionsByRoleIds(roles.map((r) => r.id))
+  return attachPermissions(roles as RoleBase[], permissionsMap)
 }
 
 /**
@@ -1812,6 +1874,8 @@ export const upsertRole = async (
     })),
   })
 
+  await invalidateAccessSnapshotsByRoleId(role.id)
+
   return role
 }
 
@@ -1825,9 +1889,7 @@ export const getRolePermissions = async (
 ) => {
   const rolePermissions = await db.rolePermission.findMany({
     where: { roleId },
-    include: {
-      Permission: true,
-    },
+    select: { Permission: { select: { id: true, key: true, description: true } } },
   })
 
   // TODO: Filter permissions based on plan entitlements
@@ -1847,130 +1909,23 @@ export const hasPermission = async (permissionKey: string) => {
   const context = await getCurrentContext()
   if (!context) return false
 
-  const userId = session.user.id
   const { activeAgencyId, activeSubAccountId } = context
 
   // If in subaccount context, check subaccount memberships first
   if (activeSubAccountId) {
-    const subaccountMembership = await db.subAccountMembership.findFirst({
-      where: {
-        userId,
-        subAccountId: activeSubAccountId,
-        isActive: true,
-      },
-      include: {
-        Role: {
-          include: {
-            Permissions: {
-              where: {
-                Permission: {
-                  key: permissionKey,
-                },
-              },
-              include: {
-                Permission: true,
-              },
-            },
-          },
-        },
-      },
-    })
-
-    if (subaccountMembership && subaccountMembership.Role.Permissions.length > 0) {
-      return true
-    }
+    return hasSubAccountPermission(activeSubAccountId, permissionKey as ActionKey)
   }
 
   // Fall back to agency-level permissions
   if (activeAgencyId) {
-    const agencyMembership = await db.agencyMembership.findFirst({
-      where: {
-        userId,
-        agencyId: activeAgencyId,
-        isActive: true,
-      },
-      include: {
-        Role: {
-          include: {
-            Permissions: {
-              where: {
-                Permission: {
-                  key: permissionKey,
-                },
-              },
-              include: {
-                Permission: true,
-              },
-            },
-          },
-        },
-      },
-    })
-
-    if (agencyMembership && agencyMembership.Role.Permissions.length) {
-      return true
-    }
+    return hasAgencyPermission(activeAgencyId, permissionKey as ActionKey)
   }
 
   return false
 }
 
 export const getUserPermissionsList = async (userId: string) => {
-  const permissionsSet = new Set<string>()
-
-  // Get all active agency memberships
-  const agencyMemberships = await db.agencyMembership.findMany({
-    where: {
-      userId,
-      isActive: true,
-    },
-    include: {
-      Role: {
-        include: {
-          Permissions: {
-            include: {
-              Permission: true,
-            },
-          },
-        },
-      },
-    },
-  })
-
-  // Aggregate permissions from agency roles
-  for (const membership of agencyMemberships) {
-    for (const rolePermission of membership.Role.Permissions) {
-      permissionsSet.add(rolePermission.Permission.key)
-    }
-  }
-
-  // Get all active subaccount memberships
-  const subAccountMemberships = await db.subAccountMembership.findMany({
-    where: {
-      userId,
-      isActive: true,
-    },
-    include: {
-      Role: {
-        include: {
-          Permissions: {
-            include: {
-              Permission: true,
-            },
-          },
-        },
-      },
-    },
-  })
-
-  // Aggregate permissions from subaccount roles
-  for (const membership of subAccountMemberships) {
-    for (const rolePermission of membership.Role.Permissions) {
-      permissionsSet.add(rolePermission.Permission.key)
-    }
-  }
-
-  return Array.from(permissionsSet)
+  return getPermissionKeysForUserId(userId)
 }
 
 /**
@@ -1981,11 +1936,8 @@ export const updateAgencyMemberRole = async (
   agencyId: string,
   roleId: string
 ) => {
-  // Import permission check
-  const { hasAgencyPermission } = await import('@/lib/features/iam/authz/permissions')
-
   // Check permission
-  const hasPermission = await hasAgencyPermission(agencyId, 'core.agency.team_member.manage')
+  const hasPermission = await hasAgencyPermission(agencyId, 'org.agency.team_member.manage')
   if (!hasPermission) {
     throw new Error('Permission denied: Cannot assign roles')
   }
@@ -2018,10 +1970,17 @@ export const updateAgencyMemberRole = async (
     throw new Error('Invalid role for this agency')
   }
 
-  return await db.agencyMembership.update({
+  const updated = await db.agencyMembership.update({
     where: { id: membership.id },
     data: { roleId },
   })
+
+  await invalidateAccessSnapshot({
+    userId,
+    scopeKey: agencyScopeKey(agencyId),
+  })
+
+  return updated
 }
 
 /**
@@ -2044,9 +2003,15 @@ export const updateSubAccountMemberRole = async (
     throw new Error('SubAccount membership not found')
   }
 
-  return await db.subAccountMembership.update({
+  const updated = await db.subAccountMembership.update({
     where: { id: membership.id },
     data: { roleId },
   })
-}
 
+  await invalidateAccessSnapshot({
+    userId,
+    scopeKey: subAccountScopeKey(subAccountId),
+  })
+
+  return updated
+}

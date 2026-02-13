@@ -2,7 +2,7 @@
  * Automation Account Mappings Actions
  * FI-GL Module - Manage debit/credit account pairs for automatic postings
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Actions.AutomationMappings
+ * @namespace Autlify.Lib.Features.FI.GL.Actions.AutomationMappings
  */
 
 'use server'

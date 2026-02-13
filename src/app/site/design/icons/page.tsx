@@ -8,7 +8,7 @@ const iconNames = Object.keys(PremiumIcons).filter(name => name.startsWith('Prem
 
 // Group icons by category
 const iconCategories = {
-  'Core Premium': [
+  'org.Premium': [
     'PremiumCrown', 'PremiumShield', 'PremiumAnalytics', 'PremiumTeam', 'PremiumZap',
     'PremiumDiamond', 'PremiumStar', 'PremiumRocket', 'PremiumSparkles', 'PremiumInfinity', 'PremiumLock'
   ],

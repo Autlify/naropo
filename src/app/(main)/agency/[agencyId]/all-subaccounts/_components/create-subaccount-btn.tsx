@@ -3,17 +3,14 @@ import SubAccountDetails from '@/components/forms/subaccount-details'
 import CustomModal from '@/components/global/custom-modal'
 import { Button } from '@/components/ui/button'
 import { useModal } from '@/providers/modal-provider'
-import { Agency, AgencySidebarOption, SubAccount, User } from '@/generated/prisma/client'
+import type { Agency, User } from '@/generated/prisma/client'
 import { PlusCircleIcon } from 'lucide-react'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {
-  user: User
-  agencyDetails: Agency & {
-    SubAccount: SubAccount[]
-    SidebarOption: AgencySidebarOption[]
-  }
+  user: Pick<User, 'id' | 'name'>
+  agencyDetails: Pick<Agency, 'id'>
   id: string
   className: string
 }

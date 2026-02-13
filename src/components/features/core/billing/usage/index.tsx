@@ -9,7 +9,7 @@
  * - UsageEventsTable: Event log with filtering
  * - AllocationCard: Cost allocation rules (future accounting)
  *
- * Used internally by Naropo and exportable as part of Billing SDK.
+ * Used internally by Autlify and exportable as part of Billing SDK.
  */
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -107,10 +107,10 @@ const UsageDetailedTable = ({
   };
 
   return (
-    <Card className={cn("w-full bg-gradient-to-br from-muted/20 to-transparent border-border/50", className)}>
+    <Card className={cn("w-full", className)}>
       <CardHeader>
-        <CardTitle className="text-xl font-semibold">{title}</CardTitle>
-        {description && <CardDescription className="text-sm">{description}</CardDescription>}
+        <CardTitle>{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto rounded-md border">
@@ -307,11 +307,11 @@ export const UsageClient = ({
 
   const refresh = async () => {
     if (!scopeId) return;
-
+    
     setError(null);
     setLoading(true);
     setLoadingEvents(true);
-
+    
     try {
       const url = new URL("/api/features/core/billing/usage/summary", window.location.origin);
       url.searchParams.set("agencyId", agencyId ?? scopeId);
@@ -322,7 +322,7 @@ export const UsageClient = ({
 
       const res = await fetch(url.toString(), {
         headers: {
-          [subAccountId ? "x-naropo-subaccount" : "x-naropo-agency"]:
+          [subAccountId ? "x-autlify-subaccount" : "x-autlify-agency"]:
             subAccountId ?? agencyId ?? scopeId,
         },
         cache: "no-store",
@@ -341,7 +341,7 @@ export const UsageClient = ({
 
       const evRes = await fetch(evUrl.toString(), {
         headers: {
-          [subAccountId ? "x-naropo-subaccount" : "x-naropo-agency"]:
+          [subAccountId ? "x-autlify-subaccount" : "x-autlify-agency"]:
             subAccountId ?? agencyId ?? scopeId,
         },
         cache: "no-store",
@@ -560,39 +560,39 @@ export const UsageClient = ({
             <TableBody>
               {loadingEvents
                 ? Array.from({ length: 6 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Skeleton className="h-5 w-[140px]" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-5 w-[220px]" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="ml-auto h-5 w-[80px]" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-5 w-[160px]" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-5 w-[260px]" />
-                    </TableCell>
-                  </TableRow>
-                ))
+                    <TableRow key={i}>
+                      <TableCell>
+                        <Skeleton className="h-5 w-[140px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-[220px]" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="ml-auto h-5 w-[80px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-[160px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-[260px]" />
+                      </TableCell>
+                    </TableRow>
+                  ))
                 : filteredEvents.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(e.createdAt).toLocaleString()}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">{e.featureKey}</TableCell>
-                    <TableCell className="text-right font-medium">{e.quantity}</TableCell>
-                    <TableCell>
-                      {e.actionKey ?? <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {e.idempotencyKey}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                    <TableRow key={e.id}>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(e.createdAt).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{e.featureKey}</TableCell>
+                      <TableCell className="text-right font-medium">{e.quantity}</TableCell>
+                      <TableCell>
+                        {e.actionKey ?? <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {e.idempotencyKey}
+                      </TableCell>
+                    </TableRow>
+                  ))}
             </TableBody>
           </Table>
         </div>

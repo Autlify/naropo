@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { MoonIcon, SunIcon, SparkleIcon } from 'lucide-react'
 import { useEffect } from 'react'
+import { cn } from '@/lib/utils'
 
 export function ModeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
@@ -49,7 +50,7 @@ export function ModeToggle() {
 }
 
 
-const ModeButton = () => {
+const ModeButton = ({className}: {className?: string} ) => {
   const { resolvedTheme, setTheme } = useTheme()
   const theme = resolvedTheme
   const [mounted, setMounted] = React.useState(false)
@@ -72,7 +73,7 @@ const ModeButton = () => {
     <Button
       variant="ghost"
       size="icon"
-      className="relative bg-secondary hover:bg-muted/70 transition-colors text-muted-foreground"
+      className={cn(className,"relative transition-colors")}
       onClick={() => {
         if (theme === 'light') {
           setTheme('premium')
@@ -83,8 +84,8 @@ const ModeButton = () => {
         }
       }}
     >
-      <SunIcon className={`h-[1.2rem] w-[1.2rem] transition-all text-muted-foreground ${theme === 'light' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
-      <MoonIcon className={`absolute h-[1.2rem] w-[1.2rem] transition-all text-muted-foreground ${theme === 'premium' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
+      <SunIcon className={`h-[1.2rem] w-[1.2rem] transition-all ${theme === 'light' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
+      <MoonIcon className={`absolute h-[1.2rem] w-[1.2rem] transition-all ${theme === 'premium' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
       {/* <SparkleIcon className={`absolute h-[1.2rem] w-[1.2rem] transition-all  ${theme === 'premium' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} /> */}
 
       <span className="sr-only">Toggle theme</span>

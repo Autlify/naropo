@@ -10,9 +10,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+} from '@/components/ui-2/card'
+import { Button } from '@/components/ui-2/button'
+import { Badge } from '@/components/ui-2/badge'
 import {
   Dialog,
   DialogClose,
@@ -20,8 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+} from '@/components/ui-2/dialog'
+import { RadioGroup, RadioGroupItem } from '@/components/ui-2/radio-group'
 import { Toggle } from '@/components/ui/toggle'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
@@ -122,7 +122,8 @@ const TrialTimeUnit = ({ value, label }: { value: number; label: string }) => (
 const TrialExpiryCard = ({
   trialEndDate,
   daysRemaining: propDaysRemaining,
-  onUpgrade,
+  onUpgrade, 
+  cancelTrial,
   className,
   title = 'Trial Period',
   description,
@@ -155,6 +156,8 @@ const TrialExpiryCard = ({
       }
     }
   }
+ 
+
 
   const getStatusBadge = () => {
     if (daysRemaining <= 0) return <Badge variant="destructive">Expired</Badge>
@@ -164,13 +167,13 @@ const TrialExpiryCard = ({
   }
 
   return (
-    <Card className={cn('w-full max-w-md bg-gradient-to-br from-muted/20 to-transparent border-border/50', className)}>
+    <Card className={cn('w-full max-w-md', className)}>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-semibold">{title}</CardTitle>
+          <CardTitle className="text-base font-medium">{title}</CardTitle>
           {getStatusBadge()}
         </div>
-        {description && <CardDescription className="text-sm">{description}</CardDescription>}
+        {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent className="space-y-6">
         {trialEndDate && daysRemaining > 0 && (
@@ -221,6 +224,14 @@ const UpdatePlanDialog = ({
   title,
   triggerText,
 }: UpdatePlanDialogProps) => {
+  // Defensive normalization: avoid runtime crashes if a call-site accidentally
+  // passes a non-array structure.
+  const normalizedPlans: Plan[] = Array.isArray(plans)
+    ? plans
+    : plans && typeof plans === 'object'
+      ? (Object.values(plans as Record<string, Plan>).filter(Boolean) as Plan[])
+      : []
+
   const [isYearly, setIsYearly] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<string | undefined>(undefined)
   const [isOpen, setIsOpen] = useState(false)
@@ -275,14 +286,14 @@ const UpdatePlanDialog = ({
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
-          {plans.length === 0 ? (
+          {normalizedPlans.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-center">
               <p className="text-muted-foreground text-sm">No plans available</p>
             </div>
           ) : (
             <RadioGroup value={selectedPlan} onValueChange={handlePlanChange}>
               <div className="space-y-2.5 pb-2 sm:space-y-3">
-                {plans.map((plan, index) => (
+                {normalizedPlans.map((plan, index) => (
                   <motion.div
                     key={plan.id}
                     layout
@@ -642,15 +653,15 @@ const CancelSubscriptionDialog = ({
 const SubscriptionManagement = ({ className, currentPlan, cancelSubscription, updatePlan }: SubscriptionManagementProps) => {
   return (
     <div className={cn('w-full text-left', className)}>
-      <Card className="shadow-lg bg-gradient-to-br from-muted/20 to-transparent border-border/50">
+      <Card className="shadow-lg">
         <CardHeader className="px-4 pb-4 sm:px-6 sm:pb-6">
-          <CardTitle className="flex items-center gap-2 text-xl font-semibold sm:gap-3">
+          <CardTitle className="flex items-center gap-2 text-lg sm:gap-3 sm:text-xl">
             <div className="bg-primary/10 ring-primary/20 rounded-lg p-1.5 ring-1 sm:p-2">
               <CreditCard className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             Current Subscription
           </CardTitle>
-          <CardDescription className="text-sm">
+          <CardDescription className="text-sm sm:text-base">
             Manage your billing and subscription settings
           </CardDescription>
         </CardHeader>
@@ -764,7 +775,7 @@ const SubscriptionClient = ({ scope, scopeId }: SubscriptionClientProps) => {
     try {
       // Get subscription data first
       const result = await getSubscriptionData(scopeId)
-      
+
       // If we have a subscription, sync with Stripe to update DB
       if (result.success && result.data?.subscriptionId) {
         await syncSubscriptionStatus(scopeId, result.data.subscriptionId)
@@ -775,7 +786,7 @@ const SubscriptionClient = ({ scope, scopeId }: SubscriptionClientProps) => {
           return
         }
       }
-      
+
       // Use original result if no subscription or sync failed
       if (result.success && result.data) {
         setData(result.data)
@@ -802,15 +813,15 @@ const SubscriptionClient = ({ scope, scopeId }: SubscriptionClientProps) => {
   const plan: Plan = pricingCard
     ? mapPricingCardToPlan(pricingCard)
     : {
-        id: 'free',
-        title: 'Free',
-        description: 'No active subscription',
-        currency: 'RM',
-        monthlyPrice: '0',
-        yearlyPrice: '0',
-        buttonText: 'Subscribe',
-        features: [],
-      }
+      id: 'free',
+      title: 'Free',
+      description: 'No active subscription',
+      currency: 'RM',
+      monthlyPrice: '0',
+      yearlyPrice: '0',
+      buttonText: 'Subscribe',
+      features: [],
+    }
 
   const isTrialing = data?.state === 'TRIALING'
   const isActive = data?.state === 'ACTIVE'
@@ -821,10 +832,10 @@ const SubscriptionClient = ({ scope, scopeId }: SubscriptionClientProps) => {
     price: pricingCard?.price || 'RM 0',
     nextBillingDate: data?.currentPeriodEndDate
       ? new Date(data.currentPeriodEndDate).toLocaleDateString(undefined, {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
       : 'Not set',
     paymentMethod: data?.defaultPaymentMethod || 'Not set',
     status: isActive ? 'active' : isTrialing ? 'active' : data?.state === 'CANCELLED' ? 'cancelled' : data?.state === 'PAST_DUE' ? 'past_due' : 'inactive',
@@ -855,6 +866,18 @@ const SubscriptionClient = ({ scope, scopeId }: SubscriptionClientProps) => {
           trialEndDate={new Date(data.currentPeriodEndDate)}
           onUpgrade={() => { window.location.href = `/${scope}/${scopeId}/billing/checkout` }}
           features={plan.features.map((f) => f.name)}
+          cancelTrial={{
+            title: 'Cancel Trial',
+            description: 'Are you sure you want to cancel your trial?',
+            plan,
+            triggerButtonText: 'Cancel Trial',
+            leftPanelImageUrl: '/assets/preview.png',
+            warningTitle: 'You will lose access to premium features',
+            warningText: 'If you cancel your trial, you will lose access to all agency, subaccount, and features immediately.',
+            onCancel: handleCancelSubscription,
+            onKeepSubscription: async () => {},
+          }}
+
         />
       ) : (
         <SubscriptionManagement
@@ -874,7 +897,7 @@ const SubscriptionClient = ({ scope, scopeId }: SubscriptionClientProps) => {
             warningText:
               'If you cancel your subscription, you will lose access to all premium features at the end of your billing period.',
             onCancel: handleCancelSubscription,
-            onKeepSubscription: async () => {},
+            onKeepSubscription: async () => { },
           }}
         />
       )}

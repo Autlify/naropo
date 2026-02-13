@@ -5,10 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { describeInstallState } from '@/lib/features/core/apps/install-state'
-import { listAppsWithState, type AppWithState } from '@/lib/features/core/apps/service'
-import { installAppAgencyAction, uninstallAppAgencyAction } from '@/lib/features/core/apps/actions'
-import { getDeliveryDetail } from '@/lib/features/core/integrations/store'
+import { describeInstallState } from '@/lib/features/org/apps/install-state'
+import { listAppsWithState, type AppWithState } from '@/lib/features/org/apps/service'
+import { installAppAgencyAction, uninstallAppAgencyAction } from '@/lib/features/org/apps/actions'
+import { getDeliveryDetail } from '@/lib/features/org/integrations/store'
 import { WebhooksNav } from '@/components/features/core/apps/webhooks/nav'
 import { WebhooksProvidersPanel } from '@/components/features/core/apps/webhooks/providers'
 import { WebhooksConnectionsPanel } from '@/components/features/core/apps/webhooks/connections'
@@ -215,7 +215,7 @@ function WebhooksLayout({
                 <h1 className="text-2xl font-semibold">Webhooks</h1>
                 <p className="text-sm text-muted-foreground">Providers, connections, API keys, subscriptions, and deliveries.</p>
             </div>
-            <WebhooksNav basePath={basePath} />
+            <WebhooksNav basePath={basePath} agencyId={agencyId} />
             <div className="space-y-6">{children}</div>
         </div>
     )

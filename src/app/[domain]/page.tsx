@@ -3,15 +3,16 @@ import { getDomainContent } from '@/lib/queries'
 import EditorProvider from '@/providers/editor/editor-provider'
 import { notFound } from 'next/navigation'
 import React from 'react'
-import FunnelEditorNavigation from '../(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-navigation'
 import FunnelEditor from '../(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor'
+import { FunnelPage } from '@/generated/prisma/client'
 
 const Page = async ({ params }: { params: Promise<{ domain: string }> }) => {
   const { domain } = await params
   const domainData = await getDomainContent(domain.slice(0, -1))
   if (!domainData) return notFound()
+  if (!domainData.published) return notFound()
 
-  const pageData = domainData.FunnelPages.find((page) => !page.pathName)
+  const pageData = domainData.FunnelPages.find((page: FunnelPage) => !page.pathName)
 
   if (!pageData) return notFound()
 

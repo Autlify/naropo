@@ -8,12 +8,12 @@ import ModalProvider from '@/providers/modal-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as SonnarToaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { SidebarProvider } from '@/components/sidebar-01/sidebar-context'
+import { SidebarProvider } from '@/components/sidebar/sidebar-context'
 
 const font = DM_Sans({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Naropo',
+  title: 'Autlify',
   description: 'The ultimate agency kit',
 }
 
@@ -27,7 +27,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
-      <body className={`${font.className} min-w-screen min-h-screen`}>
+      <body className={`${font.className } min-w-dvw min-h-dvh`}>
         <AuthProvider>
           <ThemeProvider
             attribute="class"

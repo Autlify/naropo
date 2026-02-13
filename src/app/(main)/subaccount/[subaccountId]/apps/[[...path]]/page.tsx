@@ -5,10 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { describeInstallState } from '@/lib/features/core/apps/install-state'
-import { listAppsWithState, type AppWithState } from '@/lib/features/core/apps/service'
-import { installAppSubAccountAction, uninstallAppSubAccountAction } from '@/lib/features/core/apps/actions'
-import { getDeliveryDetail } from '@/lib/features/core/integrations/store'
+import { describeInstallState } from '@/lib/features/org/apps/install-state'
+import { listAppsWithState, type AppWithState } from '@/lib/features/org/apps/service'
+import { installAppSubAccountAction, uninstallAppSubAccountAction } from '@/lib/features/org/apps/actions'
+import { getDeliveryDetail } from '@/lib/features/org/integrations/store'
 import { requireSubAccountAccess } from '@/lib/features/iam/authz/require'
 import { KEYS } from '@/lib/registry/keys/permissions'
 import { WebhooksNav } from '@/components/features/core/apps/webhooks/nav'
@@ -28,7 +28,7 @@ type Props = { params: Promise<{ subaccountId: string; path?: string[] }> }
 // Apps Hub Menu (shows when path is empty)
 // ============================================================================
 
-const AppsHubMenu = ({ subaccountId, agencyId, apps }: { 
+const AppsHubMenu = ({ subaccountId, agencyId, apps }: {
   subaccountId: string
   agencyId: string
   apps: AppWithState[]
@@ -50,7 +50,7 @@ const AppsHubMenu = ({ subaccountId, agencyId, apps }: {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-gradient-to-br from-muted/30 to-transparent border-border/50 hover:border-foreground/20 transition-all">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-2">
               <CardTitle>Support Center</CardTitle>
@@ -68,7 +68,7 @@ const AppsHubMenu = ({ subaccountId, agencyId, apps }: {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-muted/30 to-transparent border-border/50 hover:border-foreground/20 transition-all">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-2">
               <CardTitle>Webhooks</CardTitle>
@@ -100,7 +100,7 @@ const AppsHubMenu = ({ subaccountId, agencyId, apps }: {
           {addons.map((a) => {
             const meta = describeInstallState(a.state)
             return (
-              <Card key={a.key} className="bg-gradient-to-br from-muted/30 to-transparent border-border/50 hover:border-foreground/20 transition-all">
+              <Card key={a.key}>
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle>{a.label}</CardTitle>
@@ -168,7 +168,7 @@ const SupportLayout = ({
   )
 }
 
-const SupportRouter =({
+const SupportRouter = ({
   subaccountId,
   segments,
 }: {
@@ -205,12 +205,12 @@ const SupportRouter =({
 // Webhooks Module Router
 // ============================================================================
 
-function WebhooksLayout({ 
-  subaccountId, 
-  children 
-}: { 
+function WebhooksLayout({
+  subaccountId,
+  children
+}: {
   subaccountId: string
-  children: React.ReactNode 
+  children: React.ReactNode
 }) {
   const basePath = `/subaccount/${subaccountId}/apps/webhooks`
   return (
@@ -219,20 +219,20 @@ function WebhooksLayout({
         <h1 className="text-2xl font-semibold">Webhooks</h1>
         <p className="text-sm text-muted-foreground">Providers, connections, API keys, subscriptions, and deliveries.</p>
       </div>
-      <WebhooksNav basePath={basePath} />
+      <WebhooksNav basePath={basePath} subaccountId={subaccountId} />
       <div className="space-y-6">{children}</div>
     </div>
   )
 }
 
-const WebhooksRouter = async({ 
-  subaccountId, 
+const WebhooksRouter = async ({
+  subaccountId,
   agencyId,
-  segments 
-}: { 
+  segments
+}: {
   subaccountId: string
   agencyId: string
-  segments: string[] 
+  segments: string[]
 }) => {
   const [section, id] = segments
 
@@ -245,7 +245,7 @@ const WebhooksRouter = async({
 
   switch (section) {
     case 'providers':
-      content = id 
+      content = id
         ? <ProviderDetailClient subAccountId={subaccountId} provider={id} />
         : <WebhooksProvidersPanel subAccountId={subaccountId} />
       break
@@ -281,12 +281,12 @@ const WebhooksRouter = async({
   return <WebhooksLayout subaccountId={subaccountId}>{content}</WebhooksLayout>
 }
 
-const DeliveryDetailView = ({ 
-  subaccountId, 
-  detail 
-}: { 
+const DeliveryDetailView = ({
+  subaccountId,
+  detail
+}: {
   subaccountId: string
-  detail: { delivery: any; attempts?: any[] } 
+  detail: { delivery: any; attempts?: any[] }
 }) => {
   return (
     <Card>
@@ -347,7 +347,7 @@ const DeliveryDetailView = ({
 // Integrations Redirect (legacy alias to webhooks)
 // ============================================================================
 
-const integrationsRedirect =(subaccountId: string, segments: string[]): never => {
+const integrationsRedirect = (subaccountId: string, segments: string[]): never => {
   const [section] = segments
 
   // /apps/integrations → /apps/webhooks/providers
@@ -383,7 +383,7 @@ const AppAccessPrompt = ({
   agencyId: string
   appKey: string
   info?: { state: string; entitled: boolean; canInstall: boolean; label?: string }
-})  => {
+}) => {
   const meta = describeInstallState((info?.state as any) ?? 'AVAILABLE')
   const entitled = info?.entitled ?? false
   const canInstall = info?.canInstall ?? false
@@ -456,7 +456,7 @@ export default async function SubAccountAppsCatchAllPage({ params }: Props) {
   // Validate access (needed for all routes including menu)
   const ctx = await requireSubAccountAccess({
     subAccountId: subaccountId,
-    permissionKeys: [KEYS.core.apps.app.view],
+    permissionKeys: [KEYS.org.apps.app.view],
     requireActiveAgencySubscription: true,
     redirectTo: `/subaccount/${subaccountId}/apps`,
   })

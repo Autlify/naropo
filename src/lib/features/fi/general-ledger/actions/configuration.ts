@@ -6,9 +6,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions';
 import {
     glConfigurationSchema,
     updateGLConfigurationSchema,
@@ -17,7 +15,7 @@ import {
 } from '@/lib/schemas/fi/general-ledger/configuration';
 import { logGLAudit } from './audit';
 import { ConsolidationMethod } from '../../../../../generated/prisma/enums';
-import { ActionKey } from '@/lib/registry';
+import { getActionContext, hasContextPermission, type ActionContext } from '@/lib/features/iam/authz/action-context';
 
 type ActionResult<T> = {
     success: boolean
@@ -25,42 +23,12 @@ type ActionResult<T> = {
     error?: string
 }
 
-type ConfigContext = {
-    agencyId?: string
-    subAccountId?: string
-    userId: string
-}
+type ConfigContext = ActionContext
 
 
 
-const getContext = async (): Promise<ConfigContext | null> => {
-    const session = await auth()
-    if (!session?.user?.id) return null
-
-    const dbSession = await db.session.findFirst({
-        where: { userId: session.user.id },
-        select: { activeAgencyId: true, activeSubAccountId: true },
-    })
-
-    return {
-        userId: session.user.id,
-        agencyId: dbSession?.activeAgencyId ?? undefined,
-        subAccountId: dbSession?.activeSubAccountId ?? undefined,
-    }
-}
-
-const checkPermission = async (
-    context: ConfigContext,
-    permissionKey: ActionKey
-): Promise<boolean> => {
-    if (context.subAccountId) {
-        return hasSubAccountPermission(context.subAccountId, permissionKey)
-    }
-    if (context.agencyId) {
-        return hasAgencyPermission(context.agencyId, permissionKey)
-    }
-    return false
-}
+const getContext = getActionContext
+const checkPermission = hasContextPermission
 
 /**
  * Get GL Configuration for an agency
@@ -295,7 +263,7 @@ export const createGLConfiguration = async (
         }
 
         // Check permission
-        const hasPermission = await hasAgencyPermission(context.agencyId, 'fi.general_ledger.settings.manage');
+        const hasPermission = await checkPermission(context, 'fi.general_ledger.settings.manage');
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing permission to edit GL settings' };
         }
@@ -358,7 +326,7 @@ export const initializeGLModule = async (): Promise<ActionResult<any>> => {
         }
 
         // Check permission
-        const hasPermission = await hasAgencyPermission(context.agencyId, 'fi.general_ledger.settings.manage');
+        const hasPermission = await checkPermission(context, 'fi.general_ledger.settings.manage');
         if (!hasPermission) {
             return { success: false, error: 'Unauthorized: Missing permission to initialize GL module' };
         }

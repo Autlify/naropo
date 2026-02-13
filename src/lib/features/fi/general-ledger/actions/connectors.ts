@@ -2,7 +2,7 @@
  * Integration Connectors Actions
  * FI-GL Module - Manage internal and external service connections
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Actions.Connectors
+ * @namespace Autlify.Lib.Features.FI.GL.Actions.Connectors
  */
 
 'use server'
@@ -266,7 +266,7 @@ export async function configureConnector(
 
   const data = validation.data
   const definition = AVAILABLE_CONNECTORS[data.connectorId as ConnectorId]
-
+  
   if (!definition) {
     return errorResult(`Unknown connector: ${data.connectorId}`)
   }
@@ -436,7 +436,7 @@ export async function checkConnectorHealth(
 
   const { context } = contextResult
   const definition = AVAILABLE_CONNECTORS[connectorId as ConnectorId]
-
+  
   if (!definition) {
     return errorResult(`Unknown connector: ${connectorId}`)
   }

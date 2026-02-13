@@ -82,7 +82,7 @@ export const requireAgencyAccess = async (args: {
 }) => {
   const failMode = args.failMode ?? 'redirect'
   const redirectTo = args.redirectTo ?? '/agency/sign-in'
-  const billingPermissionKey = args.billingPermissionKey ?? 'core.billing.account.view' as PermissionKey
+  const billingPermissionKey = args.billingPermissionKey ?? 'org.billing.account.view' as PermissionKey
 
   const ctx = await resolveCurrentAgencyContext({ agencyId: args.agencyId })
   if (!ctx) return fail(failMode, redirectTo, 'No agency membership')
@@ -92,7 +92,7 @@ export const requireAgencyAccess = async (args: {
       ? args.permissionKeys
       : args.permissionKey
         ? [args.permissionKey]
-        : ['core.agency.account.read'] as PermissionKey[]
+        : ['org.agency.account.read'] as PermissionKey[]
 
   await requirePermission({
     permissionKeys: ctx?.permissionKeys || [],
@@ -127,7 +127,7 @@ export const requireSubAccountAccess = async (args: {
 }) => {
   const failMode = args.failMode ?? 'redirect'
   const redirectTo = args.redirectTo ?? '/agency/sign-in'
-  const billingPermissionKey = args.billingPermissionKey ?? 'core.billing.account.view' as PermissionKey
+  const billingPermissionKey = args.billingPermissionKey ?? 'org.billing.account.view' as PermissionKey
 
   const ctx = await resolveCurrentSubAccountContext({ subAccountId: args.subAccountId })
   if (!ctx) return fail(failMode, redirectTo, 'No subaccount membership')
@@ -137,7 +137,7 @@ export const requireSubAccountAccess = async (args: {
       ? args.permissionKeys
       : args.permissionKey
         ? [args.permissionKey]
-        : ['core.subaccount.account.read'] as PermissionKey[]
+        : ['org.subaccount.account.read'] as PermissionKey[]
 
   await requirePermission({
     permissionKeys: ctx.permissionKeys,
@@ -213,7 +213,7 @@ export const requireRequestAccess = async (args: {
         throw new ApiAuthzError({
           status: 400,
           code: 'INVALID_REQUEST',
-          message: 'Missing scope: provide x-naropo-agency-id / x-naropo-subaccount-id headers (SDK) or agencyId/subAccountId query (UI)',
+          message: 'Missing scope: provide x-autlify-agency-id / x-autlify-subaccount-id headers (SDK) or agencyId/subAccountId query (UI)',
         })
       }
     } else if (e instanceof AutlifyContextError) {
@@ -231,11 +231,11 @@ export const requireRequestAccess = async (args: {
     // Use membership permissions at the resolved scope.
     const membership =
       scope.kind === 'agency'
-        ? await resolveAgencyContextForUser({ userId: principal.userId, agencyId: scope.agencyId })
-        : await resolveSubAccountContextForUser({
-          userId: principal.userId,
-          subAccountId: scope.subAccountId,
-        })
+      ? await resolveAgencyContextForUser({ userId: principal.userId, agencyId: scope.agencyId })
+      : await resolveSubAccountContextForUser({
+        userId: principal.userId,
+        subAccountId: scope.subAccountId,
+      })
     if (!membership) {
       throw new ApiAuthzError({ status: 403, code: 'FORBIDDEN', message: 'No membership' })
     }

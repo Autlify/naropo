@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import EditorProvider from '@/providers/editor/editor-provider'
 import { redirect } from 'next/navigation'
 import React from 'react'
+import { hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
 import FunnelEditorNavigation from './_components/funnel-editor-navigation'
 import FunnelEditorSidebar from './_components/funnel-editor-sidebar'
 import FunnelEditor from './_components/funnel-editor'
@@ -16,9 +17,21 @@ type Props = {
 
 const Page = async ({ params }: Props) => {
   const { subaccountId, funnelId, funnelPageId } = await params
+
+  const canEdit = await hasSubAccountPermission(subaccountId, 'crm.funnels.content.update')
+  if (!canEdit) {
+    return redirect(`/subaccount/${subaccountId}/funnels`)
+  }
+
+  const funnel = await db.funnel.findFirst({ where: { id: funnelId, subAccountId: subaccountId } })
+  if (!funnel) {
+    return redirect(`/subaccount/${subaccountId}/funnels`)
+  }
+
   const funnelPageDetails = await db.funnelPage.findFirst({
     where: {
       id: funnelPageId,
+      funnelId,
     },
   })
   if (!funnelPageDetails) {

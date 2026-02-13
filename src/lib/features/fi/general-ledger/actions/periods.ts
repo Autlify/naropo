@@ -6,9 +6,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions';
 import {
   createPeriodSchema,
   updatePeriodSchema,
@@ -19,6 +17,7 @@ import { logGLAudit } from './audit';
 import { emitEvent } from './fanout';
 import { EVENT_KEYS } from '@/lib/registry/events/trigger';
 import { PeriodStatus } from '@/generated/prisma/client';
+import { getActionContext, hasContextPermission, type ActionContext } from '@/lib/features/iam/authz/action-context';
 
 type ActionResult<T> = {
   success: boolean;
@@ -26,27 +25,9 @@ type ActionResult<T> = {
   error?: string;
 };
 
-type Context = {
-  agencyId?: string;
-  subAccountId?: string;
-  userId: string;
-};
+type Context = ActionContext;
 
-const getContext = async (): Promise<Context | null> => {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const dbSession = await db.session.findFirst({
-    where: { userId: session.user.id },
-    select: { activeAgencyId: true, activeSubAccountId: true },
-  });
-
-  return {
-    userId: session.user.id,
-    agencyId: dbSession?.activeAgencyId ?? undefined,
-    subAccountId: dbSession?.activeSubAccountId ?? undefined,
-  }; 
-};
+const getContext = getActionContext;
 
 /**
  * Get Financial Period by ID
@@ -58,9 +39,7 @@ export const getFinancialPeriod = async (periodId: string): Promise<ActionResult
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.configuration.fiscal_years.view')
-      : await hasAgencyPermission(context.agencyId!, 'fi.configuration.fiscal_years.view');
+    const hasPermission = await hasContextPermission(context, 'fi.configuration.fiscal_years.view');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to view periods' };
@@ -100,9 +79,7 @@ export const getCurrentOpenPeriod = async (): Promise<ActionResult<any>> => {
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.configuration.fiscal_years.view')
-      : await hasAgencyPermission(context.agencyId!, 'fi.configuration.fiscal_years.view');
+    const hasPermission = await hasContextPermission(context, 'fi.configuration.fiscal_years.view');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to view periods' };
@@ -142,9 +119,7 @@ export const listFinancialPeriods = async (): Promise<ActionResult<any>> => {
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.configuration.fiscal_years.view')
-      : await hasAgencyPermission(context.agencyId!, 'fi.configuration.fiscal_years.view');
+    const hasPermission = await hasContextPermission(context, 'fi.configuration.fiscal_years.view');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to view periods' };
@@ -179,9 +154,7 @@ export const createFinancialPeriod = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.configuration.fiscal_years.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.configuration.fiscal_years.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.configuration.fiscal_years.manage');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to create periods' };
@@ -262,9 +235,7 @@ export const updateFinancialPeriod = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.configuration.fiscal_years.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.configuration.fiscal_years.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.configuration.fiscal_years.manage');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to edit periods' };
@@ -334,9 +305,7 @@ export const openPeriod = async (periodId: string): Promise<ActionResult<any>> =
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.configuration.fiscal_years.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.configuration.fiscal_years.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.configuration.fiscal_years.manage');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to open periods' };
@@ -416,9 +385,7 @@ export const closePeriod = async (periodId: string): Promise<ActionResult<any>> 
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.configuration.fiscal_years.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.configuration.fiscal_years.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.configuration.fiscal_years.manage');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to close periods' };
@@ -573,9 +540,7 @@ export const lockPeriod = async (periodId: string, reason: string): Promise<Acti
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.configuration.fiscal_years.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.configuration.fiscal_years.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.configuration.fiscal_years.manage');
     
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to lock periods' };

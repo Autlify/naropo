@@ -1,16 +1,40 @@
-import React from "react";
-import Link from "next/link";
 import { getPricingCards } from "@/lib/registry/plans/pricing-config";
-import { getAuthUserDetails } from "@/lib/queries";
+import Link from "next/link";
+import React from "react";
 import { PricingSection } from "./_components/pricing-section";
-import { Pricing as Card } from '@/components/site/pricing';
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
 
 const Pricing: React.FC = async () => {
   // Get pricing cards from SSoT (pricing-config.ts)
   const monthlyCards = getPricingCards('month')
   const yearlyCards = getPricingCards('year')
 
-  const user = await getAuthUserDetails();
+  const session = await auth()
+  const userId = session?.user?.id
+
+  const user = userId
+    ? await db.user.findUnique({
+        where: { id: userId },
+        select: {
+          trialEligible: true,
+          AgencyMemberships: {
+            where: { isActive: true },
+            select: {
+              isPrimary: true,
+              Agency: { select: { id: true, name: true } },
+            },
+            orderBy: [{ isPrimary: 'desc' }, { joinedAt: 'asc' }],
+          },
+        },
+      })
+    : null
+
+  const agencies = user?.AgencyMemberships?.map((m) => ({
+    id: m.Agency.id,
+    name: m.Agency.name,
+    isPrimary: m.isPrimary,
+  }))
 
   return (
     <div className="w-full min-h-screen relative overflow-hidden">
@@ -39,7 +63,7 @@ const Pricing: React.FC = async () => {
         <PricingSection
           monthlyCards={monthlyCards}
           yearlyCards={yearlyCards}
-          user={user ? { trialEligible: user.trialEligible ?? false } : null}
+          user={user ? { trialEligible: user.trialEligible ?? false, agencies } : null}
         />
   
 

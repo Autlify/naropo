@@ -106,7 +106,7 @@ export const createOpenItemSchema = z.object({
  * Limited fields can be updated (matching fields mainly)
  */
 export const updateOpenItemSchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
   reference: z.string().max(100).optional(),
   assignment: z.string().max(50).optional(),
   text: z.string().max(255).optional(),
@@ -169,7 +169,7 @@ export const getOpenItemsFilterSchema = z.object({
 export const clearOpenItemsSchema = z.object({
   // Items to clear (must net to zero or within tolerance)
   items: z.array(z.object({
-    openItemId: z.uuid(),
+    openItemId: z.string().uuid(),
     clearAmount: z.number(), // Amount to clear from this item
     clearAmountDocument: z.number().optional(), // Document currency amount
   })).min(1, 'At least one item required for clearing'),
@@ -201,7 +201,7 @@ export const clearOpenItemsSchema = z.object({
  * Used when clearing part of an open item
  */
 export const partialClearSchema = z.object({
-  openItemId: z.uuid(),
+  openItemId: z.string().uuid(),
   
   // Amount to allocate (in local currency)
   localAmount: z.number(),
@@ -273,8 +273,8 @@ export const reverseClearingSchema = z.object({
  * Open Item Allocation Output
  */
 export const openItemAllocationOutputSchema = z.object({
-  id: z.uuid(),
-  openItemId: z.uuid(),
+  id: z.string().uuid(),
+  openItemId: z.string().uuid(),
   
   clearedById: z.string().nullable(),
   clearedByType: z.string(),
@@ -294,10 +294,10 @@ export const openItemAllocationOutputSchema = z.object({
  * Open Item Output (from DB)
  */
 export const openItemOutputSchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
   agencyId: z.string().nullable(),
   subAccountId: z.string().nullable(),
-  accountId: z.uuid(),
+  accountId: z.string().uuid(),
   
   // Document info
   documentNumber: z.string(),
@@ -375,7 +375,7 @@ export const clearingResultOutputSchema = z.object({
   
   // Items that were cleared
   clearedItems: z.array(z.object({
-    openItemId: z.uuid(),
+    openItemId: z.string().uuid(),
     documentNumber: z.string(),
     previousStatus: z.string(),
     newStatus: z.string(),
@@ -385,7 +385,7 @@ export const clearingResultOutputSchema = z.object({
   
   // Any exchange differences posted
   exchangeDifferences: z.array(z.object({
-    openItemId: z.uuid(),
+    openItemId: z.string().uuid(),
     difference: z.number(),
     journalEntryId: z.string().uuid().optional(),
   })).optional(),
@@ -406,7 +406,7 @@ export const autoClearResultOutputSchema = z.object({
   itemsProcessed: z.number(),
   itemsCleared: z.number(),
   errors: z.array(z.object({
-    openItemId: z.uuid(),
+    openItemId: z.string().uuid(),
     documentNumber: z.string(),
     error: z.string(),
   })),
@@ -414,7 +414,7 @@ export const autoClearResultOutputSchema = z.object({
   // If dry run, show what would be cleared
   proposedClearings: z.array(z.object({
     items: z.array(z.object({
-      openItemId: z.uuid(),
+      openItemId: z.string().uuid(),
       documentNumber: z.string(),
       amount: z.number(),
     })),

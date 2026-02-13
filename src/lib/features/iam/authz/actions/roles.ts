@@ -5,9 +5,19 @@ import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import type { RoleScope } from '@/generated/prisma/client'
-import { resolveEffectiveEntitlements } from '@/lib/features/core/billing/entitlements/resolve'
+import { resolveEffectiveEntitlements } from '@/lib/features/org/billing/entitlements/resolve'
 import { getPermissionCatalogSeeds } from '@/lib/features/iam/authz/permission-catalog'
 import { isPermissionAssignable } from '@/lib/features/iam/authz/permission-entitlements'
+import { invalidateAccessSnapshotsByRoleId } from '@/lib/features/iam/authz/access-snapshot'
+import {
+  type PermissionInfo,
+  type RoleWithPermissions,
+  type RoleBase,
+  roleSelect,
+  fetchRolePermissionsByRoleIds,
+  attachPermissions,
+  getRoleWithPermissions,
+} from '@/lib/features/iam/authz/role-permissions'
 import type { ActionKey } from '@/lib/registry'
 
 // ============================================================================
@@ -18,42 +28,32 @@ export type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string }
 
-export type PermissionInfo = {
-  id: string
-  key: ActionKey
-  description: string | null
-}
-
-export type RoleWithPermissions = {
-  id: string
-  name: string
-  agencyId: string | null
-  subAccountId: string | null
-  scope: RoleScope
-  isSystem: boolean
-  createdAt: Date
-  updatedAt: Date
-  Permissions: { Permission: PermissionInfo; granted: boolean }[]
-  _count: { AgencyMemberships: number; SubAccountMemberships: number }
-}
-
 // ============================================================================
 // ENTITLEMENT VALIDATION (Server-side)
 // ============================================================================
 
-async function getAssignablePermissionKeySet(args: {
+async function getAssignablePermissionSeeds(args: {
   agencyId: string
   subAccountId: string | null
   scope: 'AGENCY' | 'SUBACCOUNT'
-}): Promise<Set<ActionKey>> {
+}) {
   const entitlements = await resolveEffectiveEntitlements({
     scope: args.scope,
     agencyId: args.agencyId,
     subAccountId: args.subAccountId,
   })
 
-  const seeds = getPermissionCatalogSeeds().filter((s) => isPermissionAssignable(s.key, entitlements))
-  return new Set(seeds.map((s) => s.key))
+  const seeds = getPermissionCatalogSeeds()
+  return seeds.filter((s) => isPermissionAssignable(s.key, entitlements))
+}
+
+async function getAssignablePermissionKeySet(args: {
+  agencyId: string
+  subAccountId: string | null
+  scope: 'AGENCY' | 'SUBACCOUNT'
+}): Promise<Set<ActionKey>> {
+  const assignableSeeds = await getAssignablePermissionSeeds(args)
+  return new Set(assignableSeeds.map((s) => s.key))
 }
 
 async function validatePermissionIdsEntitled(params: {
@@ -108,15 +108,22 @@ const updateRoleSchema = z.object({
 // QUERIES
 // ============================================================================
 
-const roleInclude = {
-  Permissions: {
-    include: {
-      Permission: true,
-    },
-  },
-  _count: {
-    select: { AgencyMemberships: true, SubAccountMemberships: true },
-  },
+function groupPermissionsByCategory(permissions: PermissionInfo[]) {
+  const grouped = new Map<string, PermissionInfo[]>()
+  for (const perm of permissions) {
+    const parts = perm.key.split('.')
+    const category = parts.slice(0, 2).join('.')
+    const list = grouped.get(category) ?? []
+    list.push(perm)
+    grouped.set(category, list)
+  }
+
+  return Array.from(grouped.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([category, perms]) => ({
+      category: formatCategory(category),
+      permissions: perms,
+    }))
 }
 
 /**
@@ -136,14 +143,15 @@ export async function listRoles(agencyId: string): Promise<ActionResult<RoleWith
           { agencyId: agencyId }, // Agency-specific custom roles
         ],
       },
-      include: roleInclude,
+      select: roleSelect,
       orderBy: [
         { isSystem: 'desc' }, // System roles first
         { name: 'asc' },
       ],
     })
 
-    return { success: true, data: roles as RoleWithPermissions[] }
+    const permissionsMap = await fetchRolePermissionsByRoleIds(roles.map((r) => r.id))
+    return { success: true, data: attachPermissions(roles as RoleBase[], permissionsMap) }
   } catch (error) {
     console.error('Error listing roles:', error)
     return { success: false, error: 'Failed to load roles' }
@@ -160,16 +168,13 @@ export async function getRole(roleId: string): Promise<ActionResult<RoleWithPerm
       return { success: false, error: 'Unauthorized' }
     }
 
-    const role = await db.role.findUnique({
-      where: { id: roleId },
-      include: roleInclude,
-    })
+    const role = await getRoleWithPermissions(roleId)
 
     if (!role) {
       return { success: false, error: 'Role not found' }
     }
 
-    return { success: true, data: role as RoleWithPermissions }
+    return { success: true, data: role }
   } catch (error) {
     console.error('Error getting role:', error)
     return { success: false, error: 'Failed to load role' }
@@ -244,7 +249,7 @@ export async function createRole(
     // }
 
     // Create role with permissions in transaction
-    const role = await db.$transaction(async (tx) => {
+    const roleId = await db.$transaction(async (tx) => {
       const newRole = await tx.role.create({
         data: {
           name: validated.data.name,
@@ -263,13 +268,10 @@ export async function createRole(
         })),
       })
 
-      // Return with includes
-      return tx.role.findUnique({
-        where: { id: newRole.id },
-        include: roleInclude,
-      })
+      return newRole.id
     })
 
+    const role = await getRoleWithPermissions(roleId)
     if (!role) {
       return { success: false, error: 'Failed to create role' }
     }
@@ -298,6 +300,14 @@ export async function updateRole(
     // Get existing role
     const existingRole = await db.role.findUnique({
       where: { id: roleId },
+      select: {
+        id: true,
+        name: true,
+        agencyId: true,
+        subAccountId: true,
+        scope: true,
+        isSystem: true,
+      },
     })
 
     if (!existingRole) {
@@ -349,7 +359,7 @@ export async function updateRole(
     }
 
     // Update role in transaction
-    const role = await db.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // Update name if provided
       if (validated.data.name) {
         await tx.role.update({
@@ -374,20 +384,19 @@ export async function updateRole(
           })),
         })
       }
-
-      // Return with includes
-      return tx.role.findUnique({
-        where: { id: roleId },
-        include: roleInclude,
-      })
     })
 
+    const role = await getRoleWithPermissions(roleId)
     if (!role) {
       return { success: false, error: 'Failed to update role' }
     }
 
+    if (validated.data.permissionIds) {
+      await invalidateAccessSnapshotsByRoleId(roleId)
+    }
+
     revalidatePath(`/agency/${existingRole.agencyId}/settings/roles`)
-    return { success: true, data: role as RoleWithPermissions }
+    return { success: true, data: role }
   } catch (error) {
     console.error('Error updating role:', error)
     return { success: false, error: 'Failed to update role' }
@@ -437,6 +446,8 @@ export async function deleteRole(roleId: string): Promise<ActionResult> {
       where: { id: roleId },
     })
 
+    await invalidateAccessSnapshotsByRoleId(existingRole.id)
+
     revalidatePath(`/agency/${existingRole.agencyId}/settings/roles`)
     return { success: true, data: undefined }
   } catch (error) {
@@ -469,30 +480,7 @@ export async function getAvailablePermissions(
 
     // Backwards-compatible default: return all permissions from DB if no context is provided.
     const permissions = await db.permission.findMany({ orderBy: { key: 'asc' } })
-
-    // Group by category (first two parts of key)
-    const grouped = permissions.reduce(
-      (acc, perm) => {
-        const parts = perm.key.split('.')
-        const category = parts.slice(0, 2).join('.') // e.g., "fi.general-ledger"
-        if (!acc[category]) {
-          acc[category] = []
-        }
-        acc[category].push(perm as PermissionInfo)
-        return acc
-      },
-      {} as Record<string, PermissionInfo[]>
-    )
-
-    // Convert to array sorted by category
-    const result = Object.entries(grouped)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([category, perms]) => ({
-        category: formatCategory(category),
-        permissions: perms,
-      }))
-
-    return { success: true, data: result }
+    return { success: true, data: groupPermissionsByCategory(permissions as PermissionInfo[]) }
   } catch (error) {
     console.error('Error getting permissions:', error)
     return { success: false, error: 'Failed to load permissions' }
@@ -532,15 +520,16 @@ export async function getAvailablePermissionsForContext(
     }
 
     const scope = subAccountId ? ('SUBACCOUNT' as any) : ('AGENCY' as any)
-    const entitlements = await resolveEffectiveEntitlements({
+    // Start from registry catalog to avoid “membership-used only” key gaps.
+    const assignableSeeds = await getAssignablePermissionSeeds({
       scope,
       agencyId,
       subAccountId,
     })
-
-    // Start from registry catalog to avoid “membership-used only” key gaps.
-    const seeds = getPermissionCatalogSeeds()
-    const assignableSeeds = seeds.filter((s) => isPermissionAssignable(s.key, entitlements))
+    if (assignableSeeds.length === 0) {
+      return { success: true, data: [] }
+    }
+    const assignableKeys = assignableSeeds.map((s) => s.key)
 
     // Ensure DB has the assignable keys so UI can work with permission IDs.
     await db.permission.createMany({
@@ -555,29 +544,11 @@ export async function getAvailablePermissionsForContext(
     })
 
     const permissions = await db.permission.findMany({
-      where: { key: { in: assignableSeeds.map((s) => s.key) } },
+      where: { key: { in: assignableKeys } },
       orderBy: { key: 'asc' },
     })
 
-    const grouped = permissions.reduce(
-      (acc, perm) => {
-        const parts = perm.key.split('.')
-        const category = parts.slice(0, 2).join('.')
-        if (!acc[category]) acc[category] = []
-        acc[category].push(perm as PermissionInfo)
-        return acc
-      },
-      {} as Record<string, PermissionInfo[]>
-    )
-
-    const result = Object.entries(grouped)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([category, perms]) => ({
-        category: formatCategory(category),
-        permissions: perms,
-      }))
-
-    return { success: true, data: result }
+    return { success: true, data: groupPermissionsByCategory(permissions as PermissionInfo[]) }
   } catch (error) {
     console.error('Error getting context-aware permissions:', error)
     return { success: false, error: 'Failed to load permissions' }
@@ -598,10 +569,10 @@ export async function getAvailablePermissionsForSubAccount(
 
 function formatCategory(key: string): string {
   const map: Record<string, string> = {
-    'core.agency': 'Core - Agency',
-    'core.subaccount': 'Core - SubAccounts',
-    'core.billing': 'Billing',
-    'core.apps': 'Apps',
+    'org.agency': 'Core - Agency',
+    'org.subaccount': 'Core - SubAccounts',
+    'org.billing': 'Billing',
+    'org.apps': 'Apps',
     crm: 'CRM',
     fi: 'FI',
     'fi.general_ledger': 'FI - General Ledger',

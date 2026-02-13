@@ -33,17 +33,19 @@ const FunnelSettings: React.FC<FunnelSettingsProps> = async ({
   })
 
   if (!subaccountDetails) return null
-  if (!subaccountDetails.connectAccountId) return null
-  const products = await getConnectAccountProducts(
-    subaccountDetails.connectAccountId
-  )
+  
+  // Fetch products if connect account exists, with graceful error handling
+  let products: Awaited<ReturnType<typeof getConnectAccountProducts>> = []
+  if (subaccountDetails.connectAccountId) {
+    products = await getConnectAccountProducts(subaccountDetails.connectAccountId)
+  }
 
   return (
-    <div className="flex gap-6 flex-col xl:!flex-row">
-      <Card className="flex-1 flex-shrink bg-gradient-to-br from-muted/20 to-transparent border-border/50">
+    <div className="flex gap-4 flex-col xl:!flex-row">
+      <Card className="flex-1 flex-shrink">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold">Funnel Products</CardTitle>
-          <CardDescription className="text-sm">
+          <CardTitle>Funnel Products</CardTitle>
+          <CardDescription>
             Select the products and services you wish to sell on this funnel.
             You can sell one time and recurring products too.
           </CardDescription>

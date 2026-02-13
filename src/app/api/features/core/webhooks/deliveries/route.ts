@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import { requireIntegrationAuth } from '@/lib/features/core/integrations/guards'
-import { listDeliveries } from '@/lib/features/core/integrations/store'
+import { requireIntegrationAuth } from '@/lib/features/org/integrations/guards'
+import { listDeliveries } from '@/lib/features/org/integrations/store'
 import { KEYS } from '@/lib/registry/keys/permissions'
 
 export async function GET(req: Request) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.core.apps.webhooks.view] })
+    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.org.apps.webhooks.view] })
     const url = new URL(req.url)
     const limit = Number(url.searchParams.get('limit') || '50')
     const deliveries = await listDeliveries(scope, { limit: Number.isFinite(limit) ? limit : 50 })

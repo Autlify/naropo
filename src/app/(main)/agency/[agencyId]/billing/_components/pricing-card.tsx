@@ -66,7 +66,7 @@ const PricingCard = ({
     )
   }
   return (
-    <Card className="flex flex-col justify-between lg:w-1/2 bg-gradient-to-br from-muted/30 to-transparent border-border/50 hover:border-foreground/20 transition-all">
+    <Card className="flex flex-col justify-between lg:w-1/2">
       <div>
         <CardHeader className="flex flex-col md:!flex-row justify-between">
           <div>
@@ -94,8 +94,8 @@ const PricingCard = ({
         </CardContent>
       </div>
       <CardFooter>
-        <Card className="w-full bg-gradient-to-br from-muted/50 to-muted/20 border-border/50">
-          <div className="flex flex-col md:!flex-row items-center justify-between rounded-lg border border-border/50 gap-4 p-4">
+        <Card className="w-full">
+          <div className="flex flex-col md:!flex-row items-center justify-between rounded-lg border gap-4 p-4">
             <div>
               <p>{highlightTitle}</p>
               <p className="text-sm text-muted-foreground">

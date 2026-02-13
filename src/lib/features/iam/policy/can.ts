@@ -4,8 +4,8 @@ import type { MeteringScope } from '@/generated/prisma/client'
 import { db } from '@/lib/db'
 import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
 import { getAgencySubscriptionState, type SubscriptionState } from '@/lib/features/iam/authz/resolver'
-import { checkUsage } from '@/lib/features/core/billing/usage/consume'
-import type { UsageDecision } from '@/lib/features/core/billing/usage/consume'
+import { checkUsage } from '@/lib/features/org/billing/usage/consume'
+import type { UsageDecision } from '@/lib/features/org/billing/usage/consume'
 
 import { POLICY_MESSAGES, type PolicyReason, type PolicySuggestion } from './messages'
 import type { ActionKey, FeatureKey } from '@/lib/registry/keys'
@@ -44,8 +44,8 @@ export type CanPerformResult = {
 }
 
 const DEFAULT_BILLING_PERMISSION_KEYS: Partial<ActionKey>[] = [
-  'core.billing.account.view',
-  'core.billing.account.manage',
+  'org.billing.account.view',
+  'org.billing.account.manage',
 ]
 
 const isSubscriptionAllowed = (state: SubscriptionState) =>

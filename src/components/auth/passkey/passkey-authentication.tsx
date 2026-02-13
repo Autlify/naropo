@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { authenticateWithPasskey } from '@/lib/webauthn';
+import { authenticateWithPasskey } from '@/lib/core/auth/webauthn';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Fingerprint } from 'lucide-react';
 import { useRouter } from 'next/navigation';

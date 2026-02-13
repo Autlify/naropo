@@ -2,7 +2,7 @@
  * App-Wide Preferences Type Definitions
  * Global UI preferences that affect the entire application
  * 
- * @namespace Naropo.Types.AppPreferences
+ * @namespace Autlify.Types.AppPreferences
  */
 
 // ============================================================================
@@ -76,25 +76,25 @@ export interface Theme {
 }
 
 export interface Notifications {
-  /** PWA or WebApp related notifications */
-  enableNotifications: boolean
-  /** Marketing emails subscription */
-  marketingEmails: boolean
-  /** Email notifications for important updates */
-  emailNotifications: boolean
-  /** Notification sound on new alerts */
-  soundAlerts: boolean
-  /** Daily summary of notifications */
-  dailySummary: boolean
+    /** PWA or WebApp related notifications */
+    enableNotifications: boolean
+    /** Marketing emails subscription */
+    marketingEmails: boolean
+    /** Email notifications for important updates */
+    emailNotifications: boolean
+    /** Notification sound on new alerts */
+    soundAlerts: boolean
+    /** Daily summary of notifications */
+    dailySummary: boolean
 }
 
 export interface Privacy {
-  /** Data sharing with third parties */
-  dataSharing: boolean
-  /** Personalized ads */
-  personalizedAds: boolean
-  /** Activity tracking */
-  activityTracking: boolean
+    /** Data sharing with third parties */
+    dataSharing: boolean
+    /** Personalized ads */
+    personalizedAds: boolean
+    /** Activity tracking */
+    activityTracking: boolean
 }
 
 
@@ -154,17 +154,17 @@ export const THEME: Theme = {
 }
 
 export const NOTIFICATIONS: Notifications = {
-  enableNotifications: true,
-  marketingEmails: false,
-  emailNotifications: true,
-  soundAlerts: true,
-  dailySummary: false,
+    enableNotifications: true,
+    marketingEmails: false,
+    emailNotifications: true,
+    soundAlerts: true,
+    dailySummary: false,
 }
 
 export const PRIVACY: Privacy = {
-  dataSharing: false,
-  personalizedAds: false,
-  activityTracking: false,
+    dataSharing: false,
+    personalizedAds: false,
+    activityTracking: false,
 }
 
 export const PREFERENCES: Preferences = {

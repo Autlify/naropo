@@ -58,16 +58,19 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
 
   if (!subaccountDetails) return
 
-  if (subaccountDetails.connectAccountId) {
+  let connectAccountId = subaccountDetails.connectAccountId
+  let connectAccountInvalid = false
+
+  if (connectAccountId) {
     try {
       const response = await stripe.accounts.retrieve({
-        stripeAccount: subaccountDetails.connectAccountId,
+        stripeAccount: connectAccountId,
       })
       currency = response.default_currency?.toUpperCase() || 'USD'
       const checkoutSessions = await stripe.checkout.sessions.list(
         { created: { gte: startDate, lte: endDate }, limit: 100 },
         {
-          stripeAccount: subaccountDetails.connectAccountId,
+          stripeAccount: connectAccountId,
         }
       )
       sessions = checkoutSessions.data.map((session) => ({
@@ -107,8 +110,24 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
         ? +(((totalClosedSessions.length / totalSessions) * 100).toFixed(2))
         : 0
     } catch (error) {
-      // Connected account no longer accessible - log and continue with defaults
+      // Connected account no longer accessible - handle deauth / wrong key gracefully
+      const code = (error as any)?.code
+      const status = (error as any)?.statusCode
       console.error('Failed to fetch Stripe Connect account data:', error)
+
+      if (code === 'account_invalid' || status === 403) {
+        connectAccountInvalid = true
+        connectAccountId = ''
+        // Best-effort: clear saved connectAccountId so UI will prompt reconnect
+        try {
+          await db.subAccount.update({
+            where: { id: subaccountDetails.id },
+            data: { connectAccountId: '' },
+          })
+        } catch {
+          // ignore
+        }
+      }
     }
   }
 
@@ -132,13 +151,15 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
   return (
     <BlurPage>
       <div className="relative h-full">
-        {!subaccountDetails.connectAccountId && (
+        {(!connectAccountId || connectAccountInvalid) && (
           <div className="absolute -top-10 -left-10 right-0 bottom-0 z-30 flex items-center justify-center backdrop-blur-md bg-background/50">
             <Card>
               <CardHeader>
                 <CardTitle>Connect Your Stripe</CardTitle>
                 <CardDescription>
-                  You need to connect your stripe account to see metrics
+                  {connectAccountInvalid
+                    ? 'Your Stripe connection is no longer valid (access revoked or wrong key). Please reconnect to continue.'
+                    : 'You need to connect your Stripe account to see metrics.'}
                 </CardDescription>
                 <Link
                   href={`/subaccount/${subaccountDetails.id}/launchpad`}

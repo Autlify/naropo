@@ -4,21 +4,21 @@
  * GL Provider
  * Client-side context for General Ledger state management
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Core.Provider
+ * @namespace Autlify.Lib.Features.FI.GL.Core.Provider
  */
 
-import React, {
-  createContext,
-  useContext,
-  useState,
+import React, { 
+  createContext, 
+  useContext, 
+  useState, 
   useCallback,
   useMemo,
-  type ReactNode
+  type ReactNode 
 } from 'react'
-import type {
-  FinancialPeriod,
-  ChartOfAccount,
-  GLConfiguration
+import type { 
+  FinancialPeriod, 
+  ChartOfAccount, 
+  GLConfiguration 
 } from '@/generated/prisma/client'
 import type { GLContextType } from './context'
 
@@ -38,16 +38,16 @@ import type { AccountOption } from './types'
 interface GLState {
   // Context type (agency or subaccount)
   contextType: GLContextType | null
-
+  
   // Selected period for operations
   selectedPeriodId: string | null
   selectedPeriod: PeriodOption | null
-
+  
   // Cached data
   periods: PeriodOption[]
   accounts: AccountOption[]
   configuration: GLConfiguration | null
-
+  
   // Loading states
   isLoading: boolean
   isInitialized: boolean
@@ -57,23 +57,23 @@ interface GLState {
 interface GLActions {
   // Period selection
   setSelectedPeriod: (periodId: string | null) => void
-
+  
   // Cache management
   setPeriods: (periods: PeriodOption[]) => void
   setAccounts: (accounts: AccountOption[]) => void
   setConfiguration: (config: GLConfiguration | null) => void
-
+  
   // Initialization
   initialize: (data: Partial<GLState>) => void
   setLoading: (loading: boolean) => void
-
+  
   // Refresh
   refreshAccounts: () => Promise<void>
   refreshPeriods: () => Promise<void>
 }
 
 /** Full GL context value */
-interface GLContextValue extends GLState, GLActions { }
+interface GLContextValue extends GLState, GLActions {}
 
 /** Initial state */
 const initialState: GLState = {
@@ -128,8 +128,8 @@ export function GLProvider({
     setState(prev => ({
       ...prev,
       selectedPeriodId: periodId,
-      selectedPeriod: periodId
-        ? prev.periods.find(p => p.id === periodId) ?? null
+      selectedPeriod: periodId 
+        ? prev.periods.find(p => p.id === periodId) ?? null 
         : null,
     }))
   }, [])
@@ -139,8 +139,8 @@ export function GLProvider({
       ...prev,
       periods,
       // Update selected period if it exists in new list
-      selectedPeriod: prev.selectedPeriodId
-        ? periods.find(p => p.id === prev.selectedPeriodId) ?? null
+      selectedPeriod: prev.selectedPeriodId 
+        ? periods.find(p => p.id === prev.selectedPeriodId) ?? null 
         : null,
     }))
   }, [])
@@ -184,10 +184,10 @@ export function GLProvider({
     refreshAccounts,
     refreshPeriods,
   }), [
-    state,
-    setSelectedPeriod,
-    setPeriods,
-    setAccounts,
+    state, 
+    setSelectedPeriod, 
+    setPeriods, 
+    setAccounts, 
     setConfiguration,
     initialize,
     setLoading,

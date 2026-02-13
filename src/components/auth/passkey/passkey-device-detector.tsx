@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { detectAuthenticatorCapabilities, getDeviceDescription } from '@/lib/webauthn';
+import { detectAuthenticatorCapabilities, getDeviceDescription } from '@/lib/core/auth/webauthn';
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 

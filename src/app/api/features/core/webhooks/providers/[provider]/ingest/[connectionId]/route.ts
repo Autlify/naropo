@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server'
-import { verifyGitHubSignature256, verifySlackSignature } from '@/lib/features/core/integrations/signatures'
-import { getConnectionById } from '@/lib/features/core/integrations/store'
-import { createAttempt, createDelivery, createProviderEventIdempotent, incrementDeliveryAttempt } from '@/lib/features/core/integrations/store'
-import { sendWebhookAttempt } from '@/lib/features/core/integrations/delivery'
+import { verifyGitHubSignature256, verifySlackSignature } from '@/lib/features/org/integrations/signatures'
+import { getConnectionById } from '@/lib/features/org/integrations/store'
+import { createAttempt, createDelivery, createProviderEventIdempotent, incrementDeliveryAttempt } from '@/lib/features/org/integrations/store'
+import { sendWebhookAttempt } from '@/lib/features/org/integrations/delivery'
 import { db } from '@/lib/db'
 import { Prisma } from '@/generated/prisma/client'
-import { sha256Hex } from '@/lib/features/core/integrations/crypto'
+import { sha256Hex } from '@/lib/features/org/integrations/crypto'
 
 type Props = { params: Promise<{ provider: string; connectionId: string }> }
 
 /**
- * Provider -> Naropo inbound webhook.
+ * Provider -> Autlify inbound webhook.
  * Path binding uses connectionId for tenant resolution.
  */
 export async function POST(req: Request, props: Props) {
@@ -112,9 +112,9 @@ export async function POST(req: Request, props: Props) {
         secret: sub.secretHash ?? null, // derived secret (sha256(userSecret))
         body: outboundPayload,
         headers: {
-          'x-naropo-provider': provider,
-          'x-naropo-connection-id': connectionId,
-          'x-naropo-event': eventKeys[0] ?? provider,
+          'x-autlify-provider': provider,
+          'x-autlify-connection-id': connectionId,
+          'x-autlify-event': eventKeys[0] ?? provider,
         },
       })
 

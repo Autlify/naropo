@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import { getPricingCardByPriceId } from '@/lib/registry/plans/pricing-config'
+import { getPricingCardByPriceId, getAddonCardByPriceId } from '@/lib/registry/plans/pricing-config'
 import { CheckoutForm } from './_components/checkout-form'
 import { auth } from '@/auth'
 import { getUser } from '@/lib/queries'
@@ -13,8 +13,14 @@ type Props = {
 export default async function CheckoutPage({ params }: Props) {
     const { priceId } = await params
     const session = await auth()
-    const priceDetails = getPricingCardByPriceId(priceId)
-    const user = await getUser(session?.user?.id || '')
+    
+    // Check for pricing plan first, then addon
+    const pricingCard = getPricingCardByPriceId(priceId)
+    const addonCard = !pricingCard ? getAddonCardByPriceId(priceId) : null
+    const priceDetails = pricingCard || addonCard
+    const isAddon = !!addonCard
+    
+    const user = await getUser(session?.user?.id!)
 
     if (!priceDetails) {
         notFound()
@@ -77,14 +83,15 @@ export default async function CheckoutPage({ params }: Props) {
         } : null,
     }))
 
-    // Map PricingCardData to the shape expected by CheckoutForm
+    // Map PricingCardData or AddonCardData to the shape expected by CheckoutForm
     const planConfig = {
         title: priceDetails.title,
         price: priceDetails.price,
-        duration: priceDetails.interval === 'month' ? 'Monthly' : 'Yearly',
+        duration: priceDetails.interval === 'month' ? 'Monthly' : priceDetails.interval === 'year' ? 'Yearly' : 'One-time',
         features: priceDetails.features,
-        trialEnabled: priceDetails.trialEnabled,
-        trialPeriodDays: priceDetails.trialDays,
+        trialEnabled: pricingCard?.trialEnabled ?? false,
+        trialPeriodDays: pricingCard?.trialDays ?? 0,
+        isAddon,
     }
 
     return (

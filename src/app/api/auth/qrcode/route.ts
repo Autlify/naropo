@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
         // Configure TOTP
         const uriOptions: URIOptions = {
-            issuer: "Naropo",
+            issuer: "Autlify",
             label: email,
             secret: new TOTP().generateSecret(),
             algorithm: 'sha256',
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
             algorithm: uriOptions.algorithm,
             digits: uriOptions.digits,
             period: uriOptions.period,
-
+                
         })
         const qrCodeDataURL = await qrcode.toDataURL(otpauthURI)
 

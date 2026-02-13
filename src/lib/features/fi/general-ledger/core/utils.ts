@@ -3,7 +3,7 @@
  * Pure utility functions that don't require server context
  * Separated from server actions to avoid 'use server' restrictions
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Core.Utils
+ * @namespace Autlify.Lib.Features.FI.GL.Core.Utils
  */
 
 import type { GLContext } from './context'
@@ -42,12 +42,12 @@ export const getContextWhereClause = (context: GLContext) => {
  */
 export const getContextCreateData = (context: GLContext) => {
   if (context.contextType === 'SUBACCOUNT' && context.subAccountId) {
-    return {
+    return { 
       agencyId: null,
       subAccountId: context.subAccountId,
     }
   }
-  return {
+  return { 
     agencyId: context.agencyId ?? null,
     subAccountId: null,
   }

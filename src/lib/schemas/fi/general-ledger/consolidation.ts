@@ -2,7 +2,7 @@
 import { z } from 'zod';
 
 export const createConsolidationSnapshotSchema = z.object({
-  periodId: z.uuid(),
+  periodId: z.string().uuid(),
   name: z.string().min(1).max(100),
   description: z.string().max(1000).optional(),
   subAccountIds: z.array(z.string().uuid()).min(1),
@@ -11,11 +11,11 @@ export const createConsolidationSnapshotSchema = z.object({
 });
 
 export const executeConsolidationSchema = z.object({
-  snapshotId: z.uuid(),
+  snapshotId: z.string().uuid(),
 });
 
 export const consolidationAdjustmentSchema = z.object({
-  snapshotId: z.uuid(),
+  snapshotId: z.string().uuid(),
   description: z.string().min(1).max(500),
   debitAccountCode: z.string().min(1),
   creditAccountCode: z.string().min(1),
@@ -30,7 +30,7 @@ export const consolidationAdjustmentSchema = z.object({
 });
 
 export const intercompanyEliminationSchema = z.object({
-  snapshotId: z.uuid(),
+  snapshotId: z.string().uuid(),
   description: z.string().min(1).max(500),
   subAccountId1: z.string().uuid(),
   subAccountId2: z.string().uuid(),
@@ -47,7 +47,7 @@ export const intercompanyEliminationSchema = z.object({
 });
 
 export const subAccountOwnershipSchema = z.object({
-  subAccountId: z.uuid(),
+  subAccountId: z.string().uuid(),
   ownershipPercentage: z.number().min(0).max(100),
   consolidationMethod: z.enum(['FULL', 'PROPORTIONAL', 'EQUITY']),
   effectiveFrom: z.coerce.date(),

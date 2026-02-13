@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { requireRequestAccess } from '@/lib/features/iam/authz/require'
-import { createSupportTicket, listSupportTickets, type SupportScope } from '@/lib/features/core/support/service'
+import { createSupportTicket, listSupportTickets, type SupportScope } from '@/lib/features/org/support/service'
 
 // Minimal access: membership scope + baseline read permission.
 const hasBaselineRead = (pks: string[], scopeKind: 'agency' | 'subaccount') => {
-  if (scopeKind === 'agency') return pks.includes('core.agency.account.read')
-  return pks.includes('core.subaccount.account.read')
+  if (scopeKind === 'agency') return pks.includes('org.agency.account.read')
+  return pks.includes('org.subaccount.account.read')
 }
 
 function toSupportScope(resolved: { kind: 'agency'; agencyId: string } | { kind: 'subaccount'; agencyId: string; subAccountId: string }): SupportScope {

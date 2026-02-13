@@ -1,17 +1,18 @@
 import InfoBar from '@/components/global/infobar'
-import Sidebar from '@/components/sidebar-01'
-import { LayoutWrapper } from '@/components/sidebar-01/sidebar-context'
+import Sidebar from '@/components/sidebar'
+import { LayoutWrapper } from '@/components/sidebar/sidebar-context'
 import Unauthorized from '@/components/unauthorized'
 import {
   getNotificationAndUser,
   verifyAndAcceptInvitation,
 } from '@/lib/queries'
-import { hasPermission } from '@/lib/features/iam/authz/permissions'
+import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import React from 'react'
 import BlurPage from '@/components/global/blur-page'
 import { headers } from 'next/headers';
+import PermissionVersionSync from '@/components/features/iam/permission-version-sync'
 
 
 type Props = {
@@ -34,7 +35,7 @@ const SubaccountLayout = async ({ children, params }: Props) => {
   let notifications: any = []
 
   // Check if user has subaccount access permission
-  const hasSubaccountAccess = await hasPermission('core.subaccount.account.read')
+  const hasSubaccountAccess = await hasSubAccountPermission(subaccountId, 'org.subaccount.account.read')
 
   if (!hasSubaccountAccess) {
     return <Unauthorized />
@@ -43,7 +44,7 @@ const SubaccountLayout = async ({ children, params }: Props) => {
   const allNotifications = await getNotificationAndUser(agencyId)
 
   // Filter notifications based on permissions
-  const canViewAllNotifications = await hasPermission('core.agency.account.read')
+  const canViewAllNotifications = await hasAgencyPermission(agencyId, 'org.agency.account.read')
 
   if (canViewAllNotifications) {
     notifications = allNotifications
@@ -67,6 +68,10 @@ const SubaccountLayout = async ({ children, params }: Props) => {
           />
         }
       >
+        <PermissionVersionSync
+          agencyId={agencyId}
+          subAccountId={subaccountId}
+        />
         <BlurPage>{children}</BlurPage>
       </LayoutWrapper>
 

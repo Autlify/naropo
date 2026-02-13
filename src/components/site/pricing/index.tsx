@@ -2,7 +2,7 @@
 import { PlanSelectorDialog, type PlanSelectorDialogProps } from '@autlify/billing-sdk'
 import React from 'react'
 import { getPricingCards } from '@/lib/registry/plans/pricing-config'
-import { getAuthUserDetails } from '@/lib/queries'
+import { getCurrentUser } from '@/lib/core/cache/current-user'
 import { redirect } from 'next/navigation'
 
 const Pricing: React.FC = async () => {
@@ -13,7 +13,7 @@ const Pricing: React.FC = async () => {
     const open = true
     const cards = selectedInterval === 'monthly' ? monthlyCards : yearlyCards
 
-    const user = await getAuthUserDetails();
+    const user = await getCurrentUser({ withFullUser: true, redirectIfNotFound: false });;
 
     return (
         <div>

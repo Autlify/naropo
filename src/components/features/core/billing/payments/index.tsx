@@ -7,7 +7,7 @@
  * - PaymentMethodsCard: Payment method management with Stripe Elements
  * - InvoiceListCard: Invoice history with view/download/share actions
  *
- * Used internally by Naropo and exportable as part of Billing SDK.
+ * Used internally by Autlify and exportable as part of Billing SDK.
  */
 
 import {
@@ -508,22 +508,22 @@ const PaymentMethodsCard = ({
         : null;
 
     return (
-        <div className={cn("space-y-6", className)}>
-            <Card className="shadow-lg bg-gradient-to-br from-muted/20 to-transparent border-border/50">
+        <div className={cn("space-y-4", className)}>
+            <Card className="shadow-lg">
                 <CardHeader className="px-4 pb-4 sm:px-6 sm:pb-6">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2 text-xl font-semibold sm:gap-3">
-                            <div className="rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 p-2 ring-1 ring-primary/20 shadow-sm">
-                                <CreditCard className="h-5 w-5 text-primary" />
+                        <CardTitle className="flex items-center gap-2 text-lg sm:gap-3 sm:text-xl">
+                            <div className="rounded-lg bg-primary/10 p-1.5 ring-1 ring-primary/20 sm:p-2">
+                                <CreditCard className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
                             </div>
                             Payment Methods
                         </CardTitle>
-                        <Button variant="default" size="default" onClick={handleAddCard} className="gap-2 shadow-sm">
+                        <Button type="button" variant="outline" size="sm" onClick={handleAddCard} className="gap-1.5">
                             <Plus className="h-4 w-4" />
                             Add New Card
                         </Button>
                     </div>
-                    <CardDescription className="text-sm">
+                    <CardDescription className="text-sm sm:text-base">
                         Manage your saved payment methods for billing
                     </CardDescription>
                 </CardHeader>
@@ -677,11 +677,11 @@ const InvoiceListCard = ({
     };
 
     return (
-        <Card className={cn("shadow-lg bg-gradient-to-br from-muted/20 to-transparent border-border/50", className)}>
-            <CardHeader className="px-4 pb-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-xl font-semibold">
-                    <div className="rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 p-2 ring-1 ring-primary/20 shadow-sm">
-                        <FileText className="h-5 w-5 text-primary" />
+        <Card className={cn("shadow-lg", className)}>
+            <CardHeader className="px-4 pb-3 sm:px-6">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                    <div className="rounded-lg bg-primary/10 p-1.5 ring-1 ring-primary/20">
+                        <FileText className="h-4 w-4 text-primary" />
                     </div>
                     Invoice History
                 </CardTitle>
@@ -690,91 +690,89 @@ const InvoiceListCard = ({
                 </CardDescription>
             </CardHeader>
             <CardContent className="px-4 pt-0 sm:px-6">
-                <div className="rounded-lg border border-border/50 overflow-hidden bg-gradient-to-br from-muted/10 to-transparent">
-                    <Table>
-                        <TableHeader>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {invoices.length === 0 ? (
                             <TableRow>
-                                <TableHead className="font-semibold">Date</TableHead>
-                                <TableHead className="font-semibold">Description</TableHead>
-                                <TableHead className="font-semibold">Status</TableHead>
-                                <TableHead className="text-right font-semibold">Amount</TableHead>
-                                <TableHead className="text-right font-semibold">Actions</TableHead>
+                                <TableCell
+                                    colSpan={5}
+                                    className="py-2 text-center text-muted-foreground"
+                                >
+                                    No invoices found
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {invoices.length === 0 ? (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={5}
-                                        className="py-2 text-center text-muted-foreground"
-                                    >
-                                        No invoices found
+                        ) : (
+                            invoices.map((invoice) => (
+                                <TableRow key={invoice.id}>
+                                    <TableCell className="py-2 font-medium">{invoice.date}</TableCell>
+                                    <TableCell className="py-2">{invoice.description}</TableCell>
+                                    <TableCell className="py-2">
+                                        <Badge
+                                            variant="outline"
+                                            className={cn(
+                                                getStatusColor(invoice.status),
+                                                "backdrop-blur-sm"
+                                            )}
+                                        >
+                                            {invoice.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="py-2 text-right font-medium">
+                                        {invoice.amount}
+                                    </TableCell>
+                                    <TableCell className="py-2 text-right">
+                                        <div className="flex items-center justify-end gap-1">
+                                            {invoice.viewUrl && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => window.open(invoice.viewUrl, "_blank")}
+                                                    className="transition-all duration-200 hover:bg-primary/10"
+                                                    title="View Invoice"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                            {invoice.downloadUrl && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        window.open(invoice.downloadUrl, "_blank")
+                                                    }
+                                                    className="transition-all duration-200 hover:bg-primary/10"
+                                                    title="Download PDF"
+                                                >
+                                                    <Download className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                            {invoice.viewUrl && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleShare(invoice)}
+                                                    className="transition-all duration-200 hover:bg-primary/10"
+                                                    title="Share Invoice"
+                                                >
+                                                    <Share2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
-                            ) : (
-                                invoices.map((invoice) => (
-                                    <TableRow key={invoice.id}>
-                                        <TableCell className="py-2 font-medium">{invoice.date}</TableCell>
-                                        <TableCell className="py-2">{invoice.description}</TableCell>
-                                        <TableCell className="py-2">
-                                            <Badge
-                                                variant="outline"
-                                                className={cn(
-                                                    getStatusColor(invoice.status),
-                                                    "backdrop-blur-sm"
-                                                )}
-                                            >
-                                                {invoice.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="py-2 text-right font-medium">
-                                            {invoice.amount}
-                                        </TableCell>
-                                        <TableCell className="py-2 text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                {invoice.viewUrl && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => window.open(invoice.viewUrl, "_blank")}
-                                                        className="transition-all duration-200 hover:bg-primary/10"
-                                                        title="View Invoice"
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                                {invoice.downloadUrl && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            window.open(invoice.downloadUrl, "_blank")
-                                                        }
-                                                        className="transition-all duration-200 hover:bg-primary/10"
-                                                        title="Download PDF"
-                                                    >
-                                                        <Download className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                                {invoice.viewUrl && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleShare(invoice)}
-                                                        className="transition-all duration-200 hover:bg-primary/10"
-                                                        title="Share Invoice"
-                                                    >
-                                                        <Share2 className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
     );
@@ -795,11 +793,11 @@ const DunningCard = ({
     const uncollectibleCount = dunningInvoices.filter((inv) => inv.status === "uncollectible").length;
 
     return (
-        <Card className={cn("shadow-lg bg-gradient-to-br from-orange-500/5 to-transparent border-orange-500/20", className)}>
-            <CardHeader className="px-4 pb-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-xl font-semibold">
-                    <div className="rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 p-2 ring-1 ring-orange-500/20 shadow-sm">
-                        <AlertTriangle className="h-5 w-5 text-orange-500" />
+        <Card className={cn("shadow-lg", className)}>
+            <CardHeader className="px-4 pb-3 sm:px-6">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                    <div className="rounded-lg bg-orange-500/10 p-1.5 ring-1 ring-orange-500/20">
+                        <AlertTriangle className="h-4 w-4 text-orange-500" />
                     </div>
                     Dunning
                 </CardTitle>
@@ -808,85 +806,83 @@ const DunningCard = ({
                 </CardDescription>
             </CardHeader>
             <CardContent className="px-4 pt-0 sm:px-6">
-                {/* Stats Grid - Premium cards */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-6">
-                    <div className="rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-transparent p-4 shadow-sm">
-                        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Open invoices</div>
-                        <div className="mt-2 text-3xl font-bold">{openCount}</div>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3 mb-4">
+                    <div className="rounded-lg border bg-card/50 p-3">
+                        <div className="text-xs text-muted-foreground">Open invoices</div>
+                        <div className="mt-1 text-2xl font-semibold">{openCount}</div>
                     </div>
-                    <div className="rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-transparent p-4 shadow-sm">
-                        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Uncollectible</div>
-                        <div className="mt-2 text-3xl font-bold">{uncollectibleCount}</div>
+                    <div className="rounded-lg border bg-card/50 p-3">
+                        <div className="text-xs text-muted-foreground">Uncollectible</div>
+                        <div className="mt-1 text-2xl font-semibold">{uncollectibleCount}</div>
                     </div>
-                    <div className="rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-transparent p-4 shadow-sm">
-                        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total flagged</div>
-                        <div className="mt-2 text-3xl font-bold">{dunningInvoices.length}</div>
+                    <div className="rounded-lg border bg-card/50 p-3">
+                        <div className="text-xs text-muted-foreground">Total flagged</div>
+                        <div className="mt-1 text-2xl font-semibold">{dunningInvoices.length}</div>
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-border/50 overflow-hidden bg-gradient-to-br from-muted/10 to-transparent">
-                    <Table>
-                        <TableHeader>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Invoice</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Due</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {dunningInvoices.length === 0 ? (
                             <TableRow>
-                                <TableHead className="font-semibold">Date</TableHead>
-                                <TableHead className="font-semibold">Invoice</TableHead>
-                                <TableHead className="font-semibold">Status</TableHead>
-                                <TableHead className="font-semibold">Due</TableHead>
-                                <TableHead className="text-right font-semibold">Amount</TableHead>
-                                <TableHead className="text-right font-semibold">Actions</TableHead>
+                                <TableCell
+                                    colSpan={6}
+                                    className="py-4 text-center text-muted-foreground"
+                                >
+                                    No overdue invoices found
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {dunningInvoices.length === 0 ? (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={6}
-                                        className="py-4 text-center text-muted-foreground"
-                                    >
-                                        No overdue invoices found
+                        ) : (
+                            dunningInvoices.map((inv) => (
+                                <TableRow key={inv.id}>
+                                    <TableCell className="py-2 text-muted-foreground">{inv.date}</TableCell>
+                                    <TableCell className="py-2 font-mono text-xs">{inv.number}</TableCell>
+                                    <TableCell className="py-2">
+                                        <Badge
+                                            variant={inv.status === "open" ? "secondary" : "outline"}
+                                            className="backdrop-blur-sm"
+                                        >
+                                            {inv.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="py-2 text-muted-foreground">
+                                        {inv.dueDate ?? "—"}
+                                    </TableCell>
+                                    <TableCell className="py-2 text-right font-medium">
+                                        {inv.amount} {inv.currency}
+                                    </TableCell>
+                                    <TableCell className="py-2 text-right">
+                                        {inv.hostedUrl ? (
+                                            <Button
+                                                asChild
+                                                variant="outline"
+                                                size="sm"
+                                            >
+                                                <a href={inv.hostedUrl} target="_blank" rel="noopener noreferrer">
+                                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                                    Open
+                                                </a>
+                                            </Button>
+                                        ) : (
+                                            <span className="text-muted-foreground">—</span>
+                                        )}
                                     </TableCell>
                                 </TableRow>
-                            ) : (
-                                dunningInvoices.map((inv) => (
-                                    <TableRow key={inv.id}>
-                                        <TableCell className="py-2 text-muted-foreground">{inv.date}</TableCell>
-                                        <TableCell className="py-2 font-mono text-xs">{inv.number}</TableCell>
-                                        <TableCell className="py-2">
-                                            <Badge
-                                                variant={inv.status === "open" ? "secondary" : "outline"}
-                                                className="backdrop-blur-sm"
-                                            >
-                                                {inv.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="py-2 text-muted-foreground">
-                                            {inv.dueDate ?? "—"}
-                                        </TableCell>
-                                        <TableCell className="py-2 text-right font-medium">
-                                            {inv.amount} {inv.currency}
-                                        </TableCell>
-                                        <TableCell className="py-2 text-right">
-                                            {inv.hostedUrl ? (
-                                                <Button
-                                                    asChild
-                                                    variant="outline"
-                                                    size="sm"
-                                                >
-                                                    <a href={inv.hostedUrl} target="_blank" rel="noopener noreferrer">
-                                                        <ExternalLink className="mr-2 h-4 w-4" />
-                                                        Open
-                                                    </a>
-                                                </Button>
-                                            ) : (
-                                                <span className="text-muted-foreground">—</span>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
     );

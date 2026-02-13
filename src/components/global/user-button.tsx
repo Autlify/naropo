@@ -12,8 +12,10 @@ import {
 import { signOut, useSession } from 'next-auth/react'
 import { LogOut, User } from 'lucide-react'
 import { PremiumSignout, PremiumSignin, PremiumSettings, PremiumTerms, PremiumHelp, PremiumUsers } from '@/components/icons/premium'
+import { Button } from '@/components/ui-2/button'
+import { cn } from '@/lib/utils'
 
-export function UserButton() {
+export function UserButton({className}: {className?: string}) {
   const { data: session } = useSession()
 
   if (!session?.user) {
@@ -30,12 +32,12 @@ export function UserButton() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="relative h-8 w-8 text-foreground rounded-full">
+        <Button variant="ghost" className={cn(className, "relative h-10 w-10 rounded-full border-2 p-0  p-0 focus:border-primary")}>
           <Avatar className="h-8 w-8">
             <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-            <AvatarFallback><span className="text-sm">{initials}</span></AvatarFallback>
+            <AvatarFallback><span className="text-xs ">{initials}</span></AvatarFallback>
           </Avatar>
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 z-150" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">

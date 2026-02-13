@@ -1,7 +1,7 @@
 /**
  * FI-GL Core Module
  * Shared context, permissions, errors, and utilities
- * @namespace Naropo.Lib.Features.FI.GL.Core
+ * @namespace Autlify.Lib.Features.FI.GL.Core
  */
 
 export * from './context'

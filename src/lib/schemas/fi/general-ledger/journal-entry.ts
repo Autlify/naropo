@@ -30,7 +30,7 @@ export const nextLineNumber = (lines: JournalEntryLineInput[]): number => {
  */
 export const journalEntryLineSchema = z.object({
   lineNumber: z.number().int().min(1),
-  accountId: z.uuid(),
+  accountId: z.string().uuid(),
   description: z.string().max(500).optional(),
   
   // Transaction currency amounts (user input)
@@ -79,7 +79,7 @@ export const journalEntryLineSchema = z.object({
 );
 
 export const createJournalEntrySchema = z.object({
-  periodId: z.uuid(),
+  periodId: z.string().uuid(),
   entryDate: z.coerce.date(),
   
   entryType: z.enum([
@@ -139,35 +139,35 @@ export const createJournalEntrySchema = z.object({
 );
 
 export const updateJournalEntrySchema = createJournalEntrySchema.extend({
-  id: z.uuid(),
+  id: z.string().uuid(),
 });
 
 export const submitJournalEntrySchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
 });
 
 export const approveJournalEntrySchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
   notes: z.string().max(500).optional(),
 });
 
 export const rejectJournalEntrySchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
   reason: z.string().min(1, 'Rejection reason is required').max(500),
 });
 
 export const postJournalEntrySchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
 });
 
 export const reverseJournalEntrySchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
   reversalDate: z.coerce.date(),
   reason: z.string().min(1, 'Reversal reason is required').max(500),
 });
 
 export const voidJournalEntrySchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
   reason: z.string().min(1, 'Void reason is required').max(500),
 });
 
@@ -180,10 +180,10 @@ export const voidJournalEntrySchema = z.object({
  * Includes calculated base currency amounts
  */
 export const journalEntryLineOutputSchema = z.object({
-  id: z.uuid(),
-  journalEntryId: z.uuid(),
+  id: z.string().uuid(),
+  journalEntryId: z.string().uuid(),
   lineNumber: z.number().int(),
-  accountId: z.uuid(),
+  accountId: z.string().uuid(),
   description: z.string().nullable(),
   
   // Transaction currency amounts
@@ -223,12 +223,12 @@ export const journalEntryLineOutputSchema = z.object({
  * Complete entry with all calculated fields
  */
 export const journalEntryOutputSchema = z.object({
-  id: z.uuid(),
+  id: z.string().uuid(),
   agencyId: z.string().nullable(),
   subAccountId: z.string().nullable(),
   entryNumber: z.string(),
   reference: z.string().nullable(),
-  periodId: z.uuid(),
+  periodId: z.string().uuid(),
   entryDate: z.date(),
   entryType: z.string(),
   sourceModule: z.string(),

@@ -8,18 +8,18 @@
  * - FI: Financial modules (GL, AR, AP, etc.)
  * - APPS: Platform apps and integrations
  * 
- * @namespace Naropo.Lib.Registry.Keys.EntitlementFeatures
+ * @namespace Autlify.Lib.Registry.Keys.EntitlementFeatures
  * @module REGISTRY
- * @author Naropo Team
+ * @author Autlify Team
  * @created 2026-01-29
  */
 
-import type {
-  FeatureValueType,
-  MeteringType,
-  MeterAggregation,
+import type { 
+  FeatureValueType, 
+  MeteringType, 
+  MeterAggregation, 
   MeteringScope,
-  UsagePeriod
+  UsagePeriod 
 } from '@/generated/prisma/client'
 import type { FeatureKey } from '@/lib/registry/keys'
 
@@ -92,10 +92,10 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
   // CORE: Agency & Platform Features
   // ─────────────────────────────────────────────────────────
   {
-    key: 'core.agency.account',
+    key: 'org.agency.account',
     name: 'Agency Account',
     description: 'Access to core agency features and management',
-    category: 'CORE',
+    category: 'ORG',
     valueType: 'BOOLEAN',
     metering: 'NONE',
     aggregation: 'COUNT',
@@ -105,10 +105,10 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     displayOrder: 0,
   },
   {
-    key: 'core.billing.account',
+    key: 'org.billing.account',
     name: 'Billing Account',
     description: 'Access to billing and subscription management features',
-    category: 'CORE',
+    category: 'ORG',
     valueType: 'BOOLEAN',
     metering: 'NONE',
     aggregation: 'COUNT',
@@ -118,10 +118,10 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     displayOrder: 5,
   },
   {
-    key: 'core.agency.subaccounts',
+    key: 'org.agency.subaccounts',
     name: 'Sub-Accounts',
     description: 'Maximum number of sub-accounts (clients) per agency',
-    category: 'CORE',
+    category: 'ORG',
     valueType: 'INTEGER',
     unit: 'subaccounts',
     metering: 'COUNT',
@@ -132,10 +132,10 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     displayOrder: 10,
   },
   {
-    key: 'core.agency.team_member',
+    key: 'org.agency.team_member',
     name: 'Team Members',
     description: 'Maximum team members allowed in the agency',
-    category: 'CORE',
+    category: 'ORG',
     valueType: 'INTEGER',
     unit: 'members',
     metering: 'COUNT',
@@ -159,7 +159,7 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
   },
   {
     key: 'iam.authZ.members',
-    name: 'Role Assignments',
+    name: 'Role Assignments', 
     description: 'Maximum number of role assignments to team members',
     category: 'IAM',
     valueType: 'INTEGER',
@@ -171,12 +171,12 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     icon: 'user-group',
     displayOrder: 30,
   },
-
+  
   {
-    key: 'core.agency.storage',
+    key: 'org.agency.storage',
     name: 'Storage',
     description: 'Total file storage allocation in GB',
-    category: 'CORE',
+    category: 'ORG',
     valueType: 'DECIMAL',
     unit: 'GB',
     metering: 'SUM',
@@ -266,7 +266,7 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     defaultEnabled: false,
   },
   {
-    key: 'core.billing.priority_support',
+    key: 'org.billing.priority_support',
     name: 'Priority Support',
     description: '24/7 priority support access',
     category: 'BILLING',
@@ -285,7 +285,7 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
   // APPS: Integrations & Webhooks
   // ─────────────────────────────────────────────────────────
   {
-    key: 'core.apps.api_keys',
+    key: 'org.apps.api_keys',
     name: 'API Keys',
     description: 'Maximum API keys per agency',
     category: 'APPS',
@@ -299,7 +299,7 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
     displayOrder: 300,
   },
   {
-    key: 'core.apps.webhooks',
+    key: 'org.apps.webhooks',
     name: 'Webhooks',
     description: 'Enable webhooks feature with subscription and delivery limits',
     category: 'APPS',
@@ -316,10 +316,10 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
   // CORE: Support & Tickets
   // ─────────────────────────────────────────────────────────
   {
-    key: 'core.support.tickets',
+    key: 'org.support.tickets',
     name: 'Support Tickets',
     description: 'Access to support ticketing system',
-    category: 'CORE',
+    category: 'ORG',
     valueType: 'BOOLEAN',
     metering: 'NONE',
     aggregation: 'COUNT',
@@ -856,19 +856,33 @@ export const ENTITLEMENT_FEATURES: EntitlementFeatureSeed[] = [
   },
 ]
 
+const FEATURE_BY_KEY = new Map<string, EntitlementFeatureSeed>()
+const FEATURES_BY_CATEGORY = new Map<string, EntitlementFeatureSeed[]>()
+
+for (const feature of ENTITLEMENT_FEATURES) {
+  FEATURE_BY_KEY.set(feature.key, feature)
+  const existing = FEATURES_BY_CATEGORY.get(feature.category)
+  if (existing) {
+    existing.push(feature)
+  } else {
+    FEATURES_BY_CATEGORY.set(feature.category, [feature])
+  }
+}
+
 /** Helper to get features by category */
 export function getFeaturesByCategory(category: string): EntitlementFeatureSeed[] {
-  return ENTITLEMENT_FEATURES.filter(f => f.category === category)
+  const features = FEATURES_BY_CATEGORY.get(category)
+  return features ? [...features] : []
 }
 
 /** Helper to get feature by key */
 export function getFeatureByKey(key: string): EntitlementFeatureSeed | undefined {
-  return ENTITLEMENT_FEATURES.find(f => f.key === key)
+  return FEATURE_BY_KEY.get(key)
 }
 
 /** Re-export EntitlementFeatureKey from features.ts (source of truth) */
 export type { FeatureKey as EntitlementFeatureKey } from '@/lib/registry/keys/features'
 
 /** Feature categories */
-export const ENTITLEMENT_CATEGORIES = ['CORE', 'CRM', 'BILLING', 'APPS', 'FI', 'CO'] as const
+export const ENTITLEMENT_CATEGORIES = ['ORG', 'CRM', 'BILLING', 'APPS', 'FI', 'CO'] as const
 export type EntitlementCategory = typeof ENTITLEMENT_CATEGORIES[number]

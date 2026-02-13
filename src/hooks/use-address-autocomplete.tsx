@@ -70,7 +70,7 @@ export const useAddressAutocomplete = () => {
                 `https://nominatim.openstreetmap.org/search?${params.toString()}`,
                 {
                     headers: {
-                        'User-Agent': 'Naropo/1.0', // Required by Nominatim
+                        'User-Agent': 'Autlify/1.0', // Required by Nominatim
                     },
                 }
             );

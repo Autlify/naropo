@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { requireIntegrationAuth } from '@/lib/features/core/integrations/guards'
-import { revokeApiKey } from '@/lib/features/core/integrations/store'
+import { requireIntegrationAuth } from '@/lib/features/org/integrations/guards'
+import { revokeApiKey } from '@/lib/features/org/integrations/store'
 import { db } from '@/lib/db'
 import { Prisma } from '@/generated/prisma/client'
 import { KEYS } from '@/lib/registry/keys/permissions'
@@ -9,7 +9,7 @@ type Props = { params: Promise<{ id: string }> }
 
 export async function DELETE(req: Request, props: Props) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
     const { id } = await props.params
     const ok = await apiKeyInScope(id, scope)
     if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

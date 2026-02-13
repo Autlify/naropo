@@ -4,7 +4,7 @@ import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import type { MeteringScope } from '@/generated/prisma/client'
 import { hasPermission } from '@/lib/features/iam/authz/permissions'
-import { topupCredits } from '@/lib/features/core/billing/credits/grant'
+import { topupCredits } from '@/lib/features/org/billing/credits/grant'
 
 export async function POST(req: Request) {
   const session = await auth()
@@ -25,9 +25,9 @@ export async function POST(req: Request) {
 
   // Guard: billing manage
   const canBilling =
-    (await hasPermission('core.billing.account.view')) ||
-    (await hasPermission('core.billing.account.manage')) ||
-    (await hasPermission('core.billing.account.manage'))
+    (await hasPermission('org.billing.account.view')) ||
+    (await hasPermission('org.billing.account.manage')) ||
+    (await hasPermission('org.billing.account.manage'))
   if (!canBilling) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
 
   // Membership guard

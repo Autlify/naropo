@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
+import { 
   Circle,
   CheckCircle2,
   Clock,
@@ -64,7 +64,7 @@ const priorityColors = {
 }
 
 // Issue Row Component
-function IssueRow({
+function IssueRow({ 
   id,
   title,
   status,
@@ -84,27 +84,27 @@ function IssueRow({
   comments?: number
 }) {
   const StatusIcon = statusIcons[status]
-
+  
   return (
     <div className="group flex items-center gap-3 px-4 py-2.5 border-b border-border/30 hover:bg-muted/30 transition-colors cursor-pointer">
       {/* Priority indicator */}
       <div className={cn("w-1 h-4 rounded-full", priorityColors[priority])} />
-
+      
       {/* Status Icon */}
       <button className="p-0.5 hover:bg-muted rounded transition-colors">
         <StatusIcon className={cn("h-4 w-4", statusColors[status])} />
       </button>
-
+      
       {/* Issue ID */}
       <span className="text-xs text-muted-foreground font-mono w-16">{id}</span>
-
+      
       {/* Title */}
       <span className="flex-1 text-sm text-foreground truncate">{title}</span>
-
+      
       {/* Labels */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {labels?.map((label) => (
-          <span
+          <span 
             key={label.name}
             className="px-1.5 py-0.5 rounded text-[10px] font-medium"
             style={{ backgroundColor: `${label.color}20`, color: label.color }}
@@ -113,7 +113,7 @@ function IssueRow({
           </span>
         ))}
       </div>
-
+      
       {/* Comments */}
       {comments && comments > 0 && (
         <div className="flex items-center gap-1 text-muted-foreground">
@@ -121,24 +121,24 @@ function IssueRow({
           <span className="text-xs">{comments}</span>
         </div>
       )}
-
+      
       {/* Project */}
       {project && (
         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
           {project}
         </span>
       )}
-
+      
       {/* Assignee */}
       {assignee && (
-        <div
+        <div 
           className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium text-white"
           style={{ backgroundColor: assignee.color }}
         >
           {assignee.initials}
         </div>
       )}
-
+      
       {/* More actions */}
       <button className="p-1 opacity-0 group-hover:opacity-100 hover:bg-muted rounded transition-all">
         <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
@@ -148,7 +148,7 @@ function IssueRow({
 }
 
 // Cycle Progress Card
-function CycleCard({
+function CycleCard({ 
   name,
   progress,
   issues,
@@ -177,14 +177,14 @@ function CycleCard({
           </div>
           <span className="text-xs text-muted-foreground">{dateRange}</span>
         </div>
-
+        
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">{completed} of {issues} issues</span>
             <span className="text-foreground font-medium">{progress}%</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-            <div
+            <div 
               className={cn(
                 "h-full rounded-full transition-all",
                 active ? "bg-primary" : "bg-muted-foreground"
@@ -214,7 +214,7 @@ function ProjectCard({
 }) {
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer group">
-      <div
+      <div 
         className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
         style={{ backgroundColor: `${color}20` }}
       >
@@ -227,7 +227,7 @@ function ProjectCard({
         </div>
         <span className="text-xs text-muted-foreground">{issues} issues</span>
       </div>
-      <div
+      <div 
         className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-medium text-white"
         style={{ backgroundColor: color }}
       >
@@ -242,8 +242,8 @@ function QuickFilter({ label, count, active = false }: { label: string; count?: 
   return (
     <button className={cn(
       "flex items-center gap-1.5 px-2.5 py-1 rounded text-xs transition-colors",
-      active
-        ? "bg-primary/10 text-primary"
+      active 
+        ? "bg-primary/10 text-primary" 
         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
     )}>
       {label}
@@ -288,17 +288,17 @@ export default function DesignSample04() {
               <div className="w-6 h-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                 <Zap className="h-3.5 w-3.5 text-white" />
               </div>
-              <span className="font-semibold text-foreground">Naropo</span>
+              <span className="font-semibold text-foreground">Autlify</span>
             </div>
-
+            
             <nav className="flex items-center gap-1">
               {['Inbox', 'My Issues', 'Active', 'Backlog'].map((item) => (
                 <button
                   key={item}
                   className={cn(
                     "px-3 py-1.5 text-sm rounded-md transition-colors",
-                    item === 'Active'
-                      ? "bg-muted text-foreground"
+                    item === 'Active' 
+                      ? "bg-muted text-foreground" 
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -307,7 +307,7 @@ export default function DesignSample04() {
               ))}
             </nav>
           </div>
-
+          
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" className="text-muted-foreground">
               <Filter className="h-4 w-4 mr-2" />
@@ -330,7 +330,7 @@ export default function DesignSample04() {
           </div>
         </div>
       </header>
-
+      
       <div className="flex">
         {/* Sidebar */}
         <aside className="w-64 border-r border-border/50 h-[calc(100vh-53px)] p-4 space-y-6 flex-shrink-0">
@@ -343,26 +343,26 @@ export default function DesignSample04() {
               </button>
             </div>
             <div className="space-y-2">
-              <CycleCard
-                name="Sprint 24"
-                progress={68}
-                issues={24}
+              <CycleCard 
+                name="Sprint 24" 
+                progress={68} 
+                issues={24} 
                 completed={16}
                 dateRange="Feb 10 - Feb 24"
                 active
               />
-              <CycleCard
-                name="Sprint 25"
-                progress={0}
-                issues={12}
+              <CycleCard 
+                name="Sprint 25" 
+                progress={0} 
+                issues={12} 
                 completed={0}
                 dateRange="Feb 24 - Mar 10"
               />
             </div>
           </div>
-
+          
           <Separator className="bg-border/50" />
-
+          
           {/* Projects */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -377,9 +377,9 @@ export default function DesignSample04() {
               ))}
             </div>
           </div>
-
+          
           <Separator className="bg-border/50" />
-
+          
           {/* Team */}
           <div className="space-y-3">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team</span>
@@ -405,7 +405,7 @@ export default function DesignSample04() {
             </div>
           </div>
         </aside>
-
+        
         {/* Main Content */}
         <main className="flex-1 p-6">
           {/* Page Header */}
@@ -419,7 +419,7 @@ export default function DesignSample04() {
               New Issue
             </Button>
           </div>
-
+          
           {/* Quick Filters */}
           <div className="flex items-center gap-2 mb-4">
             <QuickFilter label="All" active />
@@ -428,7 +428,7 @@ export default function DesignSample04() {
             <QuickFilter label="Bugs" count={3} />
             <QuickFilter label="Features" count={12} />
           </div>
-
+          
           {/* Issues List */}
           <Card className="border-border/50 bg-gradient-to-br from-muted/20 to-transparent">
             <CardContent className="p-0">
@@ -441,7 +441,7 @@ export default function DesignSample04() {
               {issues.filter(i => i.status === 'in-progress').map((issue) => (
                 <IssueRow key={issue.id} {...issue} />
               ))}
-
+              
               {/* Group Header */}
               <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-b border-border/30">
                 <Pause className="h-3.5 w-3.5 text-purple-500" />
@@ -451,7 +451,7 @@ export default function DesignSample04() {
               {issues.filter(i => i.status === 'in-review').map((issue) => (
                 <IssueRow key={issue.id} {...issue} />
               ))}
-
+              
               {/* Group Header */}
               <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-b border-border/30">
                 <CircleDot className="h-3.5 w-3.5 text-muted-foreground" />
@@ -461,7 +461,7 @@ export default function DesignSample04() {
               {issues.filter(i => i.status === 'todo').map((issue) => (
                 <IssueRow key={issue.id} {...issue} />
               ))}
-
+              
               {/* Group Header */}
               <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-b border-border/30">
                 <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
@@ -473,7 +473,7 @@ export default function DesignSample04() {
               ))}
             </CardContent>
           </Card>
-
+          
           {/* Keyboard Shortcuts Hint */}
           <div className="mt-6 flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">

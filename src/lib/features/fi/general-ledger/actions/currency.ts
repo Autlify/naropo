@@ -6,9 +6,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
-import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions'
 import { logGLAudit } from './audit'
 import {
   createCurrencySchema, 
@@ -21,7 +19,7 @@ import {
   updateCurrencySchema,
 } from '@/lib/schemas/fi/general-ledger/currency'
 import { Decimal } from 'decimal.js'
-import { ActionKey } from '@/lib/registry'
+import { getActionContext, hasContextPermission, type ActionContext } from '@/lib/features/iam/authz/action-context'
 
 // ========== Types ==========
 
@@ -31,42 +29,12 @@ type ActionResult<T> = {
   error?: string
 }
 
-type CurrencyContext = {
-  agencyId?: string
-  subAccountId?: string
-  userId: string
-}
+type CurrencyContext = ActionContext
 
 // ========== Helper Functions ==========
 
-const getContext = async (): Promise<CurrencyContext | null> => {
-  const session = await auth()
-  if (!session?.user?.id) return null
-
-  const dbSession = await db.session.findFirst({
-    where: { userId: session.user.id },
-    select: { activeAgencyId: true, activeSubAccountId: true },
-  })
-
-  return {
-    userId: session.user.id,
-    agencyId: dbSession?.activeAgencyId ?? undefined,
-    subAccountId: dbSession?.activeSubAccountId ?? undefined,
-  }
-}
-
-const checkPermission = async (
-  context: CurrencyContext,
-  permissionKey: ActionKey
-): Promise<boolean> => {
-  if (context.subAccountId) {
-    return hasSubAccountPermission(context.subAccountId, permissionKey)
-  }
-  if (context.agencyId) {
-    return hasAgencyPermission(context.agencyId, permissionKey)
-  }
-  return false
-}
+const getContext = getActionContext
+const checkPermission = hasContextPermission
 
 // ========== Currency CRUD ==========
 

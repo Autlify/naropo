@@ -24,9 +24,9 @@ const Page = async ({
 
   const landingTarget = await resolveLandingTarget({
     cookieValue,
-    agencyPermissionKey: 'core.agency.account.read',
-    subAccountPermissionKey: 'core.subaccount.account.read',
-    billingPermissionKey: 'core.billing.account.view',
+    agencyPermissionKey: 'org.agency.account.read',
+    subAccountPermissionKey: 'org.subaccount.account.read',
+    billingPermissionKey: 'org.billing.account.view',
   })
 
   if (!landingTarget) {
@@ -36,7 +36,7 @@ const Page = async ({
 
   if (landingTarget.kind === 'agency') {
     const { agencyId, hasInactiveSubscription, permissionKeys } = landingTarget
-    const canManageBilling = permissionKeys.includes('core.billing.account.manage')
+    const canManageBilling = permissionKeys.includes('org.billing.account.manage')
 
     // IMPORTANT: missing subscription is treated as inactive too.
     if (hasInactiveSubscription) {

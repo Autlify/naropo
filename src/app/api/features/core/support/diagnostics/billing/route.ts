@@ -3,8 +3,8 @@ import { requireRequestAccess } from '@/lib/features/iam/authz/require'
 import { getAgencySubscriptionState } from '@/lib/features/iam/authz/resolver'
 
 const hasBaselineRead = (pks: string[], scopeKind: 'agency' | 'subaccount') => {
-  if (scopeKind === 'agency') return pks.includes('core.agency.account.read')
-  return pks.includes('core.subaccount.account.read')
+  if (scopeKind === 'agency') return pks.includes('org.agency.account.read')
+  return pks.includes('org.subaccount.account.read')
 }
 
 export async function GET(req: Request) {
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     }
 
     const state = await getAgencySubscriptionState(ctx.scope.agencyId)
-    const canManageBilling = ctx.principal.permissionKeys.includes('core.billing.account.view')
+    const canManageBilling = ctx.principal.permissionKeys.includes('org.billing.account.view')
 
     return NextResponse.json({
       scope: ctx.scope,

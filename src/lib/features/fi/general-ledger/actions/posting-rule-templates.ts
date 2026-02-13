@@ -2,7 +2,7 @@
  * Posting Rule Templates Action
  * FI-GL Module - Quick setup with pre-built posting rules
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Actions.PostingRuleTemplates
+ * @namespace Autlify.Lib.Features.FI.GL.Actions.PostingRuleTemplates
  */
 
 'use server'
@@ -14,9 +14,9 @@ import { revalidatePath } from 'next/cache'
 import { getGLContext } from '../core/context'
 import { getContextCreateData } from '../core/utils'
 import {
-  ActionResult,
-  errorResult,
-  successResult,
+    ActionResult,
+    errorResult,
+    successResult,
 } from '../core/errors'
 import { checkGLPermission } from '../core/permissions'
 import { FI_CONFIG_KEYS, FI_MASTER_DATA_KEYS } from '../core/utils'
@@ -340,15 +340,15 @@ export const getRecommendedAccounts = async (): Promise<
       a => a.accountType === 'EXPENSE' || a.name.toLowerCase().includes('discrepancy')
     )
     const forexAccounts = accounts.filter(
-      a =>
-        a.accountType === 'REVENUE' ||
+      a => 
+        a.accountType === 'REVENUE' || 
         a.accountType === 'EXPENSE' ||
         a.name.toLowerCase().includes('forex') ||
         a.name.toLowerCase().includes('exchange')
     )
     const clearingAccounts = accounts.filter(
-      a =>
-        a.accountType === 'ASSET' ||
+      a => 
+        a.accountType === 'ASSET' || 
         a.accountType === 'LIABILITY' ||
         a.name.toLowerCase().includes('clearing')
     )

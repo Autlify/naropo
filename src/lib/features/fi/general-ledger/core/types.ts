@@ -2,12 +2,12 @@
  * GL Shared Types
  * Common type definitions used across GL module
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Core.Types
+ * @namespace Autlify.Lib.Features.FI.GL.Core.Types
  */
 
-import type {
-  ChartOfAccount,
-  JournalEntry,
+import type { 
+  ChartOfAccount, 
+  JournalEntry, 
   JournalEntryLine,
   FinancialPeriod,
   AccountBalance,
@@ -110,9 +110,9 @@ export interface TaxSettings {
 }
 
 /** Posting rule category */
-export type PostingRuleCategory =
+export type PostingRuleCategory = 
   | 'FOREX'
-  | 'ROUNDING'
+  | 'ROUNDING' 
   | 'DISCREPANCY'
   | 'TAX'
   | 'CLEARING'
@@ -181,7 +181,7 @@ export interface FinancialSection {
 }
 
 /** Setup wizard step */
-export type SetupWizardStep =
+export type SetupWizardStep = 
   | 'BUSINESS_TYPE'
   | 'CURRENCY'
   | 'TAX'

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireIntegrationAuth } from '@/lib/features/core/integrations/guards'
-import { createSubscription, listSubscriptions } from '@/lib/features/core/integrations/store'
-import { listEffectiveConnections } from '@/lib/features/core/integrations/policy'
-import { sha256Hex } from '@/lib/features/core/integrations/crypto'
+import { requireIntegrationAuth } from '@/lib/features/org/integrations/guards'
+import { createSubscription, listSubscriptions } from '@/lib/features/org/integrations/store'
+import { listEffectiveConnections } from '@/lib/features/org/integrations/policy'
+import { sha256Hex } from '@/lib/features/org/integrations/crypto'
 import { KEYS } from '@/lib/registry/keys/permissions'
 
 const CreateSchema = z.object({
@@ -15,7 +15,7 @@ const CreateSchema = z.object({
 
 export async function GET(req: Request) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.core.apps.webhooks.view] })
+    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.org.apps.webhooks.view] })
     const url = new URL(req.url)
     const connectionId = url.searchParams.get('connectionId')
     if (!connectionId) {
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
     const body = await req.json()
     const parsed = CreateSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })

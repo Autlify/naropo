@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useSidebar } from '@/components/sidebar-01/sidebar-context'
+import { useSidebar } from '@/components/sidebar/sidebar-context'
 
 interface PageTitleProps {
   title: string

@@ -3,7 +3,7 @@
  * Single source of truth for GL context resolution
  * Replaces duplicated getContext() pattern across action files
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Core.Context
+ * @namespace Autlify.Lib.Features.FI.GL.Core.Context
  */
 
 'use server'
@@ -29,7 +29,7 @@ export interface GLContextError {
 }
 
 /** Context resolution result */
-export type GLContextResult =
+export type GLContextResult = 
   | { success: true; context: GLContext }
   | { success: false; error: GLContextError }
 
@@ -68,8 +68,8 @@ export const getGLContext = async (): Promise<GLContextResult> => {
   }
 
   // Determine context type - SubAccount takes precedence when active
-  const contextType: GLContextType = dbSession.activeSubAccountId
-    ? 'SUBACCOUNT'
+  const contextType: GLContextType = dbSession.activeSubAccountId 
+    ? 'SUBACCOUNT' 
     : 'AGENCY'
 
   return {
@@ -91,7 +91,7 @@ export const getGLContext = async (): Promise<GLContextResult> => {
  */
 export const requireAgencyContext = async (): Promise<GLContext> => {
   const result = await getGLContext()
-
+  
   if (!result.success) {
     throw new Error(result.error.error)
   }
@@ -116,7 +116,7 @@ export const requireAgencyContext = async (): Promise<GLContext> => {
  */
 export const requireAnyContext = async (): Promise<GLContext> => {
   const result = await getGLContext()
-
+  
   if (!result.success) {
     throw new Error(result.error.error)
   }

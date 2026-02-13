@@ -4,8 +4,8 @@ import { PRICING_CONFIG } from '@/lib/registry/plans/pricing-config';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
 import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions';
-import { applyTopUpCreditsFromCheckout } from '@/lib/features/core/billing/credits/grant';
-import type { MeteringScope } from '@/generated/prisma/client';
+import { makeStripeIdempotencyKey } from '@/lib/stripe/idempotency';
+import { requireLegalAcceptance } from '@/lib/features/iam/authn/terms';
 
 // ============================================================================
 // Types & Validation
@@ -27,7 +27,7 @@ type CheckoutItemInput = {
   unitAmountCents?: number;
 };
 
-type CheckoutScope =
+type CheckoutScope = 
   | { level: 'user'; userId: string }
   | { level: 'agency'; agencyId: string }
   | { level: 'subAccount'; agencyId: string; subAccountId: string };
@@ -123,7 +123,7 @@ function resolveItems(inputs: CheckoutItemInput[]): ResolvedItem[] {
         quantity: input.quantity ?? 1,
         unitAmountCents: input.unitAmountCents ?? (input.credits ?? 0) * 10, // Default: 10 cents/credit
         credits: input.credits,
-        featureKey: input.featureKey || 'core.credits',
+        featureKey: input.featureKey || 'org.credits',
       };
     }
 
@@ -155,14 +155,14 @@ async function checkPermissions(scope: CheckoutScope): Promise<boolean> {
 
       case 'agency':
         return (
-          (await hasAgencyPermission(scope.agencyId, 'core.billing.account.view')) ||
-          (await hasAgencyPermission(scope.agencyId, 'core.billing.account.manage'))
+          (await hasAgencyPermission(scope.agencyId, 'org.billing.account.view')) ||
+          (await hasAgencyPermission(scope.agencyId, 'org.billing.account.manage'))
         );
 
       case 'subAccount':
         return (
-          (await hasSubAccountPermission(scope.subAccountId, 'core.billing.account.view')) ||
-          (await hasSubAccountPermission(scope.subAccountId, 'core.billing.account.manage'))
+          (await hasSubAccountPermission(scope.subAccountId, 'org.billing.account.view')) ||
+          (await hasSubAccountPermission(scope.subAccountId, 'org.billing.account.manage'))
         );
 
       default:
@@ -179,66 +179,78 @@ async function getOrCreateStripeCustomer(
   email?: string,
   name?: string
 ): Promise<string> {
-  let existingCustomerId: string | null = null;
+  // Billing customer SSoT:
+  // - Agency billing is tied to Agency.customerId
+  // - SubAccount billing is currently billed under its Agency (no SubAccount.customerId field)
+  // - User-level uses User.customerId
 
-  // Check for existing customer based on scope
-  if (scope.level === 'agency') {
+  if (scope.level === 'agency' || scope.level === 'subAccount') {
+    const agencyId = scope.level === 'agency' ? scope.agencyId : scope.agencyId
     const agency = await db.agency.findUnique({
-      where: { id: scope.agencyId },
+      where: { id: agencyId },
       select: { customerId: true },
-    });
-    existingCustomerId = agency?.customerId || null;
-  } else if (scope.level === 'subAccount') {
-    const subAccount = await db.subAccount.findUnique({
-      where: { id: scope.subAccountId },
-      select: { connectAccountId: true },
-    });
-    existingCustomerId = subAccount?.connectAccountId || null;
-  } else {
-    // User-level
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      select: { email: true, name: true },
-    });
-    // For user-level, we'll create a new customer or use email to look up
-    if (user?.email) {
-      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-      existingCustomerId = customers.data[0]?.id || null;
-    }
-  }
+    })
+    if (agency?.customerId) return agency.customerId
 
-  if (existingCustomerId) {
-    return existingCustomerId;
-  }
+    const idem = makeStripeIdempotencyKey('customer_create', [
+      'agency',
+      agencyId,
+    ])
 
-  // Create new customer
-  const customer = await stripe.customers.create({
-    email: email,
-    name: name,
-    metadata: {
-      userId,
-      scopeLevel: scope.level,
-      agencyId: scope.level === 'agency' || scope.level === 'subAccount' ? scope.agencyId : '',
-      subAccountId: scope.level === 'subAccount' ? scope.subAccountId : '',
-    },
-  });
+    const customer = await stripe.customers.create(
+      {
+        email: email,
+        name: name,
+        metadata: {
+          userId,
+          scopeLevel: 'agency',
+          agencyId,
+        },
+      },
+      { idempotencyKey: idem }
+    )
 
-  // Update the entity with the new customer ID
-  if (scope.level === 'agency') {
     await db.agency.update({
-      where: { id: scope.agencyId },
+      where: { id: agencyId },
       data: { customerId: customer.id },
-    });
+    })
+
+    return customer.id
   }
 
-  return customer.id;
+  // user-level
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { customerId: true, email: true, name: true },
+  })
+  if (user?.customerId) return user.customerId
+
+  const idem = makeStripeIdempotencyKey('customer_create', ['user', userId])
+  const customer = await stripe.customers.create(
+    {
+      email: email ?? user?.email ?? undefined,
+      name: name ?? user?.name ?? undefined,
+      metadata: {
+        userId,
+        scopeLevel: 'user',
+      },
+    },
+    { idempotencyKey: idem }
+  )
+
+  await db.user.update({
+    where: { id: userId },
+    data: { customerId: customer.id },
+  })
+
+  return customer.id
 }
 
 function buildScopeMetadata(userId: string, scope: CheckoutScope): Record<string, string> {
   const base = {
     userId,
     scopeLevel: scope.level,
-    platform: 'naropo',
+    platform: 'autlify',
   };
 
   switch (scope.level) {
@@ -266,7 +278,7 @@ async function handleCreditsCheckout(
 
   const totalCredits = creditItems.reduce((sum, item) => sum + (item.credits ?? 0) * item.quantity, 0);
   const totalAmountCents = creditItems.reduce((sum, item) => sum + item.unitAmountCents * item.quantity, 0);
-  const featureKey = creditItems[0].featureKey || 'core.credits';
+  const featureKey = creditItems[0].featureKey || 'org.credits';
 
   const metadata = {
     ...buildScopeMetadata(userId, scope),
@@ -351,10 +363,22 @@ export async function POST(req: Request) {
     const origin = getOrigin(req);
     const userId = session.user.id;
 
+    // Billing-related actions require billing legal acceptance.
+    // NOTE: Return a machine-readable redirect so the UI can route users to /legal/accept.
+    const legal = await requireLegalAcceptance(userId, 'billing');
+    if (legal.ok !== true) {
+      const next = body.returnPath ?? body.successPath ?? body.cancelPath ?? '/site/pricing'
+      const redirectUrl = `/legal/accept?scope=billing&next=${encodeURIComponent(next)}`
+      return NextResponse.json(
+        { error: 'LEGAL_ACCEPTANCE_REQUIRED', scope: 'billing', redirectUrl },
+        { status: 409 }
+      )
+    }
+
     // Resolve scope from body or headers
     const scope: CheckoutScope = body.scope ?? { level: 'user', userId };
-    const agencyIdHeader = req.headers.get('x-naropo-agency-id');
-    const subAccountIdHeader = req.headers.get('x-naropo-subaccount-id');
+    const agencyIdHeader = req.headers.get('x-autlify-agency-id');
+    const subAccountIdHeader = req.headers.get('x-autlify-subaccount-id');
 
     if (!body.scope && agencyIdHeader) {
       if (subAccountIdHeader) {
@@ -372,7 +396,7 @@ export async function POST(req: Request) {
 
     // Handle Portal flow
     if (body.intent === 'PORTAL') {
-      const customerId = req.headers.get('x-naropo-stripe-customer-id');
+      const customerId = req.headers.get('x-autlify-stripe-customer-id');
       if (!customerId) {
         return NextResponse.json({ error: 'MISSING_CUSTOMER' }, { status: 400 });
       }
@@ -466,7 +490,7 @@ export async function POST(req: Request) {
 
     if (uiMode === 'embedded') {
       const returnUrl = `${origin}${body.returnPath ?? '/checkout/success'}?session_id={CHECKOUT_SESSION_ID}`;
-
+      
       const checkoutSession = await stripe.checkout.sessions.create({
         ui_mode: 'embedded',
         mode: stripeMode,

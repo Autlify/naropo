@@ -97,7 +97,21 @@ enum Icon {
   gitBranch
   barChart3
   image
-
+  mail
+  inifinity
+  award
+  analytics
+  globe
+  team
+  target
+  crown
+  analytcis
+  zap
+  addons
+  roles
+  permissions
+  member
+  policy
   @@schema("public")
 }
 
@@ -137,6 +151,7 @@ model User {
   ApiKeys            ApiKey[]
   IntegrationApiKeys IntegrationApiKey[]
   SupportTickets     SupportTicket[]
+  LegalAcceptances   LegalAcceptance[]
 
   @@schema("public")
 }
@@ -172,6 +187,24 @@ model TermsAgreement {
 
   User User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@schema("public")
+}
+
+model LegalAcceptance {
+  id         String   @id @default(uuid())
+  userId     String
+  scope      String
+  version    String
+  documents  Json
+  acceptedAt DateTime @default(now())
+
+  ipAddress String?
+  userAgent String? @db.Text
+
+  User User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([scope])
   @@schema("public")
 }
 
@@ -407,6 +440,10 @@ model Agency {
   GLConfigurationLocks GLConfigurationLock[]
   OpenItems            OpenItem[]
 
+  // FI-AP & FI-AR
+  ApPayments ApPayment[]
+  ArReceipts ArReceipt[]
+
   ApiKeys                ApiKey[]
   IntegrationApiKeys     IntegrationApiKey[]
   IntegrationConnections IntegrationConnection[]
@@ -479,6 +516,10 @@ model SubAccount {
   Customers             Customer[]
   GLConfigurationLocks  GLConfigurationLock[]
 
+  // FI-AP & FI-AR
+  ApPayments ApPayment[]
+  ArReceipts ArReceipt[]
+
   ApiKeys                ApiKey[]
   IntegrationApiKeys     IntegrationApiKey[]
   IntegrationConnections IntegrationConnection[]
@@ -503,6 +544,10 @@ model AgencySettings {
   // If true, SUBACCOUNT effective entitlements inherit AGENCY entitlements unless overridden.
   entitlementsInheritToSubaccounts Boolean @default(true)
 
+  // Namespace-keyed settings payload (e.g. core.agency.settings.*).
+  // Keep optional for backwards compatibility; treat null as {} in code.
+  settingsJson Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -516,6 +561,10 @@ model SubAccountSettings {
   subAccountId                  String   @unique
   // Optional override. null = follow AgencySettings / env default.
   entitlementsInheritFromAgency Boolean?
+
+  // Namespace-keyed settings payload (e.g. core.subaccount.settings.*).
+  // Keep optional for backwards compatibility; treat null as {} in code.
+  settingsJson Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -853,13 +902,13 @@ model Notification {
 }
 
 enum Plan {
-  price_1SxrtiJglUPlULDQ6Q47g9ua
-  price_1SxrtiJglUPlULDQNfTnrEaH
-  price_1SxrtjJglUPlULDQgtNaxHa9
-  price_1SxrtkJglUPlULDQt7hxe8OD
-  price_1SxrtlJglUPlULDQgA5RR4VG
-  price_1SxrtnJglUPlULDQhNpJz0OW
-  price_1SxrtnJglUPlULDQ96ygSCfB
+  price_1SzWP7EDFXmtidMA6eacKYD6
+  price_1SzWP8EDFXmtidMAgI3pJQnC
+  price_1SzWP9EDFXmtidMA25Slofpy
+  price_1SzWP9EDFXmtidMAvFt8eA0e
+  price_1SzWPAEDFXmtidMA7O56e1ma
+  price_1SzWPBEDFXmtidMA9OXh9jcB
+  price_1SzWPCEDFXmtidMAxuItUkUl
 
   @@schema("public")
 }
@@ -895,12 +944,153 @@ model AddOns {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   name      String
+  addonKey  String?
   active    Boolean  @default(false)
   priceId   String   @unique
   agencyId  String?
   Agency    Agency?  @relation(fields: [agencyId], references: [id])
 
+  @@unique([agencyId, priceId])
   @@index([agencyId])
+  @@index([priceId])
+  @@schema("public")
+}
+
+// ========================================
+// Billing Read Models / Snapshots (low-query, top-app patterns)
+// ========================================
+
+enum SubscriptionItemKind {
+  PLAN
+  ADDON
+
+  @@schema("public")
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+
+  @@schema("public")
+}
+
+enum AccessContextScope {
+  SYSTEM
+  AGENCY
+  SUBACCOUNT
+
+  @@schema("public")
+}
+
+model WebhookEvent {
+  id          String             @id @default(uuid())
+  provider    String             @default("stripe")
+  eventId     String
+  eventType   String
+  status      WebhookEventStatus @default(RECEIVED)
+  receivedAt  DateTime           @default(now())
+  processedAt DateTime?
+  error       String?            @db.Text
+  payload     Json?
+
+  @@unique([provider, eventId])
+  @@index([eventType])
+  @@index([status])
+  @@schema("public")
+}
+
+model BillingState {
+  id               String    @id @default(uuid())
+  scopeKey         String    @unique
+  agencyId         String?
+  subAccountId     String?
+  customerId       String?
+  subscriptionId   String?
+  planPriceId      String?
+  planKey          String?
+  addonPriceIds    Json?
+  addonKeys        Json?
+  isTrialing       Boolean   @default(false)
+  trialEndsAt      DateTime?
+  currentPeriodEnd DateTime?
+  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime  @default(now())
+
+  @@index([agencyId])
+  @@index([subAccountId])
+  @@schema("public")
+}
+
+model EntitlementSnapshot {
+  id           String   @id @default(uuid())
+  scopeKey     String   @unique
+  version      Int      @default(1)
+  entitlements Json
+  computedAt   DateTime @default(now())
+  source       String   @default("system")
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  @@schema("public")
+}
+
+model SubscriptionItem {
+  id                       String               @id @default(uuid())
+  scopeKey                 String
+  stripeSubscriptionId     String
+  stripeSubscriptionItemId String               @unique
+  kind                     SubscriptionItemKind
+  priceId                  String
+  quantity                 Int?
+  status                   String?
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+
+  @@index([scopeKey])
+  @@index([stripeSubscriptionId])
+  @@index([kind])
+  @@schema("public")
+}
+
+model CreditGrantCursor {
+  id            String    @id @default(uuid())
+  scopeKey      String    @unique
+  lastGrantedAt DateTime?
+  nextGrantAt   DateTime?
+  lastInvoiceId String?
+  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime  @default(now())
+
+  @@schema("public")
+}
+
+model AccessContextSnapshot {
+  id             String             @id @default(uuid())
+  userId         String
+  scopeKey       String
+  scope          AccessContextScope @default(AGENCY)
+  roleId         String?
+  permissionKeys Json
+  permissionHash String
+  version        Int                @default(1)
+  active         Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([userId, scopeKey])
+  @@index([scopeKey])
+  @@index([userId])
+  @@schema("public")
+}
+
+model NavProfileSnapshot {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  payload   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@schema("public")
 }
 
@@ -2362,6 +2552,10 @@ model JournalEntry {
   Lines     JournalEntryLine[]
   EInvoices EInvoice[]
 
+  // FI-AP & FI-AR linkage
+  ApPayments ApPayment[] @relation("ApPaymentJournal")
+  ArReceipts ArReceipt[] @relation("ArReceiptJournal")
+
   @@unique([agencyId, entryNumber])
   @@unique([subAccountId, entryNumber])
   @@index([agencyId, status])
@@ -3257,12 +3451,16 @@ model Vendor {
   SubAccount   SubAccount? @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
 
   // Vendor identification
-  code    String // Vendor code
-  name    String
-  taxId   String? // Tax identification number
-  email   String?
-  phone   String?
-  address Json? // Address details
+  code      String // Vendor code
+  name      String
+  legalName String? // Registered legal name (may differ from display name)
+  taxId     String? // Tax identification number
+  email     String?
+  phone     String?
+  address   Json? // Primary/registered address (AddressSchema)
+
+  // Optional remit-to/billing address for AP
+  billingAddress Json?
 
   // Subledger link
   subLedgerId String?
@@ -3273,10 +3471,36 @@ model Vendor {
   currency        String   @default("MYR")
   creditLimit     Decimal? @db.Decimal(18, 6)
 
-  // Bank details
-  bankName      String?
-  bankAccount   String?
-  bankSwiftCode String?
+  // Default posting accounts (for auto-post)
+  defaultExpenseAccountId        String?
+  defaultLiabilityAccountId      String?
+  defaultTaxAccountId            String?
+  defaultWithholdingTaxAccountId String?
+  defaultApPostingTemplateKey    String? // Posting template for FI-AP → FI-GL
+
+  // Bank details (extended)
+  bankName          String?
+  bankAccount       String?
+  bankSwiftCode     String?
+  bankIban          String?
+  bankRoutingNumber String?
+  bankCountryCode   String? @db.Char(2)
+
+  // AP operations
+  preferredPaymentMethod String? // ACH, WIRE, CHECK, CREDIT_CARD, CASH, OTHER
+  invoiceEmail           String? // Where vendors send invoices
+  remittanceEmail        String? // Where remittance advice is sent
+  paymentHold            Boolean @default(false)
+  paymentHoldReason      String? @db.Text
+
+  // Invoice automation settings (JSON blob)
+  invoiceAutomation Json?
+
+  // Forward compatibility
+  externalRefs Json? // External identifiers for integrations
+  metadata     Json? // Arbitrary metadata
+  notes        String?  @db.Text
+  tags         String[] // Tags/labels
 
   isActive Boolean @default(true)
 
@@ -3286,7 +3510,8 @@ model Vendor {
   updatedBy String?
 
   // Relations
-  OpenItems OpenItem[] @relation("VendorOpenItems")
+  OpenItems  OpenItem[]  @relation("VendorOpenItems")
+  ApPayments ApPayment[] @relation("VendorApPayments")
 
   @@unique([agencyId, code])
   @@unique([subAccountId, code])
@@ -3306,21 +3531,61 @@ model Customer {
   SubAccount   SubAccount? @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
 
   // Customer identification
-  code    String // Customer code
-  name    String
-  taxId   String? // Tax identification number
-  email   String?
-  phone   String?
-  address Json? // Address details
+  code      String // Customer code
+  name      String
+  legalName String? // Registered legal name (may differ from display name)
+  taxId     String? // Tax identification number
+  email     String?
+  phone     String?
+  address   Json? // Primary/registered address (AddressSchema)
+
+  // Optional billing/shipping addresses
+  billingAddress  Json?
+  shippingAddress Json?
 
   // Subledger link
   subLedgerId String?
   SubLedger   SubLedger? @relation(fields: [subLedgerId], references: [id])
 
-  // Payment terms
+  // Payment/Credit terms
   paymentTermDays Int      @default(30)
   currency        String   @default("MYR")
   creditLimit     Decimal? @db.Decimal(18, 6)
+
+  // Default posting accounts (for auto-post)
+  defaultRevenueAccountId     String?
+  defaultReceivableAccountId  String?
+  defaultTaxAccountId         String?
+  defaultArPostingTemplateKey String? // Posting template for FI-AR → FI-GL
+
+  // Bank details (for refunds, etc.)
+  bankName          String?
+  bankAccount       String?
+  bankSwiftCode     String?
+  bankIban          String?
+  bankRoutingNumber String?
+  bankCountryCode   String? @db.Char(2)
+
+  // AR operations
+  preferredPaymentMethod String? // ACH, WIRE, CHECK, CREDIT_CARD, CASH, OTHER
+  statementEmail         String? // Where statements are sent
+  dunningEmail           String? // Where dunning notices are sent
+  creditHold             Boolean @default(false)
+  creditHoldReason       String? @db.Text
+
+  // Dunning settings
+  dunningEnabled  Boolean   @default(true)
+  dunningLevel    Int       @default(0) // Current dunning level (0 = none)
+  lastDunningDate DateTime?
+
+  // Invoice/Receipt automation settings (JSON blob)
+  invoiceAutomation Json?
+
+  // Forward compatibility
+  externalRefs Json? // External identifiers for integrations
+  metadata     Json? // Arbitrary metadata
+  notes        String?  @db.Text
+  tags         String[] // Tags/labels
 
   isActive Boolean @default(true)
 
@@ -3330,14 +3595,269 @@ model Customer {
   updatedBy String?
 
   // Relations
-  OpenItems OpenItem[] @relation("CustomerOpenItems")
-  EInvoices EInvoice[]
+  OpenItems  OpenItem[]  @relation("CustomerOpenItems")
+  EInvoices  EInvoice[]
+  ArReceipts ArReceipt[] @relation("CustomerArReceipts")
 
   @@unique([agencyId, code])
   @@unique([subAccountId, code])
   @@index([agencyId, isActive])
   @@index([subAccountId, isActive])
   @@index([subLedgerId])
+  @@schema("finance")
+}
+
+// ========================================
+// ACCOUNTS PAYABLE - PAYMENT
+// ========================================
+
+enum ApPaymentStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SCHEDULED
+  PROCESSING
+  COMPLETED
+  FAILED
+  VOID
+
+  @@schema("finance")
+}
+
+enum PaymentMethod {
+  ACH
+  WIRE
+  CHECK
+  CREDIT_CARD
+  DEBIT_CARD
+  CASH
+  BANK_TRANSFER
+  DIGITAL_WALLET
+  OTHER
+
+  @@schema("finance")
+}
+
+model ApPayment {
+  id String @id @default(uuid())
+
+  // Multi-tenant scope
+  agencyId     String
+  subAccountId String?
+  Agency       Agency      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  SubAccount   SubAccount? @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+
+  // Payment identification
+  paymentNumber String // e.g., PAY-2026-001
+  reference     String? // External/bank reference
+
+  // Vendor
+  vendorId String
+  Vendor   Vendor @relation("VendorApPayments", fields: [vendorId], references: [id])
+
+  // Payment details
+  paymentDate   DateTime
+  paymentMethod PaymentMethod
+  status        ApPaymentStatus @default(DRAFT)
+
+  // Amounts
+  currencyCode       String   @default("MYR")
+  amount             Decimal  @db.Decimal(18, 6)
+  amountBase         Decimal? @db.Decimal(18, 6) // Base currency
+  exchangeRate       Decimal  @default(1) @db.Decimal(18, 6)
+  exchangeDifference Decimal? @db.Decimal(18, 6) // FX difference on payment
+
+  // Bank details used
+  bankAccountId String? // From which bank account paid
+  bankName      String?
+  bankAccount   String?
+  bankReference String? // Bank transaction reference
+
+  // Workflow
+  submittedAt     DateTime?
+  submittedBy     String?
+  approvedAt      DateTime?
+  approvedBy      String?
+  rejectedAt      DateTime?
+  rejectedBy      String?
+  rejectionReason String?   @db.Text
+  processedAt     DateTime?
+  processedBy     String?
+  voidedAt        DateTime?
+  voidedBy        String?
+  voidReason      String?   @db.Text
+
+  // Journal linkage
+  journalEntryId String?
+  JournalEntry   JournalEntry? @relation("ApPaymentJournal", fields: [journalEntryId], references: [id])
+
+  // Open item clearing
+  clearingDocumentNumber String?
+
+  // Forward compatibility
+  externalRefs Json?
+  metadata     Json?
+  notes        String? @db.Text
+
+  createdAt DateTime @default(now())
+  createdBy String
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  // Relations
+  PaymentAllocations ApPaymentAllocation[]
+
+  @@unique([agencyId, paymentNumber])
+  @@unique([subAccountId, paymentNumber])
+  @@index([agencyId, status])
+  @@index([vendorId])
+  @@index([paymentDate])
+  @@schema("finance")
+}
+
+// Payment allocation to open items/invoices
+model ApPaymentAllocation {
+  id String @id @default(uuid())
+
+  paymentId String
+  ApPayment ApPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  // What is being paid (open item or direct invoice reference)
+  openItemId    String?
+  OpenItem      OpenItem? @relation("ApPaymentOpenItem", fields: [openItemId], references: [id])
+  invoiceNumber String?
+
+  // Allocation amounts
+  allocatedAmount     Decimal  @db.Decimal(18, 6)
+  allocatedAmountBase Decimal? @db.Decimal(18, 6)
+  exchangeDifference  Decimal? @db.Decimal(18, 6)
+
+  createdAt DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([openItemId])
+  @@schema("finance")
+}
+
+// ========================================
+// ACCOUNTS RECEIVABLE - RECEIPT
+// ========================================
+
+enum ArReceiptStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  DEPOSITED
+  CLEARED
+  BOUNCED
+  VOID
+
+  @@schema("finance")
+}
+
+model ArReceipt {
+  id String @id @default(uuid())
+
+  // Multi-tenant scope
+  agencyId     String
+  subAccountId String?
+  Agency       Agency      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  SubAccount   SubAccount? @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+
+  // Receipt identification
+  receiptNumber String // e.g., RCT-2026-001
+  reference     String? // Customer payment reference
+
+  // Customer
+  customerId String
+  Customer   Customer @relation("CustomerArReceipts", fields: [customerId], references: [id])
+
+  // Receipt details
+  receiptDate   DateTime
+  paymentMethod PaymentMethod
+  status        ArReceiptStatus @default(DRAFT)
+
+  // Amounts
+  currencyCode       String   @default("MYR")
+  amount             Decimal  @db.Decimal(18, 6)
+  amountBase         Decimal? @db.Decimal(18, 6) // Base currency
+  exchangeRate       Decimal  @default(1) @db.Decimal(18, 6)
+  exchangeDifference Decimal? @db.Decimal(18, 6) // FX difference
+
+  // Bank details
+  depositBankAccountId String? // To which bank account deposited
+  bankName             String?
+  bankReference        String? // Bank transaction reference
+  checkNumber          String?
+
+  // Workflow
+  submittedAt     DateTime?
+  submittedBy     String?
+  approvedAt      DateTime?
+  approvedBy      String?
+  rejectedAt      DateTime?
+  rejectedBy      String?
+  rejectionReason String?   @db.Text
+  depositedAt     DateTime?
+  depositedBy     String?
+  clearedAt       DateTime?
+  clearedBy       String?
+  bouncedAt       DateTime?
+  bouncedBy       String?
+  bounceReason    String?   @db.Text
+  voidedAt        DateTime?
+  voidedBy        String?
+  voidReason      String?   @db.Text
+
+  // Journal linkage
+  journalEntryId String?
+  JournalEntry   JournalEntry? @relation("ArReceiptJournal", fields: [journalEntryId], references: [id])
+
+  // Open item clearing
+  clearingDocumentNumber String?
+
+  // Forward compatibility
+  externalRefs Json?
+  metadata     Json?
+  notes        String? @db.Text
+
+  createdAt DateTime @default(now())
+  createdBy String
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  // Relations
+  ReceiptAllocations ArReceiptAllocation[]
+
+  @@unique([agencyId, receiptNumber])
+  @@unique([subAccountId, receiptNumber])
+  @@index([agencyId, status])
+  @@index([customerId])
+  @@index([receiptDate])
+  @@schema("finance")
+}
+
+// Receipt allocation to open items/invoices
+model ArReceiptAllocation {
+  id String @id @default(uuid())
+
+  receiptId String
+  ArReceipt ArReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  // What is being settled (open item or direct invoice reference)
+  openItemId    String?
+  OpenItem      OpenItem? @relation("ArReceiptOpenItem", fields: [openItemId], references: [id])
+  invoiceNumber String?
+
+  // Allocation amounts
+  allocatedAmount     Decimal  @db.Decimal(18, 6)
+  allocatedAmountBase Decimal? @db.Decimal(18, 6)
+  exchangeDifference  Decimal? @db.Decimal(18, 6)
+
+  createdAt DateTime @default(now())
+
+  @@index([receiptId])
+  @@index([openItemId])
   @@schema("finance")
 }
 
@@ -3450,6 +3970,10 @@ model OpenItem {
 
   // Allocations for partial clearing
   Allocations OpenItemAllocation[]
+
+  // Payment/Receipt allocations
+  ApPaymentAllocations ApPaymentAllocation[] @relation("ApPaymentOpenItem")
+  ArReceiptAllocations ArReceiptAllocation[] @relation("ArReceiptOpenItem")
 
   @@index([agencyId, accountId, status])
   @@index([subAccountId, accountId, status])
@@ -3711,7 +4235,7 @@ model SupportTicket {
 // ============================================================================
 // E-INVOICE & BILLING CONFIGURATION (finance schema)
 // ============================================================================
-// NOTE: Naropo does NOT handle tax compliance/liability. These models store
+// NOTE: Autlify does NOT handle tax compliance/liability. These models store
 // user-configured settings for e-Invoice generation and tax visualization.
 // KYC and business verification is handled by Stripe Connect.
 // ============================================================================

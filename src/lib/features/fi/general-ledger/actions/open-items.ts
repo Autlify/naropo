@@ -9,9 +9,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions';
 import {
   createOpenItemSchema,
   updateOpenItemSchema,
@@ -35,6 +33,7 @@ import { logGLAudit } from './audit';
 import { OpenItemStatus, ClearingDocumentType, Prisma, SourceModule } from '@/generated/prisma/client';
 import { Decimal } from 'decimal.js';
 import { format } from 'date-fns';
+import { getActionContext, hasContextPermission, type ActionContext } from '@/lib/features/iam/authz/action-context';
 
 type ActionResult<T> = {
   success: boolean;
@@ -42,27 +41,9 @@ type ActionResult<T> = {
   error?: string;
 };
 
-type Context = {
-  agencyId?: string;
-  subAccountId?: string;
-  userId: string;
-};
+type Context = ActionContext;
 
-const getContext = async (): Promise<Context | null> => {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const dbSession = await db.session.findFirst({
-    where: { userId: session.user.id },
-    select: { activeAgencyId: true, activeSubAccountId: true },
-  });
-
-  return {
-    userId: session.user.id,
-    agencyId: dbSession?.activeAgencyId ?? undefined,
-    subAccountId: dbSession?.activeSubAccountId ?? undefined,
-  };
-};
+const getContext = getActionContext;
 
 // ============================================================
 // OPEN ITEM CRUD OPERATIONS
@@ -81,9 +62,7 @@ export const createOpenItem = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reconciliation.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reconciliation.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reconciliation.manage');
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to create open items' };
@@ -195,9 +174,7 @@ export const getOpenItem = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reconciliation.view')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reconciliation.view');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reconciliation.view');
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to view open items' };
@@ -245,9 +222,7 @@ export const getOpenItems = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reconciliation.view')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reconciliation.view');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reconciliation.view');
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to view open items' };
@@ -349,9 +324,7 @@ export const updateOpenItem = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reconciliation.manage')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reconciliation.manage');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reconciliation.manage');
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to edit open items' };
@@ -422,9 +395,7 @@ export const clearOpenItems = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reconciliation.clear')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reconciliation.clear');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reconciliation.clear');
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to clear open items' };
@@ -587,9 +558,7 @@ export const partialClearOpenItem = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reconciliation.clear')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reconciliation.clear');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reconciliation.clear');
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to clear open items' };
@@ -699,9 +668,7 @@ export const autoClearOpenItems = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reconciliation.clear')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reconciliation.clear');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reconciliation.clear');
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to auto-clear open items' };
@@ -890,9 +857,7 @@ export const reverseClearing = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reconciliation.reset')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reconciliation.reset');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reconciliation.reset');
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to reverse clearing' };
@@ -1011,9 +976,7 @@ export const getPartnerOpenItemsSummary = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reconciliation.view')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reconciliation.view');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reconciliation.view');
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to view open items' };
@@ -1099,9 +1062,7 @@ export const getOpenItemsAging = async (
       return { success: false, error: 'Unauthorized: No session found' };
     }
 
-    const hasPermission = context.subAccountId
-      ? await hasSubAccountPermission(context.subAccountId, 'fi.general_ledger.reconciliation.view')
-      : await hasAgencyPermission(context.agencyId!, 'fi.general_ledger.reconciliation.view');
+    const hasPermission = await hasContextPermission(context, 'fi.general_ledger.reconciliation.view');
 
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized: Missing permission to view open items' };

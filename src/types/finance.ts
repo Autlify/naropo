@@ -2,9 +2,9 @@
  * 
  * @name FinanceTypes
  * @description Contain all types related to finance module.
- * @namespace Naropo.Types.Finance
+ * @namespace Autlify.Types.Finance
  * @module TYPES
- * @author Naropo Team
+ * @author Autlify Team
  * @created 2026-Feb-15
  * @see prisma/schema.prisma - ChartOfAccount, JournalEntry, FiscalPeriod, etc.
  * 
@@ -19,11 +19,11 @@
  * @description Determines how and when revenue is recognized per accounting standards
  */
 export type RevenueRecognitionType =
-    | 'point_in_time'        // Recognize immediately upon delivery (goods, setup fees)
-    | 'over_time_ratable'    // Recognize evenly over service period (subscriptions)
-    | 'over_time_usage'      // Recognize based on usage/consumption (metered)
-    | 'milestone'            // Recognize upon completion of milestones
-    | 'percentage_complete'  // Recognize based on % of work completed
+  | 'point_in_time'        // Recognize immediately upon delivery (goods, setup fees)
+  | 'over_time_ratable'    // Recognize evenly over service period (subscriptions)
+  | 'over_time_usage'      // Recognize based on usage/consumption (metered)
+  | 'milestone'            // Recognize upon completion of milestones
+  | 'percentage_complete'  // Recognize based on % of work completed
 
 /**
  * Recognition Frequency Type
@@ -36,16 +36,16 @@ export type RecognitionFrequencyType = 'daily' | 'weekly' | 'monthly' | 'quarter
  * @description How to handle revenue deferral for multi-period pricing
  */
 export interface DeferredRevenueConfig {
-    /** Whether to create deferred revenue entries */
-    createDeferredEntry: boolean
-    /** GL Account for deferred revenue (liability) */
-    deferredRevenueAccount?: string
-    /** GL Account for recognized revenue (income) */
-    revenueAccount?: string
-    /** Recognition schedule: daily, weekly, monthly, quarterly, yearly */
-    recognitionFrequency?: RecognitionFrequencyType
-    /** Number of periods to defer (for prepaid annual, etc.) */
-    deferralPeriods?: number
+  /** Whether to create deferred revenue entries */
+  createDeferredEntry: boolean
+  /** GL Account for deferred revenue (liability) */
+  deferredRevenueAccount?: string
+  /** GL Account for recognized revenue (income) */
+  revenueAccount?: string
+  /** Recognition schedule: daily, weekly, monthly, quarterly, yearly */
+  recognitionFrequency?: RecognitionFrequencyType
+  /** Number of periods to defer (for prepaid annual, etc.) */
+  deferralPeriods?: number
 }
 
 /**
@@ -53,18 +53,18 @@ export interface DeferredRevenueConfig {
  * @description GL account mappings for journal entry generation
  */
 export interface AccountingConfig {
-    /** Revenue account code */
-    revenueAccountCode?: string
-    /** Deferred revenue account code */
-    deferredRevenueAccountCode?: string
-    /** Cost of goods sold account (for goods) */
-    cogsAccountCode?: string
-    /** Expense account (for internal use) */
-    expenseAccountCode?: string
-    /** Department/Cost center */
-    costCenter?: string
-    /** Profit center */
-    profitCenter?: string
+  /** Revenue account code */
+  revenueAccountCode?: string
+  /** Deferred revenue account code */
+  deferredRevenueAccountCode?: string
+  /** Cost of goods sold account (for goods) */
+  cogsAccountCode?: string
+  /** Expense account (for internal use) */
+  expenseAccountCode?: string
+  /** Department/Cost center */
+  costCenter?: string
+  /** Profit center */
+  profitCenter?: string
 }
 
 // ============================================================================
@@ -76,17 +76,17 @@ export interface AccountingConfig {
  * @description Single journal entry in a recognition schedule
  */
 export interface RevenueRecognitionEntry {
-    date: Date
-    debit: {
-        account: string
-        amount: number
-        description: string
-    }
-    credit: {
-        account: string
-        amount: number
-        description: string
-    }
+  date: Date
+  debit: {
+    account: string
+    amount: number
+    description: string
+  }
+  credit: {
+    account: string
+    amount: number
+    description: string
+  }
 }
 
 /**
@@ -94,11 +94,11 @@ export interface RevenueRecognitionEntry {
  * @description Full schedule of journal entries for revenue recognition
  */
 export interface RevenueRecognitionSchedule {
-    purchaseDate: Date
-    totalAmount: number
-    deferredAmount: number
-    recognizedAmount: number
-    entries: RevenueRecognitionEntry[]
+  purchaseDate: Date
+  totalAmount: number
+  deferredAmount: number
+  recognizedAmount: number
+  entries: RevenueRecognitionEntry[]
 }
 
 // ============================================================================

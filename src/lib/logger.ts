@@ -72,4 +72,4 @@ class Logger {
 // Get log level from environment variable or default to 'info'
 const logLevel = (process.env.LOG_LEVEL as LogLevel) || "info"
 
-export const logger = new Logger({ level: logLevel, prefix: "Naropo" })
+export const logger = new Logger({ level: logLevel, prefix: "Autlify" })

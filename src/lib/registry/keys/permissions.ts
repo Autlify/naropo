@@ -4,155 +4,155 @@
  * Each key is organized hierarchically by module, sub-module, and specific features or actions.
  * This structure facilitates consistent permission management and access control across different parts of the system.
  *
- * @namespace Naropo.Lib.Registry.Keys.Permissions
+ * @namespace Autlify.Lib.Registry.Keys.Permissions
  * @name Permission Keys Registry
  * @module REGISTRY
- * @author Naropo Team
+ * @author Autlify Team
  * @created 2026-01-15
  * @summary Centralized, Standardized, Normalized permission keys for access control, entitlement features, role management, and authorization checks.
  */
 
 
 export const KEYS = {
-    core: {
+    org: {
         organization: {
             profile: {
-                view: 'core.organization.profile.view',
-                manage: 'core.organization.profile.manage',
+                view: 'org.organization.profile.view',
+                manage: 'org.organization.profile.manage',
             },
             security: {
-                view: 'core.organization.security.view',
-                manage: 'core.organization.security.manage',
+                view: 'org.organization.security.view',
+                manage: 'org.organization.security.manage',
             },
             integrations: {
-                view: 'core.organization.integrations.view',
-                manage: 'core.organization.integrations.manage',
+                view: 'org.organization.integrations.view',
+                manage: 'org.organization.integrations.manage',
             },
             automation: {
-                view: 'core.organization.automation.view',
-                manage: 'core.organization.automation.manage',
+                view: 'org.organization.automation.view',
+                manage: 'org.organization.automation.manage',
             },
         },
         agency: {
             // Data entity - CRUD pattern
             account: {
-                read: 'core.agency.account.read',
-                update: 'core.agency.account.update',
-                delete: 'core.agency.account.delete',
+                read: 'org.agency.account.read',
+                update: 'org.agency.account.update',
+                delete: 'org.agency.account.delete',
             },
             // Data entity - CRUD pattern
             subaccounts: {
-                read: 'core.agency.subaccounts.read',
-                create: 'core.agency.subaccounts.create',
-                update: 'core.agency.subaccounts.update',
-                delete: 'core.agency.subaccounts.delete',
+                read: 'org.agency.subaccounts.read',
+                create: 'org.agency.subaccounts.create',
+                update: 'org.agency.subaccounts.update',
+                delete: 'org.agency.subaccounts.delete',
             },
             // Actions on members
             team_member: {
-                invite: 'core.agency.team_member.invite',
-                remove: 'core.agency.team_member.remove',
-                manage: 'core.agency.team_member.manage',
+                invite: 'org.agency.team_member.invite',
+                remove: 'org.agency.team_member.remove',
+                manage: 'org.agency.team_member.manage',
             },
             // Non-data (configuration) - view/manage pattern
             settings: {
-                view: 'core.agency.settings.view',
-                manage: 'core.agency.settings.manage',
+                view: 'org.agency.settings.view',
+                manage: 'org.agency.settings.manage',
             },
             storage: {
-                view: 'core.agency.storage.view',
-                manage: 'core.agency.storage.manage',
+                view: 'org.agency.storage.view',
+                manage: 'org.agency.storage.manage',
             }
         },
         billing: {
             // Non-data (configuration) - view/manage pattern
             account: {
-                view: 'core.billing.account.view',
-                manage: 'core.billing.account.manage',
+                view: 'org.billing.account.view',
+                manage: 'org.billing.account.manage',
             },
             // Data entity (cards) - CRUD pattern
             payment_methods: {
-                read: 'core.billing.payment_methods.read',
-                create: 'core.billing.payment_methods.create',
-                delete: 'core.billing.payment_methods.delete',
+                read: 'org.billing.payment_methods.read',
+                create: 'org.billing.payment_methods.create',
+                delete: 'org.billing.payment_methods.delete',
             },
             // Non-data (configuration) - view/manage pattern
             subscription: {
-                view: 'core.billing.subscription.view',
-                manage: 'core.billing.subscription.manage',
+                view: 'org.billing.subscription.view',
+                manage: 'org.billing.subscription.manage',
             },
             // Non-data - manage only
             features: {
-                manage: 'core.billing.features.manage',
+                manage: 'org.billing.features.manage',
             },
             // Non-data (reporting) - view/action pattern
             usage: {
-                view: 'core.billing.usage.view',
-                consume: 'core.billing.usage.consume',
+                view: 'org.billing.usage.view',
+                consume: 'org.billing.usage.consume',
             },
             // Non-data (reporting) - view only
             entitlements: {
-                view: 'core.billing.entitlements.view',
+                view: 'org.billing.entitlements.view',
             },
             // Non-data (balance) - view only
             credits: {
-                view: 'core.billing.credits.view',
+                view: 'org.billing.credits.view',
             },
             // Plan-gated features (Boolean entitlements)
             rebilling: {
-                manage: 'core.billing.rebilling.manage',
+                manage: 'org.billing.rebilling.manage',
             },
             priority_support: {
-                view: 'core.billing.priority_support.view',
+                view: 'org.billing.priority_support.view',
             },
         },
         subaccount: {
             // Data entity - CRUD pattern
             account: {
-                read: 'core.subaccount.account.read',
-                update: 'core.subaccount.account.update',
-                delete: 'core.subaccount.account.delete',
+                read: 'org.subaccount.account.read',
+                update: 'org.subaccount.account.update',
+                delete: 'org.subaccount.account.delete',
             },
             // Actions on members
             team_member: {
-                invite: 'core.subaccount.team_member.invite',
-                remove: 'core.subaccount.team_member.remove',
-            },
+                invite: 'org.subaccount.team_member.invite',
+                remove: 'org.subaccount.team_member.remove',
+            }, 
         },
         experimental: {
             // User preferences - action pattern
             flag: {
-                toggle: 'core.experimental.flag.toggle',
+                toggle: 'org.experimental.flag.toggle',
             },
         },
         apps: {
             // Non-data (configuration) - view/manage pattern
             app: {
-                view: 'core.apps.app.view',
-                install: 'core.apps.app.install',
-                manage: 'core.apps.app.manage',
-                uninstall: 'core.apps.app.uninstall',
+                view: 'org.apps.app.view',
+                install: 'org.apps.app.install',
+                manage: 'org.apps.app.manage',
+                uninstall: 'org.apps.app.uninstall',
             },
             webhooks: {
-                manage: 'core.apps.webhooks.manage', // Overall management permission including creating/deleting webhooks, deliveries, etc.
-                view: 'core.apps.webhooks.view', // View existing webhooks
+                manage: 'org.apps.webhooks.manage', // Overall management permission including creating/deleting webhooks, deliveries, etc.
+                view: 'org.apps.webhooks.view', // View existing webhooks
 
             },
             // Data entities for metering - CRUD pattern
             api_keys: {
-                read: 'core.apps.api_keys.read',
-                create: 'core.apps.api_keys.create',
-                delete: 'core.apps.api_keys.delete',
+                read: 'org.apps.api_keys.read',
+                create: 'org.apps.api_keys.create',
+                delete: 'org.apps.api_keys.delete',
             },
         },
         support: {
             tickets: {
-                view: 'core.support.tickets.view',
-                create: 'core.support.tickets.create',
-                update: 'core.support.tickets.update',
-                close: 'core.support.tickets.close',
+                view: 'org.support.tickets.view',
+                create: 'org.support.tickets.create',
+                update: 'org.support.tickets.update',
+                close: 'org.support.tickets.close',
             },
             diagnostics: {
-                run: 'core.support.diagnostics.run',
+                run: 'org.support.diagnostics.run',
             }
         },
     },
@@ -182,6 +182,10 @@ export const KEYS = {
             currencies: {
                 view: 'fi.configuration.currencies.view',
                 manage: 'fi.configuration.currencies.manage',
+            },
+            invoice_templates: {
+                view: 'fi.configuration.invoice_templates.view',
+                manage: 'fi.configuration.invoice_templates.manage',
             },
             tax_settings: {
                 view: 'fi.configuration.tax_settings.view',
@@ -576,7 +580,7 @@ export type SubModuleOf<M extends ModuleCode> = M extends keyof typeof KEYS
 export type ResourceOf<M extends ModuleCode, S extends SubModuleOf<M>> = Extract<
     keyof (typeof KEYS)[M][S],
     string
->;
+>; 
 
 export type ActionOf<
     M extends ModuleCode,
@@ -594,3 +598,59 @@ export type SubModuleKey = {
 }[ModuleCode];
 
 export type SubModuleType = Uppercase<SubModuleCode>;
+
+/** Display metadata for registry keys */
+export interface RegistryDisplayInfo {
+    /** Short abbreviation (e.g., 'GL', 'AR') */
+    abbreviation: string
+    /** Human-readable display name */
+    displayName: string
+}
+
+export const MODULE_INFO: Record<ModuleCode, RegistryDisplayInfo> = {
+    'org': { abbreviation: 'ORG', displayName: 'Organization' },
+    'iam': { abbreviation: 'IAM', displayName: 'Identity & Access' },
+    'fi': { abbreviation: 'FI', displayName: 'Finance' },
+    'crm': { abbreviation: 'CRM', displayName: 'Customer' },
+    'co': { abbreviation: 'CO', displayName: 'Controlling' },
+    // 'mm': { abbreviation: 'MM', displayName: 'Materials Management' },
+} as const;
+
+export const SUBMODULE_INFO: Record<SubModuleCode, RegistryDisplayInfo> = {
+    // Core
+    'organization': { abbreviation: 'ORG', displayName: 'Organization' },
+    'agency': { abbreviation: 'AGY', displayName: 'Agency' },
+    'billing': { abbreviation: 'BILL', displayName: 'Billing' },
+    'subaccount': { abbreviation: 'SUB', displayName: 'Subaccount' },
+    'experimental': { abbreviation: 'EXP', displayName: 'Experimental Features' },
+    'apps': { abbreviation: 'APP', displayName: 'Applications' },
+    'support': { abbreviation: 'SUP', displayName: 'Support' },
+    // IAM
+    'authZ': { abbreviation: 'AUTHZ', displayName: 'Authorization' },
+    // FI
+    'configuration': { abbreviation: 'CFG', displayName: 'Configuration' },
+    'master_data': { abbreviation: 'MD', displayName: 'Master Data' },
+    'general_ledger': { abbreviation: 'GL', displayName: 'General Ledger' },
+    'accounts_receivable': { abbreviation: 'AR', displayName: 'Accounts Receivable' },
+    'accounts_payable': { abbreviation: 'AP', displayName: 'Accounts Payable' },
+    'bank_ledger': { abbreviation: 'BL', displayName: 'Bank Ledger' },
+    'controlling': { abbreviation: 'CO', displayName: 'Controlling' },
+    'advanced_reporting': { abbreviation: 'RPT', displayName: 'Advanced Reporting' },
+    // CRM
+    'customers': { abbreviation: 'CUST', displayName: 'Customers' },
+    'media': { abbreviation: 'MED', displayName: 'Media' },
+    'funnels': { abbreviation: 'FNL', displayName: 'Funnels' },
+    'pipelines': { abbreviation: 'PL', displayName: 'Pipelines' },
+    // CO
+    'cost_centers': { abbreviation: 'CCA', displayName: 'Cost Centers' },
+    'profit_centers': { abbreviation: 'PCA', displayName: 'Profit Centers' },
+    'internal_orders': { abbreviation: 'IO', displayName: 'Internal Orders' },
+    'profitability': { abbreviation: 'PA', displayName: 'Profitability Analysis' },
+    'budgets': { abbreviation: 'BUD', displayName: 'Budgets' },
+    // MM
+    // 'purchasing': { abbreviation: 'Purchasing', displayName: 'Purchasing' },
+    // 'inventory': { abbreviation: 'Inventory', displayName: 'Inventory Management' },
+    // 'invoice_verification': { abbreviation: 'Invoice Verification', displayName: 'Invoice Verification' },
+    // 'configuration': { abbreviation: 'Configuration', displayName: 'Configuration' },
+    
+} as const;

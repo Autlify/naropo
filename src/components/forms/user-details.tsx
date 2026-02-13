@@ -78,9 +78,9 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
       const fetchDetails = async () => {
         const response = await getAuthUserDetails()
         if (response) setAuthUserData(response)
-        
+
         // Check permission to manage team
-        const hasManagePermission = await hasPermission('core.agency.team_member.invite')
+        const hasManagePermission = await hasPermission('org.agency.team_member.invite')
         setCanManageTeam(hasManagePermission)
       }
       fetchDetails()
@@ -88,8 +88,10 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
   }, [data])
 
   const userDataSchema = z.object({
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
     name: z.string().min(1),
-    email: z.string().email(),
+    email: z.email(),
     avatarUrl: z.string().nullable().optional(),
   })
 
@@ -97,8 +99,9 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
     resolver: zodResolver(userDataSchema),
     mode: 'onChange',
     defaultValues: {
-      name: (userData ? userData.name : data?.user?.name) || '',
-      email: (userData ? userData.email : data?.user?.email) || '',
+      firstName: (userData ? userData.firstName : data?.user?.firstName) || '',
+      lastName: (userData ? userData.lastName : data?.user?.lastName) || '',
+      email: (userData ? userData.email : data?.user?.email),
       avatarUrl: userData ? (userData.avatarUrl ?? undefined) : (data?.user?.avatarUrl ?? undefined),
     },
   })
@@ -120,12 +123,12 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
   ) => {
     if (!data.user?.id) return
     setLoadingPermissions(true)
-    
+
     // Get the role ID for SUBACCOUNT_USER (or appropriate role)
     const roleId = subAccountPermissions?.SubAccountMemberships?.find(
       (m) => m.subAccountId === subAccountId
     )?.roleId
-    
+
     if (!roleId) {
       toast({
         variant: 'destructive',
@@ -135,7 +138,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
       setLoadingPermissions(false)
       return
     }
-    
+
     const response = await changeUserPermissions(
       data.user.id,
       roleId,
@@ -143,16 +146,15 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
       undefined,
       subAccountId
     )
-    
+
     const agencyMembership = authUserData?.AgencyMemberships?.[0]
     if (type === 'agency' && agencyMembership) {
       await saveActivityLogsNotification({
         agencyId: agencyMembership.agencyId,
-        description: `Gave ${userData?.name} access to | ${
-          subAccountPermissions?.SubAccountMemberships?.find(
-            (m) => m.subAccountId === subAccountId
-          )?.SubAccount?.name
-        } `,
+        description: `Gave ${userData?.name ? `${userData?.name}` : `${userData?.firstName} ${userData?.lastName}`}  access to | ${subAccountPermissions?.SubAccountMemberships?.find(
+          (m) => m.subAccountId === subAccountId
+        )?.SubAccount?.name
+          } `,
         subaccountId: subAccountId,
       })
     }
@@ -175,12 +177,12 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
 
   const onSubmit = async (values: z.infer<typeof userDataSchema>) => {
     if (!id) return
-    
+
     const formData = form.getValues()
-    
+
     if (userData || data?.user) {
       const updatedUser = await updateUser(formData)
-      
+
       // Log activity for all subaccounts user has access to
       const agencyMembership = authUserData?.AgencyMemberships?.[0]
       if (agencyMembership) {
@@ -189,7 +191,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
             (m) => m.subAccountId === subacc.id && m.isActive
           )
         )
-        
+
         accessibleSubAccounts.forEach(async (subaccount) => {
           await saveActivityLogsNotification({
             agencyId: undefined,
@@ -248,25 +250,6 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
                 </FormItem>
               )}
             />
-
-            <FormField
-              disabled={form.formState.isSubmitting}
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>User full name</FormLabel>
-                  <FormControl>
-                    <Input
-                      required
-                      placeholder="Full Name"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               disabled={form.formState.isSubmitting}
               control={form.control}
@@ -276,8 +259,67 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input
-                      readOnly={form.formState.isSubmitting}
+                      readOnly
                       placeholder="Email"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex gap-4">
+              <FormField
+                disabled={form.formState.isSubmitting}
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        required
+                        placeholder="First Name"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                disabled={form.formState.isSubmitting}
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        required
+                        placeholder="Last Name"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+
+            <FormField
+              disabled={form.formState.isSubmitting}
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <FormLabel>Display Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      required
+                      placeholder="Display Name"
                       {...field}
                     />
                   </FormControl>

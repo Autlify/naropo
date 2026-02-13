@@ -3,3 +3,4 @@
 
 export * from './keys'
 export * from './plans'
+export * from './settings'

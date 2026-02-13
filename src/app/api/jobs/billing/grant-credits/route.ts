@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 import { db } from '@/lib/db'
-import { grantRecurringCreditsForAgency } from '@/lib/features/core/billing/credits/grant'
+import { grantRecurringCreditsForAgency } from '@/lib/features/org/billing/credits/grant'
 
-import { assertJobSecret, getSystemJobActor } from '@/lib/features/system/job-auth'
+import { assertJobSecret, getSystemJobActor } from '@/lib/core/system/job-auth'
 
 export async function POST(req: NextRequest) {
   try {

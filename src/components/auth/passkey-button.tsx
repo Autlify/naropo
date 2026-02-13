@@ -180,31 +180,39 @@ export function PasskeyButton({
             }
         } catch (err: any) {
             const errorMsg = err.message || `An error occurred with ${variant === 'signup' ? 'passkey registration' : 'passkey signin'}`
-            setError(errorMsg)
-            onError?.(errorMsg)
+            // If parent manages error state (common on auth pages), don't double-render alerts.
+            if (onError) onError(errorMsg)
+            else setError(errorMsg)
         } finally {
             setIsLoading(false)
         }
     }
 
+    const isIconOnly = variant === 'icon-signup' || variant === 'icon-signin'
+
     return (
-        <div className={cn("space-y-2", className)}>
+        <div className="space-y-2">
             <Button
                 type="button"
                 variant="outline"
-                className={cn("w-full", className, isLoading && 'opacity-70')}
+                className={cn(
+                    'w-full justify-start gap-2',
+                    isIconOnly && 'justify-center',
+                    isLoading && 'opacity-70',
+                    className
+                )}
                 onClick={handlePasskey}
                 disabled={isLoading || disabled || (variant === 'signup' && !email)}
-                tooltip={tooltip || buttonTextState}
+                tooltip={tooltip || (buttonTextState || 'Continue with Passkey')}
+                aria-label={buttonTextState || 'Continue with Passkey'}
             >
-                <Fingerprint className="h-8 w-8" />
-                {buttonTextState}
+                <Fingerprint className="h-4 w-4" />
+                {!isIconOnly && <span className="truncate">{buttonTextState}</span>}
             </Button>
-            {error && (
+
+            {error && !onError && (
                 <Alert className="border-destructive/30 bg-destructive/10">
-                    <AlertDescription className="text-destructive-foreground">
-                        {error}
-                    </AlertDescription>
+                    <AlertDescription className="text-destructive-foreground">{error}</AlertDescription>
                 </Alert>
             )}
         </div>

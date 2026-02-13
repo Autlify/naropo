@@ -2,7 +2,7 @@
  * Tax Management Schemas
  * FI-GL Module - Tax accounts, codes, and posting configuration
  * 
- * @namespace Naropo.Lib.Schemas.FI.GL.Tax
+ * @namespace Autlify.Lib.Schemas.FI.GL.Tax
  */
 
 import { z } from 'zod'
@@ -22,8 +22,10 @@ export const taxCodeSchema = z.object({
   description: z.string().max(500).optional(),
   rate: z.number().min(0).max(100),
   type: taxTypeEnum,
-  accountId: z.uuid(),
-  reverseChargeAccountId: z.string().uuid().optional(),
+  // Account mapping is optional at the beginning of setup.
+  // Posting rules can later require it before activation.
+  accountId: z.string().uuid().nullable().optional(),
+  reverseChargeAccountId: z.string().uuid().nullable().optional(),
   isDefault: z.boolean().default(false),
   isActive: z.boolean().default(true),
   effectiveFrom: z.coerce.date().optional(),
@@ -37,7 +39,7 @@ export const createTaxCodeSchema = taxCodeSchema
 
 /** Update tax code schema */
 export const updateTaxCodeSchema = taxCodeSchema.partial().extend({
-  id: z.uuid(),
+  id: z.string().uuid(),
 })
 
 export type UpdateTaxCodeInput = z.infer<typeof updateTaxCodeSchema>
@@ -45,7 +47,7 @@ export type UpdateTaxCodeInput = z.infer<typeof updateTaxCodeSchema>
 /** Tax settings schema (part of GL configuration) */
 export const taxSettingsSchema = z.object({
   enabled: z.boolean().default(false),
-
+  
   // Tax accounts
   inputVATAccountId: z.string().uuid().nullable().optional(),
   outputVATAccountId: z.string().uuid().nullable().optional(),
@@ -53,13 +55,13 @@ export const taxSettingsSchema = z.object({
   taxClearingAccountId: z.string().uuid().nullable().optional(),
   taxPayableAccountId: z.string().uuid().nullable().optional(),
   taxReceivableAccountId: z.string().uuid().nullable().optional(),
-
+  
   // Tax period
   taxPeriod: taxPeriodEnum.default('MONTHLY'),
-
+  
   // Tax codes (stored as JSON)
   taxCodes: z.array(taxCodeSchema).default([]),
-
+  
   // Behavior
   autoApplyDefaultTax: z.boolean().default(false),
   requireTaxOnInvoice: z.boolean().default(false),
@@ -70,7 +72,7 @@ export type TaxSettingsInput = z.infer<typeof taxSettingsSchema>
 
 /** Tax clearing entry schema */
 export const taxClearingEntrySchema = z.object({
-  periodId: z.uuid(),
+  periodId: z.string().uuid(),
   clearingDate: z.coerce.date(),
   description: z.string().max(200).optional(),
   clearInputVAT: z.boolean().default(true),

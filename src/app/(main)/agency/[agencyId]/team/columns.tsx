@@ -64,7 +64,7 @@ export const columns: ColumnDef<UsersWithAgencySubAccountPermissionsSidebarOptio
           <div className="flex items-center gap-4">
             <div className="h-11 w-11 relative flex-none">
               <Image
-                src={avatarUrl || '/assets/naropo-logo.svg'}
+                src={avatarUrl || '/assets/autlify-logo.svg'}
                 fill
                 className="rounded-full object-cover"
                 alt="avatar image"
@@ -165,20 +165,20 @@ const CellActions: React.FC<CellActionsProps> = ({ rowData }) => {
   const [loading, setLoading] = useState(false)
   const [canManageTeam, setCanManageTeam] = useState(false)
   const router = useRouter()
-
+  
   useEffect(() => {
     const checkPermission = async () => {
-      const hasManagePermission = await hasPermission('core.agency.team_member.remove')
+      const hasManagePermission = await hasPermission('org.agency.team_member.remove')
       setCanManageTeam(hasManagePermission)
     }
     checkPermission()
   }, [])
-
+  
   if (!rowData) return
-
+  
   const agencyMembership = rowData.AgencyMemberships?.[0]
   if (!agencyMembership) return
-
+  
   const isAgencyOwner = agencyMembership?.Role?.name === 'AGENCY_OWNER'
 
   return (
@@ -231,7 +231,7 @@ const CellActions: React.FC<CellActionsProps> = ({ rowData }) => {
               onClick={async () => {
                 // Fetch available roles (system + agency-scoped)
                 const roles = await getRolesByScope('AGENCY', agencyMembership?.Agency?.id)
-
+                
                 setOpen(
                   <CustomModal
                     subheading="Assign a new role to change the user's permissions within this agency"
@@ -259,7 +259,7 @@ const CellActions: React.FC<CellActionsProps> = ({ rowData }) => {
             <AlertDialogTrigger asChild>
               <DropdownMenuItem
                 className="flex gap-2"
-                onClick={() => { }}
+                onClick={() => {}}
               >
                 <Trash size={15} /> Remove User
               </DropdownMenuItem>

@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { KEYS } from '@/lib/registry/keys/permissions'
 import { requireRequestAccess } from '@/lib/features/iam/authz/require'
-import { uninstallApp } from '@/lib/features/core/apps/service'
+import { uninstallApp } from '@/lib/features/org/apps/service'
 
 export async function POST(req: Request, ctx: { params: Promise<{ appKey: string }> }) {
   try {
     const access = await requireRequestAccess({
       req,
-      requiredKeys: [KEYS.core.apps.app.manage],
+      requiredKeys: [KEYS.org.apps.app.manage],
       requireActiveSubscription: true,
     })
 

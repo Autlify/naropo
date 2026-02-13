@@ -18,14 +18,14 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { getAuthUserDetails } from '@/lib/queries'
-import { SubAccount } from '@/generated/prisma/client'
 import Image from 'next/image'
 import Link from 'next/link'
 
 import React from 'react'
 import DeleteButton from './_components/delete-button'
 import CreateSubaccountButton from './_components/create-subaccount-btn'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
 
 type Props = {
   params: Promise<{ agencyId: string }>
@@ -33,24 +33,34 @@ type Props = {
 
 const AllSubaccountsPage = async ({ params }: Props) => {
   const { agencyId } = await params
-  const user = await getAuthUserDetails()
-  if (!user) return
+  const session = await auth()
+  const userId = session?.user?.id
+  const userName = session?.user?.name ?? ''
+  if (!userId) return
 
-  // Get the agency from user's memberships
-  const agencyMembership = user.AgencyMemberships?.find(
-    (m) => m.agencyId === agencyId && m.isActive
-  )
-  
-  if (!agencyMembership) return <div>No access to this agency</div>
+  const membership = await db.agencyMembership.findFirst({
+    where: { userId, agencyId, isActive: true },
+    select: { id: true },
+  })
+  if (!membership) return <div>No access to this agency</div>
 
-  const subaccounts = agencyMembership.Agency.SubAccount
+  const subaccounts = await db.subAccount.findMany({
+    where: { agencyId },
+    select: {
+      id: true,
+      name: true,
+      subAccountLogo: true,
+      city: true,
+      country: true,
+    },
+  })
 
   return (
     <AlertDialog>
       <div className="flex flex-col">
         <CreateSubaccountButton
-          user={user}
-          agencyDetails={agencyMembership.Agency}
+          user={{ id: userId, name: userName }}
+          agencyDetails={{ id: agencyId }}
           id={agencyId}
           className="w-[200px] self-end mb-8"
         />
@@ -60,7 +70,7 @@ const AllSubaccountsPage = async ({ params }: Props) => {
             <CommandEmpty>No Results Found.</CommandEmpty>
             <CommandGroup heading="Sub Accounts">
               {!!subaccounts.length ? (
-                subaccounts.map((subaccount: SubAccount) => (
+                subaccounts.map((subaccount) => (
                   <CommandItem
                     key={subaccount.id}
                     className="h-32 !bg-gradient-to-br from-muted/30 to-transparent my-4 text-primary border border-border/50 p-4 rounded-lg hover:!bg-muted/30 cursor-pointer transition-all"

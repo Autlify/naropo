@@ -19,7 +19,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/components/ui/alert'
-import { SidebarContext } from '@/components/sidebar-01/context'
+import { SidebarContext } from '@/components/sidebar/context'
 import type { MobileBehavior } from '@/types/sidebar'
 import {
   Accessibility,
@@ -65,7 +65,7 @@ const defaultMobile = {
 }
 
 // Storage key for persisting preferences
-const STORAGE_KEY = 'naropo:accessibility:preferences'
+const STORAGE_KEY = 'autlify:accessibility:preferences'
 
 // Safe hook that works outside of SidebarProvider
 function useSafePreferences() {

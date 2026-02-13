@@ -1,7 +1,9 @@
 import Unauthorized from '@/components/unauthorized'
-import { getAuthUserDetails, verifyAndAcceptInvitation } from '@/lib/queries'
+import { verifyAndAcceptInvitation } from '@/lib/queries' 
 import { redirect } from 'next/navigation'
 import React from 'react'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
 
 type Props = {
   searchParams: Promise<{ state: string; code: string }>
@@ -15,12 +17,14 @@ const SubAccountMainPage = async ({ searchParams }: Props) => {
     return <Unauthorized />
   }
 
-  const user = await getAuthUserDetails()
-  if (!user) return
+  const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) return <Unauthorized />
 
-  const firstSubaccountWithAccess = user.SubAccountMemberships?.find(
-    (membership) => membership.isActive === true
-  )
+  const firstSubaccountWithAccess = await db.subAccountMembership.findFirst({
+    where: { userId, isActive: true },
+    select: { subAccountId: true },
+  })
 
   if (searchParamsData.state) {
     const statePath = searchParamsData.state.split('___')[0]
@@ -31,7 +35,7 @@ const SubAccountMainPage = async ({ searchParams }: Props) => {
     )
   }
 
-  if (firstSubaccountWithAccess) {
+  if (firstSubaccountWithAccess?.subAccountId) {
     return redirect(`/subaccount/${firstSubaccountWithAccess.subAccountId}`)
   }
 

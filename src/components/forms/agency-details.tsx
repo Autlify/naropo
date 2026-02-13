@@ -272,14 +272,16 @@ const AgencyDetails = ({ data, selectedPlan }: Props) => {
   const handleDeleteAgency = async () => {
     if (!data?.id) return
     setDeletingAgency(true)
-    //WIP: discontinue the subscription
     try {
       const response = await deleteAgency(data.id)
       toast({
         title: 'Deleted Agency',
         description: 'Deleted your agency and all subaccounts',
       })
-      router.refresh()
+      // Force session update to clear activeAgencyId/activeSubAccountId
+      await updateSession()
+      // Redirect out of deleted tenant context
+      window.location.href = '/agency'
     } catch (error) {
       console.log(error)
       toast({

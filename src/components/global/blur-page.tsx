@@ -7,7 +7,7 @@ type Props = {
 const BlurPage = ({ children }: Props) => {
   return (
     <div
-      className="h-screen overflow-scroll surface-translucent mx-auto pt-28 px-8 pb-8 absolute top-0 right-0 left-0 botton-0 z-[11]"
+      className="absolute inset-0 z-[11] mx-auto h-screen overflow-y-auto overflow-x-hidden surface-translucent px-4 pb-8 pt-28 sm:px-6 lg:px-8"
       id="blur-page"
     >
       {children}

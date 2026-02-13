@@ -6,7 +6,7 @@
  * - JournalUploadBatch (no rows relation)
  * - JournalEntry + JournalEntryLine
  * 
- * @namespace Naropo.Lib.Features.FI.GL.Actions.JournalUpload
+ * @namespace Autlify.Lib.Features.FI.GL.Actions.JournalUpload
  */
 
 'use server'
@@ -334,8 +334,8 @@ export async function processJournalUpload(
       status: validateOnly
         ? UploadStatus.VALIDATED
         : result.isValid
-          ? UploadStatus.PROCESSING
-          : UploadStatus.FAILED,
+        ? UploadStatus.PROCESSING
+        : UploadStatus.FAILED,
       validationErrors: result.errors.length > 0 ? JSON.parse(JSON.stringify(result.errors)) : undefined,
     },
   })

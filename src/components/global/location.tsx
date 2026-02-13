@@ -396,7 +396,7 @@ const PhoneCodeSelector = React.forwardRef<HTMLButtonElement, PhoneSelectorProps
     );
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const inputValue = e.target.value.replace(/\D/g, "");
+      const inputValue = e.target.value.replace(/\D/g, ""); // e.g., output = "1234567890"
       // Pass the phone number back to parent
       onValueChange?.(inputValue);
     };

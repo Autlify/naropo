@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireIntegrationAuth } from '@/lib/features/core/integrations/guards'
-import { getConnectionById } from '@/lib/features/core/integrations/store'
-import { deleteConnection, updateConnectionById } from '@/lib/features/core/integrations/store'
+import { requireIntegrationAuth } from '@/lib/features/org/integrations/guards'
+import { getConnectionById } from '@/lib/features/org/integrations/store'
+import { deleteConnection, updateConnectionById } from '@/lib/features/org/integrations/store'
 import { KEYS } from '@/lib/registry/keys/permissions'
 
 const PatchSchema = z.object({
@@ -15,7 +15,7 @@ type Props = { params: Promise<{ provider: string; id: string }> }
 
 export async function GET(req: Request, props: Props) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.core.apps.webhooks.view] })
+    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.org.apps.webhooks.view] })
     const { id } = await props.params
     const conn = await getConnectionById(id)
     if (!connectionInScope(conn, scope)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -29,7 +29,7 @@ export async function GET(req: Request, props: Props) {
 
 export async function PATCH(req: Request, props: Props) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
     const { id } = await props.params
     const conn = await getConnectionById(id)
     if (!connectionInScope(conn, scope)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -47,7 +47,7 @@ export async function PATCH(req: Request, props: Props) {
 
 export async function DELETE(req: Request, props: Props) {
   try {
-    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.core.apps.webhooks.manage] })
+    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
     const { id } = await props.params
     const conn = await getConnectionById(id)
     if (!connectionInScope(conn, scope)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
-import { creditTopUpCreated, subscriptionCreated } from '@/lib/stripe/stripe-actions'
+import { creditTopUpCreated } from '@/lib/stripe/stripe-actions'
+import { syncStripeSubscriptionToDb } from '@/lib/stripe/billing/subscription-sync'
 import { db } from '@/lib/db'
 
 const stripeWebhookEvents = new Set([
@@ -44,6 +45,32 @@ export async function POST(req: NextRequest) {
     return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 })
   }
 
+
+  // Idempotency guard (top-app standard): ensure each Stripe event is processed once
+  let webhookRecordId: string | null = null
+  try {
+    const created = await db.webhookEvent.create({
+      data: {
+        provider: 'stripe',
+        eventId: stripeEvent.id,
+        eventType: stripeEvent.type,
+        status: 'RECEIVED',
+        payload: JSON.stringify(stripeEvent.data?.object ?? "{}"),
+      },
+      select: { id: true },
+    })
+    webhookRecordId = created.id
+  } catch (err: any) {
+    // Duplicate event (already processed/received)
+    if (err?.code === 'P2002') {
+      return NextResponse.json(
+        { webhookActionReceived: true, deduped: true },
+        { status: 200 }
+      )
+    }
+    throw err
+  }
+
   try {
     if (stripeWebhookEvents.has(stripeEvent.type)) {
       switch (stripeEvent.type) {
@@ -51,35 +78,24 @@ export async function POST(req: NextRequest) {
         case 'customer.subscription.updated': {
           const subscription = stripeEvent.data.object as Stripe.Subscription
 
-          // Skip if from connected account
           if (
             subscription.metadata.connectAccountPayments ||
             subscription.metadata.connectAccountSubscriptions
           ) {
-            console.log(
-              'SKIPPED FROM WEBHOOK 💳 because subscription was from a connected account',
-              subscription.id
-            )
+            console.log('SKIPPED FROM WEBHOOK 💳 because subscription was from a connected account', subscription.id)
             break
           }
 
-          // Handle both 'active' and 'trialing' status
-          if (subscription.status === 'active' || subscription.status === 'trialing') {
-            await subscriptionCreated(
-              subscription,
-              subscription.customer as string
-            )
-            console.log(`✅ Subscription ${subscription.status.toUpperCase()} 💳`, {
-              id: subscription.id,
-              status: subscription.status,
-              trialEnd: subscription.trial_end,
-            })
-          } else {
-            console.log(
-              `⏭️  Skipped subscription (status: ${subscription.status})`,
-              subscription.id
-            )
-          }
+          await syncStripeSubscriptionToDb({
+            subscription,
+            customerId: subscription.customer as string,
+          })
+
+          console.log(`✅ Subscription synced (status: ${subscription.status}) 💳`, {
+            id: subscription.id,
+            status: subscription.status,
+            trialEnd: subscription.trial_end,
+          })
           break
         }
 
@@ -107,32 +123,55 @@ export async function POST(req: NextRequest) {
 
         case 'customer.subscription.deleted': {
           const subscription = stripeEvent.data.object as Stripe.Subscription
-          const agencyId = subscription.metadata?.agencyId
 
-          console.log('🚫 Subscription deleted', {
-            subscriptionId: subscription.id,
-            agencyId,
-            status: subscription.status,
+          if (
+            subscription.metadata.connectAccountPayments ||
+            subscription.metadata.connectAccountSubscriptions
+          ) {
+            console.log('SKIPPED FROM WEBHOOK 💳 because subscription was from a connected account', subscription.id)
+            break
+          }
+
+          await syncStripeSubscriptionToDb({
+            subscription,
+            customerId: subscription.customer as string,
           })
 
-          if (agencyId) {
-            // Update subscription status in database
-            await db.subscription.update({
-              where: { agencyId },
-              data: {
-                active: false,
-                status: 'CANCELED',
-                cancelAtPeriodEnd: false, // Clear since it's now actually cancelled
-              },
-            })
-            console.log('✅ Database subscription marked as cancelled for agency:', agencyId)
-          }
+          console.log('🚫 Subscription deleted (synced)', {
+            subscriptionId: subscription.id,
+            agencyId: subscription.metadata?.agencyId,
+            status: subscription.status,
+          })
           break
         }
 
         case 'invoice.payment_failed': {
           const invoice = stripeEvent.data.object as Stripe.Invoice
           const customerId = invoice.customer as string
+          const subscription = invoice.parent?.subscription_details?.subscription as Stripe.Subscription
+
+          // If this invoice is related to a subscription, prefer syncing from Stripe
+          // so our SubscriptionItem/BillingState/EntitlementSnapshot stay canonical.
+          if (!stripeEvent.account && invoice.parent?.subscription_details?.subscription) {
+            const subscriptionId =
+              typeof subscription === 'string'
+                ? subscription
+                : subscription.id
+            const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+              expand: ['items.data.price'],
+            })
+            await syncStripeSubscriptionToDb({
+              subscription: sub,
+              customerId,
+            })
+
+            console.log('⚠️ Synced subscription after invoice.payment_failed', {
+              subscriptionId,
+              status: sub.status,
+              invoiceId: invoice.id,
+            })
+            break
+          }
 
           console.log('❌ Invoice payment failed', {
             invoiceId: invoice.id,
@@ -163,18 +202,116 @@ export async function POST(req: NextRequest) {
           break
         }
 
+        case 'invoice.payment_succeeded': {
+          const invoice = stripeEvent.data.object as Stripe.Invoice
+          const customerId = invoice.customer as string
+          const subscription = invoice.parent?.subscription_details?.subscription as Stripe.Subscription
+
+          // Ignore Connect invoices in the platform webhook
+          if (stripeEvent.account) {
+            console.log('SKIPPED invoice.payment_succeeded (connect event)', {
+              invoiceId: invoice.id,
+              account: stripeEvent.account,
+            })
+            break
+          }
+
+          // Subscription invoice: sync canonical state (handles dunning recovery)
+          if (invoice.parent?.subscription_details?.subscription) {
+            const subscriptionId =
+              typeof subscription === 'string'
+                ? subscription
+                : subscription.id
+            const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+              expand: ['items.data.price'],
+            })
+            await syncStripeSubscriptionToDb({
+              subscription: sub,
+              customerId,
+            })
+
+            console.log('✅ Synced subscription after invoice.payment_succeeded', {
+              subscriptionId,
+              status: sub.status,
+              invoiceId: invoice.id,
+              billing_reason: invoice.billing_reason,
+            })
+            break
+          }
+
+          // Non-subscription invoices (eg, one-off payments) can be handled separately.
+          console.log('✅ Invoice payment succeeded (non-subscription)', {
+            invoiceId: invoice.id,
+            customerId,
+            amount_paid: invoice.amount_paid,
+          })
+          break
+        }
+
         case 'checkout.session.completed': {
           const session = stripeEvent.data.object as Stripe.Checkout.Session
-          // Handle checkout session completion (implement later)
+          // Handle checkout session completion
+
+          // Subscription checkout: sync canonical state (some Stripe setups rely on this)
+          if (
+            !stripeEvent.account &&
+            session.mode === 'subscription' &&
+            session.subscription &&
+            session.customer
+          ) {
+            const subscriptionId =
+              typeof session.subscription === 'string'
+                ? session.subscription
+                : session.subscription.id
+            const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+              expand: ['items.data.price'],
+            })
+            await syncStripeSubscriptionToDb({
+              subscription: sub,
+              customerId: session.customer as string,
+            })
+
+            console.log('✅ Checkout Session completed (subscription synced) 💳', {
+              id: session.id,
+              subscriptionId,
+              customer: session.customer,
+              status: sub.status,
+            })
+            break
+          }
+
+          // Credits checkout (one-off payment)
           if (session.mode === 'payment' && session.payment_status === 'paid') {
-            await creditTopUpCreated(
-              session,
-              session.customer as string
-            )
-            console.log('✅ Checkout Session completed and paid 💳', {
+            const md = session.metadata || {}
+            const isCredits =
+              md.checkoutType === 'credits' ||
+              md.type === 'credit_purchase' ||
+              (typeof md.checkoutTypes === 'string' &&
+                md.checkoutTypes.split(',').map((s) => s.trim()).includes('credits'))
+
+            if (!isCredits) {
+              console.log('⏭️  Skipped checkout.session.completed (non-credits)', {
+                id: session.id,
+                mode: session.mode,
+                payment_status: session.payment_status,
+                metadata: md,
+              })
+              break
+            }
+
+            if (!session.customer) {
+              console.log('⏭️  Skipped credit top-up (missing customer)', {
+                id: session.id,
+              })
+              break
+            }
+
+            await creditTopUpCreated(session, session.customer as string)
+            console.log('✅ Checkout Session completed and paid (credits) 💳', {
               id: session.id,
               customer: session.customer,
               payment_intent: session.payment_intent,
+              metadata: md,
             })
           }
           break
@@ -219,10 +356,28 @@ export async function POST(req: NextRequest) {
           console.log('👉 Unhandled event type:', stripeEvent.type)
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.log(error)
+    if (webhookRecordId) {
+      await db.webhookEvent.update({
+        where: { id: webhookRecordId },
+        data: {
+          status: 'FAILED',
+          processedAt: new Date(),
+          error: error?.message ?? String(error),
+        },
+      })
+    }
     return new NextResponse('🔴 Webhook Error', { status: 400 })
   }
+
+  if (webhookRecordId) {
+    await db.webhookEvent.update({
+      where: { id: webhookRecordId },
+      data: { status: 'PROCESSED', processedAt: new Date() },
+    })
+  }
+
   return NextResponse.json(
     {
       webhookActionReceived: true,
