@@ -5,7 +5,13 @@
  * across API routes:
  * - Error handling wrapper
  * - Request validation helpers
+ * - Authentication middleware
+ * - Membership guards
+ * - Billing parameter parsing
  */
 
 export { withErrorHandler } from './error-handler';
 export { validateRequest } from './validation';
+export { requireAuth, getSession } from './auth-middleware';
+export { guardMembership, hasMembership, type MembershipScope } from './membership-guard';
+export { parseBillingParams, validateBillingParams, type BillingParams, type MeteringScope, type UsagePeriod } from './billing-params';

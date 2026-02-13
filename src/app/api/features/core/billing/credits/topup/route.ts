@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server'
 
-import { auth } from '@/auth'
-import { db } from '@/lib/db'
-import type { MeteringScope } from '@/generated/prisma/client'
 import { hasPermission } from '@/lib/features/iam/authz/permissions'
 import { topupCredits } from '@/lib/features/org/billing/credits/grant'
+import { withErrorHandler, requireAuth, guardMembership } from '@/lib/api'
+import type { MeteringScope } from '@/generated/prisma/client'
 
-export async function POST(req: Request) {
-  const session = await auth()
-  const userId = session?.user?.id
-  if (!userId) return NextResponse.json({ ok: false, error: 'Unauthenticated' }, { status: 401 })
+export const POST = withErrorHandler(async (req: Request) => {
+  const session = await requireAuth()
+  const userId = session.user.id
 
   const body = await req.json().catch(() => ({}))
   const agencyId = String(body.agencyId || '')
@@ -31,14 +29,7 @@ export async function POST(req: Request) {
   if (!canBilling) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
 
   // Membership guard
-  if (scope === 'SUBACCOUNT') {
-    if (!subAccountId) return NextResponse.json({ ok: false, error: 'subAccountId is required' }, { status: 400 })
-    const m = await db.subAccountMembership.findFirst({ where: { userId, subAccountId, isActive: true }, select: { id: true } })
-    if (!m) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
-  } else {
-    const m = await db.agencyMembership.findFirst({ where: { userId, agencyId, isActive: true }, select: { id: true } })
-    if (!m) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
-  }
+  await guardMembership(userId, scope, agencyId, subAccountId ?? undefined)
 
   await topupCredits({
     scope,
@@ -50,4 +41,4 @@ export async function POST(req: Request) {
   })
 
   return NextResponse.json({ ok: true })
-}
+})
