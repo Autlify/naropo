@@ -14,8 +14,7 @@ import { KEYS } from '@/lib/registry/keys/permissions'
 import { reserveDocumentNumber } from '@/lib/features/fi/general-ledger/utils/number-ranges'
 import { z } from 'zod'
 import Decimal from 'decimal.js'
-
-type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
+import type { ActionResult } from '@/lib/common/result'
 
 type FiContext = {
   userId: string
