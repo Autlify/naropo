@@ -2,6 +2,8 @@ import { db } from '@/lib/db'
 import { stripe } from '@/lib/stripe'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { getAgencyWithStripeData } from '@/lib/stripe/agency'
+import { withErrorHandler } from '@/lib/api'
 
 /**
  * POST /api/stripe/subscription
@@ -27,81 +29,69 @@ import Stripe from 'stripe'
  * - action: string - The action that was performed
  * - message: string (optional) - Human-readable message
  */
-export async function POST(req: Request) {
-    try {
-        const body = await req.json()
-        const { action, customerId, agencyId, priceId, coupon, paymentMethodId, trialEnabled, trialPeriodDays, prorationBehavior } = body
+export const POST = withErrorHandler(async (req: Request) => {
+    const body = await req.json()
+    const { action, customerId, agencyId, priceId, coupon, paymentMethodId, trialEnabled, trialPeriodDays, prorationBehavior } = body
 
-        // Price ID is now always the real Stripe ID (after sync script updates constants.ts)
+    // Price ID is now always the real Stripe ID (after sync script updates constants.ts)
 
-        if (!action || !customerId || !agencyId) {
-            return NextResponse.json(
-                { error: 'action, customerId, and agencyId are required' },
-                { status: 400 }
-            )
-        }
-
-        // Validate agency exists and belongs to customer
-        const agency = await db.agency.findUnique({
-            where: { id: agencyId },
-            include: { Subscription: true },
-        })
-
-        if (!agency) {
-            return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
-        }
-
-        if (agency.customerId !== customerId) {
-            return NextResponse.json(
-                { error: 'Agency does not belong to this customer' },
-                { status: 403 }
-            )
-        }
-
-        switch (action) {
-            case 'create':
-                return await handleCreate({
-                    customerId,
-                    agencyId,
-                    priceId,
-                    coupon,
-                    paymentMethodId,
-                    trialEnabled,
-                    trialPeriodDays,
-                    existingSubscription: agency.Subscription,
-                })
-
-            case 'update':
-                return await handleUpdate({
-                    customerId,
-                    agencyId,
-                    priceId,
-                    coupon,
-                    prorationBehavior,
-                    existingSubscription: agency.Subscription,
-                })
-
-            case 'cancel':
-                return await handleCancel({
-                    agencyId,
-                    existingSubscription: agency.Subscription,
-                })
-
-            default:
-                return NextResponse.json(
-                    { error: `Invalid action: ${action}. Must be 'create', 'update', or 'cancel'` },
-                    { status: 400 }
-                )
-        }
-    } catch (error) {
-        console.error('🔴 Subscription action error:', error)
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    if (!action || !customerId || !agencyId) {
         return NextResponse.json(
-            { error: 'Failed to process subscription action', details: errorMessage },
-            { status: 500 }
+            { error: 'action, customerId, and agencyId are required' },
+            { status: 400 }
         )
     }
+
+    // Validate agency exists and belongs to customer
+    const agency = await getAgencyWithStripeData(agencyId)
+
+    if (!agency) {
+        return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
+    }
+
+    if (agency.customerId !== customerId) {
+        return NextResponse.json(
+            { error: 'Agency does not belong to this customer' },
+            { status: 403 }
+    )
 }
+
+    switch (action) {
+        case 'create':
+            return await handleCreate({
+                customerId,
+                agencyId,
+                priceId,
+                coupon,
+                paymentMethodId,
+                trialEnabled,
+                trialPeriodDays,
+                existingSubscription: agency.Subscription,
+            })
+
+        case 'update':
+            return await handleUpdate({
+                customerId,
+                agencyId,
+                priceId,
+                coupon,
+                prorationBehavior,
+                existingSubscription: agency.Subscription,
+            })
+
+        case 'cancel':
+            return await handleCancel({
+                agencyId,
+                existingSubscription: agency.Subscription,
+            })
+
+        default:
+            return NextResponse.json(
+                { error: `Invalid action: ${action}. Must be 'create', 'update', or 'cancel'` },
+                { status: 400 }
+            )
+    }
+})
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE - Create a new subscription

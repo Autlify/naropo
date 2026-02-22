@@ -7,6 +7,7 @@ import { deleteSubscription, updateSubscription, getSubscriptionWithScope, updat
 import { randomToken, sha256Hex, encryptStringGcm, decryptStringGcm } from '@/lib/features/org/integrations/crypto'
 import { sendWebhookAttempt } from '@/lib/features/org/integrations/delivery'
 import { KEYS } from '@/lib/registry/keys/permissions'
+import { withErrorHandler, validateRequest } from '@/lib/api'
 
 const PatchSchema = z.object({
   url: z.string().url().optional(),
@@ -16,89 +17,66 @@ const PatchSchema = z.object({
 
 type Props = { params: Promise<{ id: string }> }
 
-export async function GET(req: Request, props: Props) {
-  try {
-    const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.org.apps.webhooks.view] })
-    const { id } = await props.params
-    const ok = await subscriptionInScope(id, scope)
-    if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+export const GET = withErrorHandler(async (req: Request, props: Props) => {
+  const { scope } = await requireIntegrationAuth(req, { requiredKeys: [KEYS.org.apps.webhooks.view] })
+  const { id } = await props.params
+  const ok = await subscriptionInScope(id, scope)
+  if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-    const subscription = await db.integrationWebhookSubscription.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        connectionId: true,
-        url: true,
-        events: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
+  const subscription = await db.integrationWebhookSubscription.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      connectionId: true,
+      url: true,
+      events: true,
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  })
 
-    if (!subscription) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json({ subscription })
-  } catch (e: any) {
-    if (e instanceof Response) return e
-    console.error(e)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+  if (!subscription) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  return NextResponse.json({ subscription })
+})
 
-export async function PATCH(req: Request, props: Props) {
-  try {
-    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
-    const { id } = await props.params
-    const body = await req.json()
-    const parsed = PatchSchema.safeParse(body)
-    if (!parsed.success) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
-    const ok = await subscriptionInScope(id, scope)
-    if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+export const PATCH = withErrorHandler(async (req: Request, props: Props) => {
+  const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
+  const { id } = await props.params
+  
+  const result = await validateRequest(req, PatchSchema)
+  if ('error' in result) return result.error
+  
+  const ok = await subscriptionInScope(id, scope)
+  if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-    await updateSubscription(id, parsed.data)
-    return NextResponse.json({ ok: true })
-  } catch (e: any) {
-    if (e instanceof Response) return e
-    console.error(e)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+  await updateSubscription(id, result.data)
+  return NextResponse.json({ ok: true })
+})
 
-export async function DELETE(req: Request, props: Props) {
-  try {
-    const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
-    const { id } = await props.params
-    const ok = await subscriptionInScope(id, scope)
-    if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+export const DELETE = withErrorHandler(async (req: Request, props: Props) => {
+  const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })
+  const { id } = await props.params
+  const ok = await subscriptionInScope(id, scope)
+  if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-    await deleteSubscription(id)
-    return NextResponse.json({ ok: true })
-  } catch (e: any) {
-    if (e instanceof Response) return e
-    console.error(e)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+  await deleteSubscription(id)
+  return NextResponse.json({ ok: true })
+})
 
 // POST handles actions: test, rotate
-export async function POST(req: Request, props: Props) {
-  try {
-    const url = new URL(req.url)
-    const action = url.searchParams.get('action')
+export const POST = withErrorHandler(async (req: Request, props: Props) => {
+  const url = new URL(req.url)
+  const action = url.searchParams.get('action')
 
-    if (action === 'test') {
-      return handleTest(req, props)
-    } else if (action === 'rotate') {
-      return handleRotate(req, props)
-    }
-
-    return NextResponse.json({ error: 'Invalid action. Use ?action=test or ?action=rotate' }, { status: 400 })
-  } catch (e: any) {
-    if (e instanceof Response) return e
-    console.error(e)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  if (action === 'test') {
+    return handleTest(req, props)
+  } else if (action === 'rotate') {
+    return handleRotate(req, props)
   }
-}
+
+  return NextResponse.json({ error: 'Invalid action. Use ?action=test or ?action=rotate' }, { status: 400 })
+})
 
 async function handleTest(req: Request, props: Props) {
   const { scope } = await requireIntegrationAuth(req, { requireWrite: true, requiredKeys: [KEYS.org.apps.webhooks.manage] })

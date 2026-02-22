@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { PRICING_CONFIG } from '@/lib/registry/plans/pricing-config';
 import { stripe } from '@/lib/stripe';
-import { db } from '@/lib/db';
 import { hasAgencyPermission, hasSubAccountPermission } from '@/lib/features/iam/authz/permissions';
-import { makeStripeIdempotencyKey } from '@/lib/stripe/idempotency';
 import { requireLegalAcceptance } from '@/lib/features/iam/authn/terms';
+import { getOrCreateStripeCustomer, buildScopeMetadata, type CustomerScope } from '@/lib/stripe/customer';
+import { withErrorHandler } from '@/lib/api';
 
 // ============================================================================
 // Types & Validation
@@ -170,96 +170,6 @@ async function checkPermissions(scope: CheckoutScope): Promise<boolean> {
     }
   } catch {
     return false;
-  }
-}
-
-async function getOrCreateStripeCustomer(
-  userId: string,
-  scope: CheckoutScope,
-  email?: string,
-  name?: string
-): Promise<string> {
-  // Billing customer SSoT:
-  // - Agency billing is tied to Agency.customerId
-  // - SubAccount billing is currently billed under its Agency (no SubAccount.customerId field)
-  // - User-level uses User.customerId
-
-  if (scope.level === 'agency' || scope.level === 'subAccount') {
-    const agencyId = scope.level === 'agency' ? scope.agencyId : scope.agencyId
-    const agency = await db.agency.findUnique({
-      where: { id: agencyId },
-      select: { customerId: true },
-    })
-    if (agency?.customerId) return agency.customerId
-
-    const idem = makeStripeIdempotencyKey('customer_create', [
-      'agency',
-      agencyId,
-    ])
-
-    const customer = await stripe.customers.create(
-      {
-        email: email,
-        name: name,
-        metadata: {
-          userId,
-          scopeLevel: 'agency',
-          agencyId,
-        },
-      },
-      { idempotencyKey: idem }
-    )
-
-    await db.agency.update({
-      where: { id: agencyId },
-      data: { customerId: customer.id },
-    })
-
-    return customer.id
-  }
-
-  // user-level
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { customerId: true, email: true, name: true },
-  })
-  if (user?.customerId) return user.customerId
-
-  const idem = makeStripeIdempotencyKey('customer_create', ['user', userId])
-  const customer = await stripe.customers.create(
-    {
-      email: email ?? user?.email ?? undefined,
-      name: name ?? user?.name ?? undefined,
-      metadata: {
-        userId,
-        scopeLevel: 'user',
-      },
-    },
-    { idempotencyKey: idem }
-  )
-
-  await db.user.update({
-    where: { id: userId },
-    data: { customerId: customer.id },
-  })
-
-  return customer.id
-}
-
-function buildScopeMetadata(userId: string, scope: CheckoutScope): Record<string, string> {
-  const base = {
-    userId,
-    scopeLevel: scope.level,
-    platform: 'autlify',
-  };
-
-  switch (scope.level) {
-    case 'agency':
-      return { ...base, agencyId: scope.agencyId };
-    case 'subAccount':
-      return { ...base, agencyId: scope.agencyId, subAccountId: scope.subAccountId };
-    default:
-      return base;
   }
 }
 

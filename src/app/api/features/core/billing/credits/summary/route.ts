@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-import { auth } from '@/auth'
-import { db } from '@/lib/db'
-import type { MeteringScope, UsagePeriod } from '@/generated/prisma/client'
 import { resolveEffectiveEntitlements } from '@/lib/features/org/billing/entitlements/resolve'
 import { getUsageWindowWithOffset } from '@/lib/features/org/billing/usage/period'
+import { db } from '@/lib/db'
+import { withErrorHandler, requireAuth, guardMembership, parseBillingParams } from '@/lib/api'
 
 const n = (v: any): number => {
   if (v == null) return 0
@@ -13,48 +12,38 @@ const n = (v: any): number => {
   return Number.isFinite(num) ? num : 0
 }
 
-export async function GET(req: NextRequest) {
-  const session = await auth()
-  const userId = session?.user?.id
-  if (!userId) return NextResponse.json({ ok: false, error: 'Unauthenticated' }, { status: 401 })
+export const GET = withErrorHandler(async (req: NextRequest) => {
+  const session = await requireAuth()
+  const userId = session.user.id
 
+  const params = parseBillingParams(req)
   const url = new URL(req.url)
-  const agencyId = url.searchParams.get('agencyId')
-  const subAccountId = url.searchParams.get('subAccountId')
-  const featureKey = url.searchParams.get('featureKey')
-  const scope: MeteringScope =
-    (url.searchParams.get('scope') as MeteringScope) ?? (subAccountId ? 'SUBACCOUNT' : 'AGENCY')
-  const period: UsagePeriod = (url.searchParams.get('period') as UsagePeriod) ?? 'MONTHLY'
   const periodsBack = Math.max(0, Math.floor(Number(url.searchParams.get('periodsBack') || 0)))
+  const period = (params.period ?? 'MONTHLY') as any
 
-  if (!agencyId) return NextResponse.json({ ok: false, error: 'agencyId is required' }, { status: 400 })
+  if (!params.agencyId) {
+    return NextResponse.json({ ok: false, error: 'agencyId is required' }, { status: 400 })
+  }
 
   // Membership guard
-  if (scope === 'SUBACCOUNT') {
-    if (!subAccountId) return NextResponse.json({ ok: false, error: 'subAccountId is required' }, { status: 400 })
-    const m = await db.subAccountMembership.findFirst({ where: { userId, subAccountId, isActive: true }, select: { id: true } })
-    if (!m) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
-  } else {
-    const m = await db.agencyMembership.findFirst({ where: { userId, agencyId, isActive: true }, select: { id: true } })
-    if (!m) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
-  }
+  await guardMembership(userId, params.scope, params.agencyId, params.subAccountId ?? undefined)
 
   const window = getUsageWindowWithOffset(period, periodsBack)
 
   const entitlements = await resolveEffectiveEntitlements({
-    scope,
-    agencyId,
-    subAccountId: subAccountId ?? null,
+    scope: params.scope,
+    agencyId: params.agencyId,
+    subAccountId: params.subAccountId ?? null,
   })
 
   const rows = await db.usageTracking.findMany({
     where: {
-      scope,
-      agencyId,
-      subAccountId: subAccountId ?? '',
+      scope: params.scope,
+      agencyId: params.agencyId,
+      subAccountId: params.subAccountId ?? '',
       period,
       periodStart: window.periodStart,
-      ...(featureKey ? { featureKey } : {}),
+      ...(params.featureKey ? { featureKey: params.featureKey } : {}),
     },
     orderBy: { featureKey: 'asc' },
   })
@@ -80,12 +69,12 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    scope,
-    agencyId,
-    subAccountId: subAccountId ?? null,
+    scope: params.scope,
+    agencyId: params.agencyId,
+    subAccountId: params.subAccountId ?? null,
     period,
     periodsBack,
     window: { periodStart: window.periodStart.toISOString(), periodEnd: window.periodEnd.toISOString() },
     rows: mapped,
   })
-}
+})
